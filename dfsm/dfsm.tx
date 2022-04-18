@@ -1,0 +1,119 @@
+/*
+    dFSM Language
+*/
+
+dFSM:
+    (
+    'events'
+        events+=Event
+    'end'
+    )?
+
+    startState=StartState
+    finishState=FinishState
+    states+=IntermediateState
+    transitions+=Transition
+;
+
+// STATES --------------------------------------------------------------->
+
+State: StartState | FinishState | IntermediateState;
+
+IntermediateState: ActiveFormState;
+
+StartState:
+    'StartState' name=ID
+        (
+            'actions'
+                actions+=Action
+            'end'
+        )?
+    'end'
+;
+
+FinishState:
+    'FinishState' name=ID
+        (
+            'actions'
+                actions+=Action
+            'end'
+        )?
+    'end'
+;
+
+ActiveFormState:
+    'ActiveFormState' name=ID
+        (
+            'parameters'
+                params+=ActiveFormParameter
+            'end'
+        )?
+    'end'
+;
+
+// ----------------------------------------------------------------------
+
+Event: IntentEvent;
+
+IntentEvent:
+    'IntentEvent' '(' intent=STRING ')' name=ID
+;
+
+ActiveFormParameter:
+    name=ID ':' type=ParameterType '=' source=ParameterSource
+;
+
+ParameterSource: HRIParamResource;
+
+HRIParamResource:
+    'HRI' '(' ask_slot=STRING ')'
+;
+
+/* FormParameter:  */
+ParameterDefinition:
+    name=ID ':' type=ParameterType (default=ParameterDefault)?
+;
+
+ParameterType: 'int' | 'float' | 'str' | 'bool';
+ParameterDefault: STRING | INT | FLOAT | BOOL;
+
+
+// ACTIONS ------------------------------------------------------------->
+
+Action: SpeakAction;
+
+SpeakAction:
+    'Speak' '(' text=STRING ')'
+;
+
+FireEventAction:
+    'FireEvent' '(' msg=STRING ')'
+;
+
+// ----------------------------------------------------------------------
+
+Transition: OnEventTransition | SimpleTransition;
+
+SimpleTransition:
+    'Transition' from_state=[State] '=>' to_state=[State]
+;
+
+OnEventTransition:
+    'Transition' from_state=[State] '=>' to_state=[State] 'on' on_event=[Event|FQN|events]
+;
+
+Keyword:
+    'end' | 'state' | 'actions'
+;
+
+SMID:
+    !Keyword ID
+;
+
+// === Fully Qualified Names Rule ===
+FQN: ID('.'ID)*;
+
+// special rule for comments.
+Comment:
+    /\/\/.*$/
+;

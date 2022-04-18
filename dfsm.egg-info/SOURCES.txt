@@ -1,0 +1,13 @@
+LICENSE
+README.md
+setup.cfg
+setup.py
+dfsm/__init__.py
+dfsm/dfsm.tx
+dfsm.egg-info/PKG-INFO
+dfsm.egg-info/SOURCES.txt
+dfsm.egg-info/dependency_links.txt
+dfsm.egg-info/entry_points.txt
+dfsm.egg-info/not-zip-safe
+dfsm.egg-info/requires.txt
+dfsm.egg-info/top_level.txt

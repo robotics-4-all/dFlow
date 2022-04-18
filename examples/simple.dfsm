@@ -1,0 +1,28 @@
+events
+    IntentEvent('Weather') IEW
+    IntentEvent('Time') IET
+    IntentEvent('Personal Information') IEPI
+end
+
+StartState SS
+    actions
+        Speak("Hello I am ELSA")
+    end
+end
+
+FinishState SF
+    actions
+        Speak("Bye bye")
+    end
+end
+
+ActiveFormState FS1
+    parameters
+        name: str = HRI("What is your name?")
+        surname: str = HRI("Give me your surname")
+        age: int = HRI("How old are you?")
+    end
+end
+
+Transition SS => FS1 on IEPI
+Transition FS1 => SF
