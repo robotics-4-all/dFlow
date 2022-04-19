@@ -53,11 +53,13 @@ ActiveFormState:
 
 // ----------------------------------------------------------------------
 
+// EVENTS -------------------------------------------------------------->
 Event: IntentEvent;
 
 IntentEvent:
     'IntentEvent' '(' intent=STRING ')' name=ID
 ;
+// ----------------------------------------------------------------------
 
 ActiveFormParameter:
     name=ID ':' type=ParameterType '=' source=ParameterSource
@@ -69,18 +71,13 @@ HRIParamResource:
     'HRI' '(' ask_slot=STRING ')'
 ;
 
-/* FormParameter:  */
-ParameterDefinition:
-    name=ID ':' type=ParameterType (default=ParameterDefault)?
-;
-
 ParameterType: 'int' | 'float' | 'str' | 'bool';
 ParameterDefault: STRING | INT | FLOAT | BOOL;
 
 
 // ACTIONS ------------------------------------------------------------->
 
-Action: SpeakAction;
+Action: SpeakAction | FireEventAction;
 
 SpeakAction:
     'Speak' '(' text=STRING ')'
@@ -92,6 +89,7 @@ FireEventAction:
 
 // ----------------------------------------------------------------------
 
+// TRANSITIONS --------------------------------------------------------->
 Transition: OnEventTransition | SimpleTransition;
 
 SimpleTransition:
@@ -101,6 +99,7 @@ SimpleTransition:
 OnEventTransition:
     'Transition' from_state=[State] '=>' to_state=[State] 'on' on_event=[Event|FQN|events]
 ;
+// ----------------------------------------------------------------------
 
 Keyword:
     'end' | 'state' | 'actions'
