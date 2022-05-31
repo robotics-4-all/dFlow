@@ -6,14 +6,14 @@ from setuptools import setup
 
 this_dir = os.path.abspath(os.path.dirname(__file__))
 
-VERSIONFILE = os.path.join(this_dir, "dfsm", "__init__.py")
+VERSIONFILE = os.path.join(this_dir, "dflow", "__init__.py")
 VERSION = None
 for line in open(VERSIONFILE, "r").readlines():
     if line.startswith('__version__'):
         VERSION = line.split('"')[1]
 
 if not VERSION:
-    raise RuntimeError('No version defined in dfsm.__init__.py')
+    raise RuntimeError('No version defined in dflow.__init__.py')
 
 
 if sys.argv[-1].startswith('publish'):

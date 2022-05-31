@@ -1,3 +1,0 @@
-[textx_languages]
-dfsm = dfsm:dfsm_language
-

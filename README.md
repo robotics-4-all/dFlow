@@ -1,4 +1,4 @@
-# dfsm
+# dflow
 
 DSL for Task-based dialogue FSMs
 
