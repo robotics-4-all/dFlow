@@ -61,16 +61,14 @@ Synonym:
 // INTENT
 Intent:
     'Intent' name=ID
-        phrases*=IntentPhrase[',']
+        phrases*=IntentPhraseComplex[',']
     'end'
 ;
 
 IntentPhraseComplex: (IntentPhrase)*;
 
 IntentPhrase:
-    (
-        p1?=Phrase ('{' entityRef1=[TrainableEntity|FQN] '}')?
-    )#
+    (p1?=STRING ('{' entityRef1=[TrainableEntity|FQN] '}')?)#
 ;
 
 Phrase:
@@ -127,6 +125,11 @@ Phrase:
 // ----------------------------------------------------------------------
 Word:
     /[-\w]*\b/
+;
+
+
+TextType:
+  STRING|/\w*\b/
 ;
 
 // === Fully Qualified Names Rule ===

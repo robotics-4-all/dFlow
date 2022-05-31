@@ -15,14 +15,9 @@ synonyms
 end
 
 intents
-    Intent anekdota
-        anekdoto,
-        asteia
-    end
-
     Intent find_doctor
-        I want {Doctor},
-        I want to talk with {Doctor},
-        I want to talk with {Doctor}
+        "I want" {Doctor} "please",
+        {Doctor} "please!"
+        "I want to call" {Doctor}
     end
 end
