@@ -1,28 +1,27 @@
-events
-    IntentEvent('Weather') IEW
-    IntentEvent('Time') IET
-    IntentEvent('Personal Information') IEPI
-end
-
-StartState SS
-    actions
-        Speak("Hello I am ELSA")
+entities
+    Entity Doctor
+        Kardiologos,
+        Odontiatros
     end
 end
 
-FinishState SF
-    actions
-        Speak("Bye bye")
+synonyms
+    Synonym date_period
+        mera,
+        evdomada,
+        mina,
+        aurio
     end
 end
 
-ActiveFormState FS1
-    parameters
-        name: str = HRI("What is your name?")
-        surname: str = HRI("Give me your surname")
-        age: int = HRI("How old are you?")
+intents
+    Intent anekdota
+        anekdoto,
+        asteia
+    end
+
+    Intent find_doctor
+        hello {Doctor},
+        hi {Doctor}
     end
 end
-
-Transition SS => FS1 on IEPI
-Transition FS1 => SF
