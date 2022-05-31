@@ -21,7 +21,8 @@ intents
     end
 
     Intent find_doctor
-        hello {Doctor},
-        hi {Doctor}
+        I want {Doctor},
+        I want to talk with {Doctor},
+        I want to talk with {Doctor}
     end
 end

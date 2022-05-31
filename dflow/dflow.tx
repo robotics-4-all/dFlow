@@ -5,17 +5,17 @@
 dFlow:
     (
     'entities'
-        entities+=Entity
+        entities*=TrainableEntity
     'end'
     )?
     (
     'synonyms'
-        synonyms+=Synonym
+        synonyms*=Synonym
     'end'
     )?
     (
     'intents'
-        intents+=Intent
+        intents*=Intent
     'end'
     )?
 ;
@@ -25,7 +25,7 @@ Entity: PredefinedEntity | TrainableEntity;
 
 TrainableEntity:
     'Entity' name=ID
-        words+=STRING[',']
+        words+=Word[',']
     'end'
 ;
 
@@ -54,7 +54,7 @@ PredefinedEntity:
 
 Synonym:
     'Synonym' name=ID
-        words+=STRING[',']
+        words+=Word[',']
     'end'
 ;
 
@@ -65,12 +65,16 @@ Intent:
     'end'
 ;
 
+IntentPhraseComplex: (IntentPhrase)*;
+
 IntentPhrase:
     (
-    /.*/
-    entityRef*=[Entity]
-    /.*/
-    )*
+        p1?=Phrase ('{' entityRef1=[TrainableEntity|FQN] '}')?
+    )#
+;
+
+Phrase:
+    words*=Word
 ;
 
 // ----------------------------------------------------------------------
@@ -121,6 +125,9 @@ IntentPhrase:
 /* ; */
 
 // ----------------------------------------------------------------------
+Word:
+    /[-\w]*\b/
+;
 
 // === Fully Qualified Names Rule ===
 FQN: ID('.'ID)*;
