@@ -2,112 +2,125 @@
     dFSM Language
 */
 
-dFSM:
+dFlow:
     (
-    'events'
-        events+=Event
+    'entities'
+        entities+=Entity
     'end'
     )?
-
-    startState=StartState
-    finishState=FinishState
-    states+=IntermediateState
-    transitions+=Transition
+    (
+    'synonyms'
+        synonyms+=Synonym
+    'end'
+    )?
+    (
+    'intents'
+        intents+=Intent
+    'end'
+    )?
 ;
 
-// STATES --------------------------------------------------------------->
+// ENTITIY
+Entity: PredefinedEntity | TrainableEntity;
 
-State: StartState | FinishState | IntermediateState;
-
-IntermediateState: ActiveFormState;
-
-StartState:
-    'StartState' name=ID
-        (
-            'actions'
-                actions+=Action
-            'end'
-        )?
+TrainableEntity:
+    'Entity' name=ID
+        words+=STRING[',']
     'end'
 ;
 
-FinishState:
-    'FinishState' name=ID
-        (
-            'actions'
-                actions+=Action
-            'end'
-        )?
+PredefinedEntity:
+    'PERSON'        |
+    'NORP'          |
+    'FAC'           |
+    'ORG'           |
+    'GPE'           |
+    'LOC'           |
+    'PRODUCT'       |
+    'EVENT'         |
+    'WORK_OF_ART'   |
+    'LAW'           |
+    'LANGUAGE'      |
+    'DATE'          |
+    'TIME'          |
+    'PERCENT'       |
+    'MONEY'         |
+    'QUANTITY'      |
+    'ORDINAL'       |
+    'CARDINAL'
+;
+
+// ----------------------------------------------------------------------
+
+Synonym:
+    'Synonym' name=ID
+        words+=STRING[',']
     'end'
 ;
 
-ActiveFormState:
-    'ActiveFormState' name=ID
-        (
-            'parameters'
-                params+=ActiveFormParameter
-            'end'
-        )?
+// INTENT
+Intent:
+    'Intent' name=ID
+        phrases*=IntentPhrase[',']
     'end'
+;
+
+IntentPhrase:
+    (
+    /.*/
+    entityRef*=[Entity]
+    /.*/
+    )*
 ;
 
 // ----------------------------------------------------------------------
 
 // EVENTS -------------------------------------------------------------->
-Event: IntentEvent;
-
-IntentEvent:
-    'IntentEvent' '(' intent=STRING ')' name=ID
-;
+/* Event: IntentEvent; */
+/**/
+/* IntentEvent: */
+/*     'IntentEvent' '(' intent=STRING ')' name=ID */
+/* ; */
 // ----------------------------------------------------------------------
 
-ActiveFormParameter:
-    name=ID ':' type=ParameterType '=' source=ParameterSource
-;
-
-ParameterSource: HRIParamResource;
-
-HRIParamResource:
-    'HRI' '(' ask_slot=STRING ')'
-;
-
-ParameterType: 'int' | 'float' | 'str' | 'bool';
-ParameterDefault: STRING | INT | FLOAT | BOOL;
-
+/* ActiveFormParameter: */
+/*     name=ID ':' type=ParameterType '=' source=ParameterSource */
+/* ; */
+/**/
+/* ParameterSource: HRIParamResource; */
+/**/
+/* HRIParamResource: */
+/*     'HRI' '(' ask_slot=STRING ')' */
+/* ; */
+/**/
+/* ParameterType: 'int' | 'float' | 'str' | 'bool'; */
+/* ParameterDefault: STRING | INT | FLOAT | BOOL; */
+/**/
 
 // ACTIONS ------------------------------------------------------------->
 
-Action: SpeakAction | FireEventAction;
-
-SpeakAction:
-    'Speak' '(' text=STRING ')'
-;
-
-FireEventAction:
-    'FireEvent' '(' msg=STRING ')'
-;
+/* Action: SpeakAction | FireEventAction; */
+/**/
+/* SpeakAction: */
+/*     'Speak' '(' text=STRING ')' */
+/* ; */
+/**/
+/* FireEventAction: */
+/*     'FireEvent' '(' msg=STRING ')' */
+/* ; */
+/**/
+/* RESTCallAction: */
+/*     'RESTCall' '(' */
+/*         host=STRING ',' */
+/*         port=INT ',' */
+/*         path=STRING ',' */
+/*         '[' query_params=STRING[','] ']' ',' */
+/*         '[' path_params=STRING[','] ']' ',' */
+/*         '[' body_params=STRING[','] ']' ',' */
+/*     ')' */
+/* ; */
 
 // ----------------------------------------------------------------------
-
-// TRANSITIONS --------------------------------------------------------->
-Transition: OnEventTransition | SimpleTransition;
-
-SimpleTransition:
-    'Transition' from_state=[State] '=>' to_state=[State]
-;
-
-OnEventTransition:
-    'Transition' from_state=[State] '=>' to_state=[State] 'on' on_event=[Event|FQN|events]
-;
-// ----------------------------------------------------------------------
-
-Keyword:
-    'end' | 'state' | 'actions'
-;
-
-SMID:
-    !Keyword ID
-;
 
 // === Fully Qualified Names Rule ===
 FQN: ID('.'ID)*;
