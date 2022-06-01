@@ -20,8 +20,8 @@ dFlow:
     )?
 ;
 
-// ENTITIY
-Entity: PredefinedEntity | TrainableEntity;
+// ENTITIY --------------------------------------------------------------
+Entity: TrainableEntity | PredefinedEntity;
 
 TrainableEntity:
     'Entity' name=ID
@@ -68,7 +68,12 @@ Intent:
 IntentPhraseComplex: (IntentPhrase)*;
 
 IntentPhrase:
-    (p1?=STRING ('{' entityRef1=[TrainableEntity|FQN] '}')?)#
+    (
+        phrase?=STRING
+        ('{' refTrainable?=[TrainableEntity|FQN] '}')?
+        ('{' refSynonym?=[Synonym|FQN] '}')?
+        ('{' refPredefined?=[PredefinedEntity|FQN] '}')?
+    )#
 ;
 
 Phrase:

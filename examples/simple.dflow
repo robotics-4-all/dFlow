@@ -17,7 +17,9 @@ end
 intents
     Intent find_doctor
         "I want" {Doctor} "please",
-        {Doctor} "please!"
-        "I want to call" {Doctor}
+        {Doctor} "please!",
+        "I want to call" {Doctor},
+        "I want to call" {Doctor} {date_period},
+        "I want to call" {Doctor} {PERSON} "on" {date_period}
     end
 end
