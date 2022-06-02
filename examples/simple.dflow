@@ -16,10 +16,13 @@ end
 
 intents
     Intent find_doctor
-        "I want" {Doctor} "please",
-        {Doctor} "please!",
-        "I want to call" {Doctor},
-        "I want to call" {Doctor} {date_period},
-        "I want to call" {Doctor} {PERSON} "on" {date_period}
+        "I want" TE:Doctor "please",
+        TE:Doctor "please!",
+        "I want to call" TE:Doctor,
+        "I want to call" TE:Doctor S:date_period,
+        "I want to call" TE:Doctor "test" S:date_period "test",
+        "I want to call" PE:PERSON "test",
+        "I want to call" PE:PERSON["Test"] "test",
+        "I want to call" TE:Doctor "test" S:date_period "test" PE:PERSON["Test","Test"]
     end
 end

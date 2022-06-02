@@ -70,9 +70,9 @@ IntentPhraseComplex: (IntentPhrase)*;
 IntentPhrase:
     (
         phrase?=STRING
-        ('{' refTrainable?=[TrainableEntity|FQN] '}')?
-        ('{' refSynonym?=[Synonym|FQN] '}')?
-        ('{' refPredefined?=[PredefinedEntity|FQN] '}')?
+        ('TE:' refTrainable?=[TrainableEntity|FQN])?
+        ('S:' refSynonym?=[Synonym|FQN])?
+        ('PE:' refPredefined?=[PredefinedEntity|FQN] ('[' refPreValues*=STRING[','] ']')?)?
     )#
 ;
 
