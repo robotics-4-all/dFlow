@@ -6,6 +6,10 @@ DSL for Task-based dialogue FSMs
 
 [System overview](https://docs.google.com/document/d/1jlFrizaDi1PD9Rtw-TwVXaGQYwpViTWV3sUK8sJBx-c/edit)
 
+# Grammar
+
+![./metamodel.png]
+
 
 # Similar Work Resources
 

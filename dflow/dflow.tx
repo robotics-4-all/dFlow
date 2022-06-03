@@ -83,49 +83,68 @@ Phrase:
 // ----------------------------------------------------------------------
 
 // EVENTS -------------------------------------------------------------->
-/* Event: IntentEvent; */
-/**/
-/* IntentEvent: */
-/*     'IntentEvent' '(' intent=STRING ')' name=ID */
-/* ; */
+
+Event: OnIntentEvent;
+
+OnIntentEvent:
+    'OnIntent' '(' intent=[Intent|FQN] ')' '->' action=[Action|FQN]
+;
+
+OnActionCompleted:
+    'OnActionCompleted' '(' actionRef=[Action|FQN] ')'
+;
 // ----------------------------------------------------------------------
 
-/* ActiveFormParameter: */
-/*     name=ID ':' type=ParameterType '=' source=ParameterSource */
-/* ; */
-/**/
-/* ParameterSource: HRIParamResource; */
-/**/
-/* HRIParamResource: */
-/*     'HRI' '(' ask_slot=STRING ')' */
-/* ; */
-/**/
-/* ParameterType: 'int' | 'float' | 'str' | 'bool'; */
-/* ParameterDefault: STRING | INT | FLOAT | BOOL; */
-/**/
+
+BotResponse: Action | ActiveForm;
+
+ActiveForm:
+    'ActiveForm' name=ID
+        (
+            'parameters'
+                params+=ActiveFormParameter
+            'end'
+        )?
+    'end'
+;
+
+ActiveFormParameter:
+    name=ID ':' type=ParameterType '=' source=ParameterSource
+;
+
+ParameterSource: HRIParamResource;
+
+HRIParamResource:
+    'HRI' '(' ask_slot=STRING ')'
+;
+
+ParameterType: 'int' | 'float' | 'str' | 'bool';
+ParameterDefault: STRING | INT | FLOAT | BOOL;
+
+
 
 // ACTIONS ------------------------------------------------------------->
 
-/* Action: SpeakAction | FireEventAction; */
-/**/
-/* SpeakAction: */
-/*     'Speak' '(' text=STRING ')' */
-/* ; */
-/**/
-/* FireEventAction: */
-/*     'FireEvent' '(' msg=STRING ')' */
-/* ; */
-/**/
-/* RESTCallAction: */
-/*     'RESTCall' '(' */
-/*         host=STRING ',' */
-/*         port=INT ',' */
-/*         path=STRING ',' */
-/*         '[' query_params=STRING[','] ']' ',' */
-/*         '[' path_params=STRING[','] ']' ',' */
-/*         '[' body_params=STRING[','] ']' ',' */
-/*     ')' */
-/* ; */
+Action: SpeakAction | FireEventAction | HTTPCallAction;
+
+SpeakAction:
+    'Speak' '(' text=STRING ')'
+;
+
+FireEventAction:
+    'FireEvent' '(' uri=STRING ',' msg=STRING ')'
+;
+
+HTTPCallAction:
+    'RESTCall' '('
+        host=STRING ','
+        port=INT ','
+        path=STRING ','
+        '[' query_params*=STRING[','] ']' ','
+        '[' path_params*=STRING[','] ']' ','
+        '[' body_params*=STRING[','] ']' ','
+    ')'
+;
 
 // ----------------------------------------------------------------------
 Word:
