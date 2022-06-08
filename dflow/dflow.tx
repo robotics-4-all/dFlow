@@ -18,6 +18,11 @@ dFlow:
         intents*=Intent
     'end'
     )?
+    (
+    'responses'
+        responses*=Response
+    'end'
+    )?
 ;
 
 // ENTITIY --------------------------------------------------------------
@@ -69,7 +74,7 @@ IntentPhraseComplex: (IntentPhrase)*;
 
 IntentPhrase:
     (
-        phrase?=STRING
+        (phrase=STRING)?
         ('TE:' refTrainable?=[TrainableEntity|FQN])?
         ('S:' refSynonym?=[Synonym|FQN])?
         ('PE:' refPredefined?=[PredefinedEntity|FQN] ('[' refPreValues*=STRING[','] ']')?)?
@@ -84,7 +89,14 @@ Phrase:
 
 // EVENTS -------------------------------------------------------------->
 
-Event: OnIntentEvent;
+Response:
+    'Response' name=ID
+        'onIntent: ' onEvent=[Intent|FQN]
+        'actions: ' actions*=Action
+    'end'
+;
+
+Event: OnIntentEvent | OnActionCompleted;
 
 OnIntentEvent:
     'OnIntent' '(' intent=[Intent|FQN] ')' '->' action=[Action|FQN]
