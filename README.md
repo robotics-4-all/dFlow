@@ -8,7 +8,7 @@ DSL for Task-based dialogue FSMs
 
 # Grammar
 
-![Metamodel](./metamodel.png)
+![Metamodel](./assets/metamodel.png)
 
 
 # Similar Work Resources
