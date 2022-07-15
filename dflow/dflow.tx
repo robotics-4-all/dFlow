@@ -1,4 +1,21 @@
 /*
+ *            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+ *                    Version 2, December 2004
+ *
+ * Copyright (C) 2022 Panayiotou, Konstantinos <klpanagi@gmail.com>
+ * Author: Panayiotou, Konstantinos <klpanagi@gmail.com>
+ *
+ * Everyone is permitted to copy and distribute verbatim or modified
+ * copies of this license document, and changing it is allowed as long
+ * as the name is changed.
+ *
+ *            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+ *   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+ *
+ *  0. You just DO WHAT THE FUCK YOU WANT TO.
+ */
+
+/*
     dFSM Language
 */
 
@@ -19,8 +36,8 @@ dFlow:
     'end'
     )?
     (
-    'responses'
-        responses*=Response
+    'dialogues'
+        dialogues*=Dialogue
     'end'
     )?
 ;
@@ -63,10 +80,17 @@ Synonym:
     'end'
 ;
 
+Intent: InternalIntent | ExternalIntent;
+
 // INTENT
-Intent:
-    'Intent' name=ID
+InternalIntent:
+    'IIntent' name=ID
         phrases*=IntentPhraseComplex[',']
+    'end'
+;
+
+ExternalIntent:
+    'EIntent' name=ID
     'end'
 ;
 
@@ -89,26 +113,20 @@ Phrase:
 
 // EVENTS -------------------------------------------------------------->
 
-Response:
-    'Response' name=ID
-        'onIntent: ' onEvent=[Intent|FQN]
-        'actions: ' actions*=Action
+Dialogue:
+    'Dialogue' name=ID
+        'on: ' onIntent=[Intent|FQN]
+        'responses: ' responses*=Response
     'end'
 ;
 
-Event: OnIntentEvent | OnActionCompleted;
 
-OnIntentEvent:
-    'OnIntent' '(' intent=[Intent|FQN] ')' '->' action=[Action|FQN]
-;
+// Event: OnIntentEvent | OnActionCompleted;
 
-OnActionCompleted:
-    'OnActionCompleted' '(' actionRef=[Action|FQN] ')'
-;
 // ----------------------------------------------------------------------
 
 
-BotResponse: Action | ActiveForm;
+Response: Action | ActiveForm;
 
 ActiveForm:
     'ActiveForm' name=ID
@@ -132,8 +150,6 @@ HRIParamResource:
 
 ParameterType: 'int' | 'float' | 'str' | 'bool';
 ParameterDefault: STRING | INT | FLOAT | BOOL;
-
-
 
 // ACTIONS ------------------------------------------------------------->
 
