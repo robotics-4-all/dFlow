@@ -91,6 +91,7 @@ InternalIntent:
 
 ExternalIntent:
     'EIntent' name=ID
+        uri=STRING
     'end'
 ;
 
@@ -111,30 +112,18 @@ Phrase:
 
 // ----------------------------------------------------------------------
 
-// EVENTS -------------------------------------------------------------->
-
 Dialogue:
     'Dialogue' name=ID
-        'on: ' onIntent=[Intent|FQN]
-        'responses: ' responses*=Response
+        'on:' onIntent=[Intent|FQN]
+        'responses:' responses*=Response[',']
     'end'
 ;
-
-
-// Event: OnIntentEvent | OnActionCompleted;
-
-// ----------------------------------------------------------------------
-
 
 Response: Action | ActiveForm;
 
 ActiveForm:
     'ActiveForm' name=ID
-        (
-            'parameters'
-                params+=ActiveFormParameter
-            'end'
-        )?
+        params+=ActiveFormParameter
     'end'
 ;
 
