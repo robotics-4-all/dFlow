@@ -58,7 +58,8 @@ def parse_model(model) -> TransformationDataModel:
                 if complex_phrase.synonym:
                     name = complex_phrase.synonym.name
                 if complex_phrase.pretrained:
-                    name = complex_phrase.pretrained.name
+                    # print(complex_phrase.pretrained)
+                    name = complex_phrase.pretrained
                     data.pretrained_entities.append(name)
             data.intents.append({'name': trigger.name, 'examples': examples})
         else:
