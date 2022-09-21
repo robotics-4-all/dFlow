@@ -1,0 +1,33 @@
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/nlu/components/
+recipe: default.v1
+language: en
+pipeline:
+  - name: SpacyNLP
+    model: "en_core_web_md"
+  - name: SpacyTokenizer
+  - name: SpacyFeaturizer
+  {% if  'pretrained_entities' in data %}
+  - name: SpacyEntityExtractor
+    dimensions: {{data['pretrained_entities']}}
+  {% endif %}
+  - name: RegexFeaturizer
+  - name: CRFEntityExtractor
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: "char_wb"
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+    epochs: 200
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    epochs: 100
+
+policies:
+  - name: MemoizationPolicy
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 200
+  - name: RulePolicy
