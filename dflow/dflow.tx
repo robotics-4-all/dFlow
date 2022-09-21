@@ -97,14 +97,15 @@ Event:
 
 IntentPhraseComplex: phrases*=IntentPhrase;
 
-IntentPhrase:
-    (
-        (phrase=STRING)?
-        ('TE:' trainable=[TrainableEntity|FQN])?
-        ('S:' synonym=[Synonym|FQN])?
-        ('PE:' pretrained=[PretrainedEntity|FQN] ('[' refPreValues*=STRING[','] ']')?)?
-    )#
-;
+IntentPhrase: IntentPhraseStr | IntentPhraseTE | IntentPhraseSynonym | IntentPhrasePE;
+
+IntentPhraseStr: STRING;
+
+IntentPhraseTE: 'TE:' trainable=[TrainableEntity|FQN];
+
+IntentPhrasePE: 'PE:' pretrained=[PretrainedEntity|FQN] ('[' refPreValues*=STRING[','] ']')?;
+
+IntentPhraseSynonym: 'S:' synonym=[Synonym|FQN];
 
 Phrase:
     words*=Word
