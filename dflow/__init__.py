@@ -1,5 +1,6 @@
 import os
 from textx import language, metamodel_from_file
+from .generator import dflow_generate_rasa
 
 __version__ = "0.1.0.dev"
 
