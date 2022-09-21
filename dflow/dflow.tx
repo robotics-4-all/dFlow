@@ -16,7 +16,7 @@
  */
 
 /*
-    dFSM Language
+    dFlow Language
 */
 
 dFlow:
@@ -31,19 +31,19 @@ dFlow:
     'end'
     )?
     (
-    'intents'
-        intents*=Intent
+    'triggers'
+        triggers+=Trigger
     'end'
     )?
     (
     'dialogues'
-        dialogues*=Dialogue
+        dialogues+=Dialogue
     'end'
     )?
 ;
 
 // ENTITIY --------------------------------------------------------------
-Entity: TrainableEntity | PredefinedEntity;
+Entity: TrainableEntity | PretrainedEntity;
 
 TrainableEntity:
     'Entity' name=ID
@@ -51,7 +51,7 @@ TrainableEntity:
     'end'
 ;
 
-PredefinedEntity:
+PretrainedEntity:
     'PERSON'        |
     'NORP'          |
     'FAC'           |
@@ -80,17 +80,17 @@ Synonym:
     'end'
 ;
 
-Intent: InternalIntent | ExternalIntent;
+Trigger: Intent | Event;
 
 // INTENT
-InternalIntent:
-    'IIntent' name=ID
-        phrases*=IntentPhraseComplex[',']
+Intent:
+    'Intent' name=ID
+        phrases+=IntentPhraseComplex[',']
     'end'
 ;
 
-ExternalIntent:
-    'EIntent' name=ID
+Event:
+    'Event' name=ID
         uri=STRING
     'end'
 ;
@@ -114,20 +114,20 @@ Phrase:
 
 Dialogue:
     'Dialogue' name=ID
-        'on:' onIntent=[Intent|FQN]
-        'responses:' responses*=Response[',']
+        'on:' onTrigger=[Trigger|FQN]
+        'responses:' responses+=Response[',']
     'end'
 ;
 
-Response: Action | ActiveForm;
+Response: Action | Form;
 
-ActiveForm:
-    'ActiveForm' name=ID
-        params+=ActiveFormParameter
+Form:
+    'Form' name=ID
+        params+=FormParameter
     'end'
 ;
 
-ActiveFormParameter:
+FormParameter:
     name=ID ':' type=ParameterType '=' source=ParameterSource
 ;
 

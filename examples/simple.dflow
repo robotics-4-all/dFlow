@@ -14,8 +14,8 @@ synonyms
     end
 end
 
-intents
-    IIntent find_doctor
+triggers
+    Intent find_doctor
         "I want" TE:Doctor "please",
         TE:Doctor "please!",
         "I want to call" TE:Doctor,
@@ -26,8 +26,8 @@ intents
         "I want to call" TE:Doctor "test" S:date_period "test" PE:PERSON["Test","Test"]
     end
 
-    EIntent external_1
-        "bot/eintent/external_1"
+    Event external_1
+        "bot/event/external_1"
     end
 end
 
@@ -39,7 +39,7 @@ dialogues
 
     Dialogue DialB
         on: find_doctor
-        responses: ActiveForm AF1
+        responses: Form AF1
             Param1: str = HRI('Give parameter 1')
             Param2: int = HRI('Give parameter 2')
         end
