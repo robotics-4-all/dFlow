@@ -95,7 +95,7 @@ Event:
     'end'
 ;
 
-IntentPhraseComplex: phrases*=IntentPhrase;
+IntentPhraseComplex: phrases+=IntentPhrase;
 
 IntentPhrase: IntentPhraseStr | IntentPhraseTE | IntentPhraseSynonym | IntentPhrasePE;
 

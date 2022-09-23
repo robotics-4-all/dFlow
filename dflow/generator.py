@@ -18,17 +18,17 @@ from typing import Any, List, Dict
 
 
 class TransformationDataModel(BaseModel):
-    synonyms: List[Dict[str, Any]] = [{}]
-    entities: List[Dict[str, Any]] = [{}]
-    pretrained_entities: List[Dict[str, Any]] = [{}]
-    intents: List[Dict[str, Any]] = [{}]
-    events: List[Dict[str, Any]] = [{}]
-    stories: List[Dict[str, Any]] = [{}]
-    actions: List[Dict[str, Any]] = [{}]
-    rules: List[Dict[str, Any]] = [{}]
-    slots: List[Dict[str, Any]] = [{}]
-    form_responses: List[Dict[str, Any]] = [{}]
-    form_actions: List[Dict[str, Any]] = [{}]
+    synonyms: List[Dict[str, Any]] = []
+    entities: List[Dict[str, Any]] = []
+    pretrained_entities: List[Dict[str, Any]] = []
+    intents: List[Dict[str, Any]] = []
+    events: List[Dict[str, Any]] = []
+    stories: List[Dict[str, Any]] = []
+    actions: List[Dict[str, Any]] = []
+    rules: List[Dict[str, Any]] = []
+    slots: List[Dict[str, Any]] = []
+    form_responses: List[Dict[str, Any]] = []
+    form_actions: List[Dict[str, Any]] = []
 
 
 @generator('dflow', 'rasa')
@@ -51,16 +51,28 @@ def parse_model(model) -> TransformationDataModel:
 
     for trigger in model.triggers:
         if trigger.__class__.__name__ == 'Intent':
-            examples = []
             for complex_phrase in trigger.phrases:
-                if complex_phrase.trainable:
-                    name = complex_phrase.trainable.name
-                if complex_phrase.synonym:
-                    name = complex_phrase.synonym.name
-                if complex_phrase.pretrained:
-                    # print(complex_phrase.pretrained)
-                    name = complex_phrase.pretrained
-                    data.pretrained_entities.append(name)
+                text = []
+                for phrase in complex_phrase.phrases:
+                    if phrase.__class__.__name__ == 'str':
+                        text.append([phrase])
+                    elif phrase.__class__.__name__ == "IntentPhraseTE":
+                        name = phrase.trainable.name
+                        words = [entity["words"] for entity in data.entities if entity['name'] == name]
+                        entities_rasa_format = [f"[{ent}]({name})" for ent in words[0]]
+                        text.append(entities_rasa_format)
+                    elif phrase.__class__.__name__ == "IntentPhraseSynonym":
+                        name = phrase.synonym.name
+                        words = [synonym["words"] for synonym in data.synonyms if synonym['name'] == name]
+                        synonyms_rasa_format = [f"[{syn}]({name})" for syn in words[0]]
+                        text.append(synonyms_rasa_format)
+                    elif phrase.__class__.__name__ == "IntentPhrasePE":
+                        name = phrase.pretrained
+                        if name not in data.pretrained_entities:
+                            data.pretrained_entities.append(name)
+                        if phrase.refPreValues != []:
+                            text.append(phrase.refPreValues)
+            examples = [' '.join(sentence) for sentence in itertools.product(*text)]
             data.intents.append({'name': trigger.name, 'examples': examples})
         else:
             data.events.append({'name': trigger.name, 'uri': trigger.uri})
@@ -118,4 +130,3 @@ def parse_model(model) -> TransformationDataModel:
             'responses': responses
         })
     return data
-
