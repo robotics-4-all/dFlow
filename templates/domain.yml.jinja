@@ -1,3 +1,18 @@
+intents:
+{% for intent in intents %}
+  - {{intent["name"]}}
+{% endfor %}
+{% for event in events %}
+  - {{event["name"]}}
+{% endfor %}
+
+{% if entities != [] %}
+entities:
+{% for entity in entities %}
+  - {{entity["name"]}}
+{% endfor %}
+{% endif %}
+
 session_config:
   session_expiration_time: 5
   carry_over_slots_to_new_session: false

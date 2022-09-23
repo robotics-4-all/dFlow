@@ -7,9 +7,9 @@ pipeline:
     model: "en_core_web_md"
   - name: SpacyTokenizer
   - name: SpacyFeaturizer
-  {% if  'pretrained_entities' in data %}
+  {% if  pretrained_entities != [] %}
   - name: SpacyEntityExtractor
-    dimensions: {{data['pretrained_entities']}}
+    dimensions: {{pretrained_entities}}
   {% endif %}
   - name: RegexFeaturizer
   - name: CRFEntityExtractor
