@@ -1,6 +1,6 @@
 from os import path, mkdir, getcwd, chmod
 from textx import generator, metamodel_from_file
-import jinja2, argparse
+import jinja2, argparse, itertools
 
 from textxjinja import textx_jinja_generator
 import textx.scoping.providers as scoping_providers
@@ -64,8 +64,8 @@ def parse_model(model) -> TransformationDataModel:
                     elif phrase.__class__.__name__ == "IntentPhraseSynonym":
                         name = phrase.synonym.name
                         words = [synonym["words"] for synonym in data.synonyms if synonym['name'] == name]
-                        synonyms_rasa_format = [f"[{syn}]({name})" for syn in words[0]]
-                        text.append(synonyms_rasa_format)
+                        synonym = words[0][0]
+                        text.append([synonym])
                     elif phrase.__class__.__name__ == "IntentPhrasePE":
                         name = phrase.pretrained
                         if name not in data.pretrained_entities:
