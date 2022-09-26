@@ -143,7 +143,8 @@ ParameterDefault: STRING | INT | FLOAT | BOOL;
 
 // ACTIONS ------------------------------------------------------------->
 
-Action: SpeakAction | FireEventAction | HTTPCallAction;
+Action: name=ID actions+=ActionTypes;
+ActionTypes: SpeakAction | FireEventAction | HTTPCallAction;
 
 SpeakAction:
     'Speak' '(' text=STRING ')'

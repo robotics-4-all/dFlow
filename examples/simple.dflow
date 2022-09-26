@@ -34,7 +34,9 @@ end
 dialogues
     Dialogue DialA
         on: external_1
-        responses: Speak('Hello')
+        responses: answers
+          Speak('Hello')
+          Speak('Hey there')
     end
 
     Dialogue DialB
