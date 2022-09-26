@@ -83,31 +83,32 @@ def parse_model(model) -> TransformationDataModel:
         responses = []
         form = []
         for response in dialogue.responses:
-            responses.append('response.name')
-            if response.__class__.__name__ == 'SpeakAction':
-                data.actions.append({
-                    'name': 'response.name',
-                    'type': response.__class__.__name__,
-                    'text': response.text
-                })
-            elif response.__class__.__name__ == 'FireEventAction':
-                data.actions.append({
-                    'name': 'response.name',
-                    'type': response.__class__.__name__,
-                    'uri': response.uri,
-                    'msg': response.msg
-                })
-            elif response.__class__.__name__ == 'HTTPCallAction':
-                data.actions.append({
-                    'name': 'response.name',
-                    'type': response.__class__.__name__,
-                    'host': response.host,
-                    'port': response.port,
-                    'path': response.path,
-                    'query_params': response.query_params,
-                    'path_params': response.path_params,
-                    'body_params': response.body_params
-                })
+            responses.append(response.name)
+            if response.__class__.__name__ == 'Action':
+                actions = []
+                for action in response.actions:
+                    if action.__class__.__name__ == 'SpeakAction':
+                        actions.append({
+                            'type': action.__class__.__name__,
+                            'text': action.text
+                        })
+                    elif action.__class__.__name__ == 'FireEventAction':
+                        actions.append({
+                            'type': action.__class__.__name__,
+                            'uri': action.uri,
+                            'msg': action.msg
+                        })
+                    elif action.__class__.__name__ == 'HTTPCallAction':
+                        actions.append({
+                            'type': action.__class__.__name__,
+                            'host': action.host,
+                            'port': action.port,
+                            'path': action.path,
+                            'query_params': action.query_params,
+                            'path_params': action.path_params,
+                            'body_params': action.body_params
+                        })
+                data.actions.append({"name": f"action_{response.name}", "actions": actions})
             elif response.__class__.__name__ == 'Form':
                 form = response.name
                 data.rules.append({

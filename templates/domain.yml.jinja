@@ -16,6 +16,12 @@ entities:
 {% endfor %}
 {% endif %}
 
+
+{% if actions %}
+actions:
+{% for action in actions %}
+  - {{action["name"]}}
+{% endfor %}
 {% endif %}
 
 session_config:
