@@ -11,6 +11,11 @@ entities:
 {% for entity in entities %}
   - {{entity["name"]}}
 {% endfor %}
+{% for entity in pretrained_entities %}
+  - {{entity}}
+{% endfor %}
+{% endif %}
+
 {% endif %}
 
 session_config:
