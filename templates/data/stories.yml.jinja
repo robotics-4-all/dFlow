@@ -1,0 +1,12 @@
+{% if dialogues %}
+stories:
+{% for story in stories %}
+- story: {{story.name}}
+  steps:
+  - intent: {{story.intent}}
+  {% for response in story.responses %}
+  - action: {{response}}
+  {% endfor %}
+
+{% endfor %}
+{% endif %}
