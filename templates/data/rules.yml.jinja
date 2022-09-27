@@ -1,0 +1,22 @@
+{% if rules %}
+rules:
+{% for rule in rules %}
+- rule: Activate {{rule.name}}
+  steps:
+  - intent: {{rule.intent}}
+  {% for response in rule.responses %}
+  - action: {{response.name}}
+  {% if response.form %}
+  - active_loop: {{response.name}}
+  {% endif %}
+  {% endfor %}
+
+- rule: Submit {{rule.name}}
+  condition:
+  - active_loop: {{rule.name}}
+  steps:
+  - activate_loop: null
+  - action: {{rule.submit}}
+
+{% endfor %}
+{% endif %}

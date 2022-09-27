@@ -136,9 +136,14 @@ def parse_model(model) -> TransformationDataModel:
         intent = dialogue.onTrigger.name
         dialogue_responses = []
         form = []
+        forced_name = None
         for response in dialogue.responses:
             if response.__class__.__name__ == 'Action':
-                dialogue_responses.append({"name": f"action_{response.name}", "form": False})
+                if forced_name:
+                    dialogue_responses.append({"name": forced_name, "form": False})
+                    forced_name = None
+                else:
+                    dialogue_responses.append({"name": f"action_{response.name}", "form": False})
                 actions = []
                 for action in response.actions:
                     if action.__class__.__name__ == 'SpeakAction':
@@ -170,8 +175,13 @@ def parse_model(model) -> TransformationDataModel:
                     'name': form,
                     'intent': intent,
                     'responses': dialogue_responses,
-                    'form': form
+                    'submit': f"action_submit_{form}"
                 })
+                if response == dialogue.responses[-1]:
+                    data.actions.append({"name":  f"action_submit_{form}", "actions": []})
+                    dialogue_responses.append({"name": f"action_submit_{form}", "form": False})
+                else:
+                    forced_name = f"action_submit_{form}"
                 form_data = []
                 for slot in response.params:
                     data.slots.append({'name': slot.name, 'type': slot.type})

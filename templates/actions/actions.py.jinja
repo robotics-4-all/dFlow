@@ -9,7 +9,7 @@ import requests
 
 {% for action in actions %}
 
-class {{action.name|replace("_"," ")|capitalize|replace(" ","")}}:
+class {{action.name|replace("_","")|capitalize}}:
 
     def name(self):
         return "{{action.name}}"
