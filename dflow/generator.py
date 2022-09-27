@@ -8,6 +8,17 @@ from rich import print
 from pydantic import BaseModel
 from typing import Any, List, Dict
 
+_THIS_DIR = path.realpath(getcwd())
+
+# Initialize template engine.
+jinja_env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(path.join(_THIS_DIR, 'templates')),
+    trim_blocks=True,
+    lstrip_blocks=True)
+
+srcgen_folder = path.join(path.realpath(getcwd()), 'gen')
+
+
 # mm = metamodel_from_file('dflow.tx')
 # mm.register_scope_providers(
 #         {
@@ -35,7 +46,49 @@ class TransformationDataModel(BaseModel):
 def dflow_generate_rasa(metamodel, model, output_path, overwrite,
         debug, **custom_args):
     "Generator for generating rasa from dflow descriptions"
-    parse_model(model)
+    data = parse_model(model)
+
+    # Prepare generating file directory
+    if output_path is None:
+        out_dir = srcgen_folder
+
+    if not path.exists(out_dir):
+        mkdir(out_dir)
+
+    if not path.exists(path.join(out_dir, 'actions')):
+        mkdir(path.join(out_dir, 'actions'))
+
+    if not path.exists(path.join(out_dir, 'data')):
+        mkdir(path.join(out_dir, 'data'))
+
+    if not path.exists(path.join(out_dir, 'models')):
+        mkdir(path.join(out_dir, 'models'))
+
+    # Generate
+    templates = [
+        'actions/actions.py.jinja', 'data/nlu.yml.jinja',
+        'data/stories.yml.jinja', 'data/rules.yml.jinja',
+        'config.yml.jinja', 'domain.yml.jinja'
+        ]
+    static_templates = ['credentials.yml', 'endpoints.yml']
+
+    for file in templates:
+        gen_file_name = path.splitext(file)[0]
+
+        out_file = path.join(out_dir, gen_file_name)
+        template = jinja_env.get_template(file)
+        with open(path.join(out_file), 'w') as f:
+            f.write(template.render(intents=data.intents,
+                                    synonyms=data.synonyms,
+                                    pretrained_entities=data.pretrained_entities,
+                                    entities=data.entities,
+                                    events=data.events,
+                                    stories=data.stories,
+                                    actions=data.actions,
+                                    rules=data.rules,
+                                    slots=data.slots))
+        chmod(out_file, 509)
+    return out_dir
 
 
 def parse_model(model) -> TransformationDataModel:
