@@ -38,9 +38,8 @@ class TransformationDataModel(BaseModel):
     actions: List[Dict[str, Any]] = []
     rules: List[Dict[str, Any]] = []
     slots: List[Dict[str, Any]] = []
-    form_responses: List[Dict[str, Any]] = []
-    form_actions: List[Dict[str, Any]] = []
-
+    forms: List[Dict[str, Any]] = []
+    responses: List[Dict[str, Any]] = []
 
 @generator('dflow', 'rasa')
 def dflow_generate_rasa(metamodel, model, output_path, overwrite,
@@ -86,7 +85,9 @@ def dflow_generate_rasa(metamodel, model, output_path, overwrite,
                                     stories=data.stories,
                                     actions=data.actions,
                                     rules=data.rules,
-                                    slots=data.slots))
+                                    slots=data.slots,
+                                    forms=data.forms,
+                                    responses=data.responses))
         chmod(out_file, 509)
     return out_dir
 
@@ -133,11 +134,11 @@ def parse_model(model) -> TransformationDataModel:
     for dialogue in model.dialogues:
         name = dialogue.name
         intent = dialogue.onTrigger.name
-        responses = []
+        dialogue_responses = []
         form = []
         for response in dialogue.responses:
-            responses.append(response.name)
             if response.__class__.__name__ == 'Action':
+                dialogue_responses.append({"name": f"action_{response.name}", "form": False})
                 actions = []
                 for action in response.actions:
                     if action.__class__.__name__ == 'SpeakAction':
@@ -163,24 +164,26 @@ def parse_model(model) -> TransformationDataModel:
                         })
                 data.actions.append({"name": f"action_{response.name}", "actions": actions})
             elif response.__class__.__name__ == 'Form':
-                form = response.name
+                form = f"{response.name}_form"
+                dialogue_responses.append({"name": form, "form": True})
                 data.rules.append({
                     'name': form,
                     'intent': intent,
-                    'responses': responses,
+                    'responses': dialogue_responses,
                     'form': form
                 })
+                form_data = []
                 for slot in response.params:
                     data.slots.append({'name': slot.name, 'type': slot.type})
-                    data.form_responses.append({
-                        'name': slot.name,
-                        'type': slot.type,
-                        'form': form,
+                    form_data.append(slot.name)
+                    data.responses.append({
+                        'name': f"utter_ask_{form}_{slot.name}",
                         'text': slot.source.ask_slot
                     })
+                data.forms.append({'name': form, 'slots': form_data})
         data.stories.append({
             'name': name,
             'intent': intent,
-            'responses': responses
+            'responses': dialogue_responses
         })
     return data

@@ -5,7 +5,11 @@ stories:
   steps:
   - intent: {{story.intent}}
   {% for response in story.responses %}
-  - action: {{response}}
+  - action: {{response.name}}
+  {% if response.form %}
+  - active_loop: {{response.name}}
+  - activate_loop: null
+  {% endif %}
   {% endfor %}
 
 {% endfor %}

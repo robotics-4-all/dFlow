@@ -16,12 +16,43 @@ entities:
 {% endfor %}
 {% endif %}
 
+{% if slots %}
+slots:
+{% for slot in slots %}
+  {{slot.name}}:
+    type: {{slot.type}}
+    influence_conversation: false
+    mappings:
+    - type: custom
+{% endfor %}
+{% endif %}
+
+{% if forms %}
+forms:
+{% for form in forms %}
+  {{form.name}}:
+    required_slots:
+    {% for slot in form.slots %}
+    - {{slot}}
+    {% endfor %}
+{% endfor %}
+{% endif %}
+
+# slots from forms
 
 {% if actions %}
 actions:
 {% for action in actions %}
   - {{action["name"]}}
 {% endfor %}
+{% endif %}
+
+{% if responses %}
+responses:
+  {% for response in responses %}
+  {{response.name}}:
+  - text: "{{response.text}}"
+  {% endfor %}
 {% endif %}
 
 session_config:
