@@ -27,9 +27,9 @@ class {{action.name|replace("_"," ")|capitalize|replace(" ","")}}:
 
         url = "{{act.host}}:{{act.port}}/{{act.path}}"
 
-        //'[' query_params*=STRING[','] ']' ','
-        //'[' path_params*=STRING[','] ']' ','
-        //'[' body_params*=STRING[','] ']' ','
+        # '[' query_params*=STRING[','] ']' ','
+        # '[' path_params*=STRING[','] ']' ','
+        # '[' body_params*=STRING[','] ']' ','
 
         {% endif %}
         {% endfor %}
