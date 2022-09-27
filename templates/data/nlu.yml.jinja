@@ -1,18 +1,16 @@
 version: "3.1"
 nlu:
-
 {% for intent in intents %}
 - intent: {{intent["name"]}}
   examples: |
-  {% for example in intent["examples"]}
+  {% for example in intent["examples"] %}
   - {{example}}
   {% endfor %}
 {% endfor %}
-
 {% for synonym in synonyms %}
 - synonym: {{synonym["name"]}}
   examples: |
-  {% for word in synonym["words"]}
+  {% for word in synonym["words"] %}
   - {{word}}
   {% endfor %}
 

@@ -17,21 +17,22 @@ class {{action.name|replace("_"," ")|capitalize|replace(" ","")}}:
     def run(self, dispatcher, tracker, domain):
         {% for act in action.actions %}
         {% if act.type == 'SpeakAction' %}
-        dispatcher.utter_message(text = {{act.text}})
+        dispatcher.utter_message(text = "{{act.text}}")
 
         {% elif act.type == 'FireEventAction' %}
         dispatcher.utter_message(text = 'Send fire event')
-        dispatcher.utter_message(text = {{act.uri}})
-        dispatcher.utter_message(text = {{act.msg}})
-        {% act.type == 'HTTPCallAction' %}
+        dispatcher.utter_message(text = "{{act.uri}}")
+        dispatcher.utter_message(text = "{{act.msg}}")
+        {% elif act.type == 'HTTPCallAction' %}
 
-        url = {{act.host}}:{{act.port}}/{{act.path}}
+        url = "{{act.host}}:{{act.port}}/{{act.path}}"
 
         //'[' query_params*=STRING[','] ']' ','
         //'[' path_params*=STRING[','] ']' ','
         //'[' body_params*=STRING[','] ']' ','
 
         {% endif %}
-
+        {% endfor %}
+        return
 
 {% endfor %}
