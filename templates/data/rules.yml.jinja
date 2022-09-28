@@ -1,7 +1,8 @@
 {% if rules %}
 rules:
 {% for rule in rules %}
-- rule: Activate {{rule.name}}
+- rule: {{rule.name}}
+{% if rule.type == 'Activate' %}
   steps:
   - intent: {{rule.intent}}
   {% for response in rule.responses %}
@@ -10,13 +11,15 @@ rules:
   - active_loop: {{response.name}}
   {% endif %}
   {% endfor %}
-
-- rule: Submit {{rule.name}}
+{% elif rule.type == 'Submit' %}
   condition:
-  - active_loop: {{rule.name}}
+  - active_loop: {{rule.form}}
   steps:
-  - activate_loop: null
-  - action: {{rule.submit}}
+  - active_loop: null
+  {% for action in rule.responses %}
+  - action: {{action.name}}
+  {% endfor %}
+{% endif %}
 
 {% endfor %}
 {% endif %}

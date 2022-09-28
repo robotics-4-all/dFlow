@@ -142,15 +142,10 @@ def parse_model(model) -> TransformationDataModel:
         name = dialogue.name
         intent = dialogue.onTrigger.name
         dialogue_responses = []
-        form = []
-        forced_name = None
-        for response in dialogue.responses:
+        for i in range(len(dialogue.responses)) :
+            response = dialogue.responses[i]
             if response.__class__.__name__ == 'Action':
-                if forced_name:
-                    dialogue_responses.append({"name": forced_name, "form": False})
-                    forced_name = None
-                else:
-                    dialogue_responses.append({"name": f"action_{response.name}", "form": False})
+                dialogue_responses.append({"name": f"action_{response.name}", "form": False})
                 actions = []
                 for action in response.actions:
                     if action.__class__.__name__ == 'SpeakAction':
@@ -179,16 +174,25 @@ def parse_model(model) -> TransformationDataModel:
                 form = f"{response.name}_form"
                 dialogue_responses.append({"name": form, "form": True})
                 data.rules.append({
-                    'name': form,
+                    'name': f"Activate {form}",
+                    'form': form,
                     'intent': intent,
-                    'responses': dialogue_responses,
-                    'submit': f"action_submit_{form}"
+                    'responses': dialogue_responses.copy(),
+                    'type': 'Activate'
                 })
-                if response == dialogue.responses[-1]:
-                    data.actions.append({"name":  f"action_submit_{form}", "actions": []})
-                    dialogue_responses.append({"name": f"action_submit_{form}", "form": False})
+                if i < len(dialogue.responses) - 1:
+                    next_actions = [{"name": f"action_{action.name}", "form": False} for action in dialogue.responses[i+1:]]
                 else:
-                    forced_name = f"action_submit_{form}"
+                    next_actions = []
+
+                data.rules.append({
+                    'name': f"Submit {form}",
+                    'form': form,
+                    'intent': intent,
+                    'responses': next_actions,
+                    'type': 'Submit'
+                })
+
                 form_data = []
                 for slot in response.params:
                     data.slots.append({'name': slot.name, 'type': slot.type})
