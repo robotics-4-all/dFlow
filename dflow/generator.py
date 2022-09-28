@@ -1,6 +1,6 @@
 from os import path, mkdir, getcwd, chmod
 from textx import generator, metamodel_from_file
-import jinja2, argparse, itertools
+import jinja2, argparse, itertools, shutil
 
 from textxjinja import textx_jinja_generator
 import textx.scoping.providers as scoping_providers
@@ -89,6 +89,13 @@ def dflow_generate_rasa(metamodel, model, output_path, overwrite,
                                     forms=data.forms,
                                     responses=data.responses))
         chmod(out_file, 509)
+
+    for file in static_templates:
+        out_file = path.join(out_dir, file)
+        template = path.join(path.join(_THIS_DIR, 'templates', file))
+        shutil.copyfile(template, out_file)
+        chmod(out_file, 509)
+
     return out_dir
 
 
