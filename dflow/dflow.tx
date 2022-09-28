@@ -129,7 +129,7 @@ Form:
 ;
 
 FormParameter:
-    name=ID ':' type=ParameterType '=' source=ParameterSource
+    name=ID ':' type=ParameterType '[' extract+=ExtractionSource[','] ']' '=' source=ParameterSource
 ;
 
 ParameterSource: HRIParamResource;
@@ -140,6 +140,12 @@ HRIParamResource:
 
 ParameterType: 'int' | 'float' | 'str' | 'bool';
 ParameterDefault: STRING | INT | FLOAT | BOOL;
+
+ExtractionSource: FromText | FromIntent | FromEntity;
+
+FromText: 'text';
+FromIntent: intent=[Trigger] ':' value=ParameterDefault;
+FromEntity: entity=[Entity];
 
 // ACTIONS ------------------------------------------------------------->
 

@@ -42,8 +42,11 @@ dialogues
     Dialogue DialB
         on: find_doctor
         responses: Form AF1
-            Param1: str = HRI('Give parameter 1')
-            Param2: int = HRI('Give parameter 2')
-        end
+            Param1: int[text] = HRI('Give parameter 1')
+            Param2: bool[find_doctor:True, external_1:False] = HRI('Give parameter 2')
+            Param3: str[Doctor] = HRI('Give parameter 3 you')
+        end,
+        answers_2
+          Speak('Hello')
     end
 end

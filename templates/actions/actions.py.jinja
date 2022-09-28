@@ -1,38 +1,62 @@
 from typing import Any, Text, Dict, List
 
-from rasa_sdk import Action, Tracker
-from rasa_sdk.forms import FormAction
+from rasa_sdk import Action, Tracker, FormValidationAction
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted, Form
+from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted
 
-import requests
+import requests, re
 
-{% for action in actions %}
+{% for action in actions%}
 
-class {{action.name|replace("_","")|capitalize}}:
+{% if action.validation_method is defined %}
 
-    def name(self):
+class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
+
+    def name(self) -> Text:
+        return "{{action.name}}"
+
+{% for slot in action.info %}
+    def {{slot.method}}(self, dispatcher, tracker, domain):
+        text = tracker.latest_message['text']
+        {{slot.name}} = None
+        {% if slot.type == 'int' %}
+        numbers = re.findall("\d+", text)
+        {% elif slot.type == 'float' %}
+        numbers = re.findall("\d+\.\d+", text)
+        {% else %}
+        reuturn
+        {% endif %}
+        if len(numbers):
+            {{slot.name}} = {{slot.type}}(numbers[0])
+        output["{{slot.name}}"] = {{slot.name}}
+        return output
+
+{% endfor %}
+{% else %}
+
+class {{action.name|replace("_","")|capitalize}}(Action):
+
+    def name(self) -> Text:
         return "{{action.name}}"
 
     def run(self, dispatcher, tracker, domain):
         {% for act in action.actions %}
         {% if act.type == 'SpeakAction' %}
         dispatcher.utter_message(text = "{{act.text}}")
-
         {% elif act.type == 'FireEventAction' %}
         dispatcher.utter_message(text = 'Send fire event')
         dispatcher.utter_message(text = "{{act.uri}}")
         dispatcher.utter_message(text = "{{act.msg}}")
         {% elif act.type == 'HTTPCallAction' %}
-
         url = "{{act.host}}:{{act.port}}/{{act.path}}"
-
         # '[' query_params*=STRING[','] ']' ','
         # '[' path_params*=STRING[','] ']' ','
         # '[' body_params*=STRING[','] ']' ','
-
         {% endif %}
+        
         {% endfor %}
         return
 
+
+{% endif %}
 {% endfor %}

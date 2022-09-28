@@ -194,14 +194,38 @@ def parse_model(model) -> TransformationDataModel:
                 })
 
                 form_data = []
+                validation_data = []
                 for slot in response.params:
-                    data.slots.append({'name': slot.name, 'type': slot.type})
+                    extract_slot = []
+                    extract_from_text = False
                     form_data.append(slot.name)
+                    for extract_method in slot.extract:
+                        if extract_method.__class__.__name__ == 'str':
+                            extract_slot.append({'type': extract_method.__class__.__name__})    # extract_method == 'text'
+                            extract_from_text = True
+                        elif extract_method.__class__.__name__ == 'FromIntent':
+                            extract_slot.append({
+                                'type': extract_method.__class__.__name__,
+                                'intent': extract_method.intent.name,
+                                'value': extract_method.value
+                            })
+                        elif extract_method.__class__.__name__ == 'FromEntity':
+                            extract_slot.append({'type': extract_method.__class__.__name__, 'entity': extract_method.entity.name})
+                    if extract_from_text and slot.type in ['int', 'float']:
+                        validation_data.append({
+                            'form': form,
+                            'name': slot.name,
+                            'method': f'extract_{slot.name}',
+                            'type': slot.type
+                        }) # extract_method == 'text
+                    data.slots.append({'name': slot.name, 'type': slot.type, 'extract_methods': extract_slot})
                     data.responses.append({
                         'name': f"utter_ask_{form}_{slot.name}",
                         'text': slot.source.ask_slot
                     })
                 data.forms.append({'name': form, 'slots': form_data})
+                if validation_data != []:
+                    data.actions.append({'name': f'validate_{form}', 'validation_method': True, 'info': validation_data})
         data.stories.append({
             'name': name,
             'intent': intent,
