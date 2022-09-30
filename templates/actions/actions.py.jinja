@@ -19,6 +19,7 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
     def {{slot.method}}(self, dispatcher, tracker, domain):
         text = tracker.latest_message['text']
         {{slot.name}} = None
+        output = {}
         {% if slot.type == 'int' %}
         numbers = re.findall("\d+", text)
         {% elif slot.type == 'float' %}
@@ -53,7 +54,7 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         # '[' path_params*=STRING[','] ']' ','
         # '[' body_params*=STRING[','] ']' ','
         {% endif %}
-        
+
         {% endfor %}
         return
 

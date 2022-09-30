@@ -4,14 +4,14 @@ nlu:
 - intent: {{intent["name"]}}
   examples: |
   {% for example in intent["examples"] %}
-  - {{example}}
+    - {{example}}
   {% endfor %}
 {% endfor %}
 {% for synonym in synonyms %}
 - synonym: {{synonym["name"]}}
   examples: |
   {% for word in synonym["words"] %}
-  - {{word}}
+    - {{word}}
   {% endfor %}
 
 {% endfor %}
