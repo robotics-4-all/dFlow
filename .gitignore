@@ -111,3 +111,6 @@ dotexport/
 srcgen/
 
 *.pu
+
+# Rasa generation scripts
+/gen/*
