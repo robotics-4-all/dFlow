@@ -17,19 +17,21 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
 
 {% for slot in action.info %}
     def {{slot.method}}(self, dispatcher, tracker, domain):
-        text = tracker.latest_message['text']
-        {{slot.name}} = None
         output = {}
-        {% if slot.type == 'int' %}
-        numbers = re.findall("\d+", text)
-        {% elif slot.type == 'float' %}
-        numbers = re.findall("\d+\.\d+", text)
-        {% else %}
-        reuturn
-        {% endif %}
-        if len(numbers):
-            {{slot.name}} = {{slot.type}}(numbers[0])
-        output["{{slot.name}}"] = {{slot.name}}
+        requested_slot = tracker.get_slot('requested_slot')
+        if requested_slot == "{{slot.name}}":
+            text = tracker.latest_message['text']
+            {{slot.name}} = None
+            {% if slot.type == 'int' %}
+            numbers = re.findall("\d+", text)
+            {% elif slot.type == 'float' %}
+            numbers = re.findall("\d+\.\d+", text)
+            {% else %}
+            reuturn
+            {% endif %}
+            if len(numbers):
+                {{slot.name}} = {{slot.type}}(numbers[0])
+            output["{{slot.name}}"] = {{slot.name}}
         return output
 
 {% endfor %}

@@ -32,6 +32,9 @@ slots:
     {% for extraction in slot.extract_methods %}
     {% if extraction.type == 'str' %}
     - type: from_text
+      conditions:
+      - active_loop: {{slot.form}}
+        requested_slot: {{slot.name}}
     {% elif extraction.type == 'FromIntent' %}
     - type: from_intent
       intent: {{extraction.intent}}

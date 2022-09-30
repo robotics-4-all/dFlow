@@ -220,7 +220,7 @@ def parse_model(model) -> TransformationDataModel:
                             'method': f'extract_{slot.name}',
                             'type': slot.type
                         }) # extract_method == 'text
-                    data.slots.append({'name': slot.name, 'type': slot.type, 'extract_methods': extract_slot})
+                    data.slots.append({'name': slot.name, 'form': form, 'type': slot.type, 'extract_methods': extract_slot})
                     data.responses.append({
                         'name': f"utter_ask_{form}_{slot.name}",
                         'text': slot.source.ask_slot
