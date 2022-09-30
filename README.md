@@ -1,12 +1,14 @@
 # dflow
 
-DSL for Task-based dialogue FSMs
+DSL for Task-based dialogue flows
 
 [Task-based FSM Presentation](https://docs.google.com/presentation/d/1-cS397zUys6AUH7NB00PnPVJY91_LgPzD6LdHc6AjxY/edit#slide=id.g1217cdb7144_0_0)
 
 [System overview](https://docs.google.com/document/d/1jlFrizaDi1PD9Rtw-TwVXaGQYwpViTWV3sUK8sJBx-c/edit)
 
-# Grammar
+# Metamodel
+
+The metamodel of the DSL, defines the concepts of the language.
 
 ![Metamodel](./assets/metamodel.png)
 
@@ -34,3 +36,16 @@ Platforms:
 
 # User Guide
 
+## Installation
+
+Download this repository and simply install using pip package manager.
+
+```
+git clone https://github.com/robotics-4-all/dFlow
+cd dFlow
+pip install .
+```
+
+### Examples
+
+Several examples can be found [here](./examples/).
