@@ -52,9 +52,7 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         dispatcher.utter_message(text = "{{act.msg}}")
         {% elif act.type == 'HTTPCallAction' %}
         url = "{{act.host}}:{{act.port}}/{{act.path}}"
-        # '[' query_params*=STRING[','] ']' ','
-        # '[' path_params*=STRING[','] ']' ','
-        # '[' body_params*=STRING[','] ']' ','
+        response = requests.get(url, params = {"query": query_params, "path": path_params, "body": body_params})
         {% endif %}
 
         {% endfor %}
