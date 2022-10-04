@@ -1,6 +1,6 @@
 # dflow
 
-A Domain-Specific Language for Task-based dialogue flows suitable for Virtual Assistants in smart environments.  
+A Domain-Specific Language for Task-based dialogue flows suitable for Virtual Assistants in smart environments. It can generate complete [Rasa](https://rasa.com/) models.
 
 [Task-based FSM Presentation](https://docs.google.com/presentation/d/1-cS397zUys6AUH7NB00PnPVJY91_LgPzD6LdHc6AjxY/edit#slide=id.g1217cdb7144_0_0)
 
@@ -46,7 +46,7 @@ cd dFlow
 pip install .
 ```
 
-## Generate model
+## Model Generation
 
 To generate a metamodel from `metamodel.dflow` file to a complete Rasa model, run the following.
 
@@ -65,7 +65,7 @@ The grammar of the language has four main attributes:
 
 ### Entities
 
-**Entities** are structured pieces of information inside a user message. They can be real-world objects, such as a person, location, organization, product, etc. In those generic cases, there are existing *Pre-trained models* that can be used to extract entities from text and the Pre-trained Entity is defined inside the intent examples. The supported categories can be found in [spacy](https://spacy.io/models), from where the relevant model has to be installed.
+**Entities** are structured pieces of information inside a user message. They can be real-world objects, such as a person, location, organization, product, etc. In those generic cases, there are existing *Pre-trained models* that can be used to extract entities from text and the Pre-trained Entity is defined inside the intent examples. The supported categories are imported from [spacy](https://spacy.io/models) and the relevant model has to be installed following their instructions. Example words can be given, when defined in the intents section.
 
 In cases where the entity is domain or use-case specific such below, examples need to be given to train a new entity extractor. This is the case of a *Trainable* Entity, which is first defined and then included in the intents section.
 
@@ -100,7 +100,7 @@ PretrainedEntity:
 ;
 ```
 
-###### Example
+##### Example
 
 ```
 entities
@@ -114,7 +114,7 @@ end
 
 ### Synonyms
 
-**Synonyms** map extracted entities to a value other than the literal text extracted. They can be used when there are multiple ways users refer to the same thing. Similarly, after defined, they are incorporated in the intent examples.
+**Synonyms** map words to a value other than the literal text extracted. They can be used when there are multiple ways users refer to the same thing. Similarly, after defined, they are incorporated in the intent examples.
 
 ```
 Synonym:
@@ -124,7 +124,7 @@ Synonym:
 ;
 ```
 
-###### Example
+##### Example
 
 ```
 synonyms
@@ -140,13 +140,13 @@ end
 
 ### Triggers
 
-A **Trigger** initializes a dialogue flow. It can be a user expression or *Intent* or an external *Event*.
+A **Trigger** initializes a dialogue flow and is either a user expression, or so called *Intent*, or an external *Event*.
 
 `Trigger: Intent | Event;`
 
 #### Intents
 
-For an assistant to recognize what a user is saying no matter how the user phrases their message, we need to provide example messages the assistant can learn from. We group these examples according to the idea or the goal the message is expressing, which is called the **Intent**. Each intent has a few examples that consist of strings, references to Trainable Entities (TE), to Synonyms (S), and to Pretrained Entities (PE). Regarding the PEs, users can also give example words inside the brackets apart from the entity category (e.g., `PE:PERSON["John"]`).   
+In a given user message, the thing that a user is trying to achieve or accomplish (e,g., greeting, ask for information) is called an **Intent**. An intent has a group of example user phrases with which an NLU model is trained, that consist of strings, references to Trainable Entities (TE), to Synonyms (S), and to Pretrained Entities (PE). Regarding the PEs, users can also give example words inside the brackets apart from the entity category (e.g., `PE:PERSON["John"]`).   
 
 ```
 Intent:
@@ -167,7 +167,7 @@ IntentPhrasePE: 'PE:' pretrained=[PretrainedEntity|FQN] ('[' refPreValues*=STRIN
 
 IntentPhraseSynonym: 'S:' synonym=[Synonym|FQN];
 ```
-###### Example
+##### Example
 
 In the code block below we have added a simple intent called *greet*, which contains example messages like "Hi", "Hey" and "Good morning", and a more complex *find_person* that uses all the possible references.
 
@@ -197,7 +197,7 @@ end
 
 #### Events
 
-**Events** are external triggers, such as IoT events, notifications or reminders. An event needs its name and the URI from which it is triggered.
+**Events** are external triggers, such as IoT events, notifications or reminders. An event is defined by its name and the URI from which it is triggered.
 
 ```
 Event:
@@ -207,7 +207,7 @@ Event:
 ;
 ```
 
-###### Example
+##### Example
 
 ```
 Event external_1
@@ -217,7 +217,7 @@ end
 
 ### Dialogues
 
-**Dialogues** depict the conversational flows the assistant will support. They are sets of triggers and assistant responses in order. Each response can be an *Action* or a *Form*.
+**Dialogues** are conversational flows the assistant supports. They are sets of triggers and assistant responses in ordera and each response can be an *Action* or a *Form*.
 
 ```
 Dialogue:
@@ -230,7 +230,7 @@ Dialogue:
 Response: Action | Form;
 ```
 
-###### Example
+##### Example
 
 ```
 dialogues
@@ -287,7 +287,7 @@ HTTPCallAction:
 
 #### Forms
 
-A From is a conversational pattern to collect information and store them in form parameters or *slots* following business logic. The assistant requests each slot using a specific text and extracts information from the user expression. Each slot has one of the 4 types (int, float, text, bool) and is filled from the processed text, from an extracted entity, or with a specific value if user stated a particular intent.
+A From is a conversational pattern to collect information and store them in form parameters or *slots* following business logic. The assistant requests each slot using a specific text and extracts information from the user expression. Each slot is of one of the 4 types (int, float, text, bool) and considers the user expression to be filled. It can contain the entire processed text, an extracted entity, or  a specific value which is set in case the user states a particular intent.
 
 ```
 Form:
