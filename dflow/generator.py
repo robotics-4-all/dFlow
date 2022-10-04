@@ -40,6 +40,7 @@ class TransformationDataModel(BaseModel):
     slots: List[Dict[str, Any]] = []
     forms: List[Dict[str, Any]] = []
     responses: List[Dict[str, Any]] = []
+    commlib_config: Dict[str, Any] = {}
 
 @generator('dflow', 'rasa')
 def dflow_generate_rasa(metamodel, model, output_path, overwrite,
@@ -87,7 +88,8 @@ def dflow_generate_rasa(metamodel, model, output_path, overwrite,
                                     rules=data.rules,
                                     slots=data.slots,
                                     forms=data.forms,
-                                    responses=data.responses))
+                                    responses=data.responses,
+                                    commlib_config=data.commlib_config))
         chmod(out_file, 509)
 
     for file in static_templates:
@@ -98,6 +100,17 @@ def dflow_generate_rasa(metamodel, model, output_path, overwrite,
 
     return out_dir
 
+
+def _init_commlib_node():
+    config = {
+        "_local_broker_host": "localhost",
+        "_local_broker_port": 6379,
+        "_local_broker_db": 0,
+        "_local_broker_username":'',
+        "_local_broker_password": '',
+        "debug": False
+    }
+    return config
 
 def parse_model(model) -> TransformationDataModel:
     data = TransformationDataModel()
@@ -161,6 +174,7 @@ def parse_model(model) -> TransformationDataModel:
                             'uri': action.uri,
                             'msg': action.msg
                         })
+                        data.commlib_config = _init_commlib_node()
                     elif action.__class__.__name__ == 'HTTPCallAction':
                         actions.append({
                             'type': action.__class__.__name__,

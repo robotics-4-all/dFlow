@@ -4,10 +4,26 @@ from rasa_sdk import Action, Tracker, FormValidationAction
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted
 
-import requests, re
+import requests, re, json
+{% if commlib_config %}
+import commlib.transports.redis as comm
 
-{% for action in actions%}
+conn_params = comm.ConnectionParameters(
+    host="{{commlib_config._local_broker_host}}",
+    port="{{commlib_config._local_broker_port}}",
+    db="{{commlib_config._local_broker_db}}"
+)
+transport_type = TransportType.REDIS
 
+conn_params.credentials.username = "{{commlib_config._local_broker_username}}"
+conn_params.credentials.password = "{{commlib_config._local_broker_password}}"
+_local_node = Node(node_name='rasa_action_server',
+                        transport_type=transport_type,
+                        transport_connection_params=conn_params,
+                        debug={{commlib_config.debug}})
+{% endif %}
+
+{% for action in actions %}
 {% if action.validation_method is defined %}
 
 class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
@@ -36,7 +52,6 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
 
 {% endfor %}
 {% else %}
-
 class {{action.name|replace("_","")|capitalize}}(Action):
 
     def name(self) -> Text:
@@ -48,8 +63,9 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         dispatcher.utter_message(text = "{{act.text}}")
         {% elif act.type == 'FireEventAction' %}
         dispatcher.utter_message(text = 'Send fire event')
-        dispatcher.utter_message(text = "{{act.uri}}")
-        dispatcher.utter_message(text = "{{act.msg}}")
+        publisher = _local_node.create_publisher(topic = {{act.uri}})
+        msg = json.dumps(msg, ensure_ascii=False)
+        publisher.publish(msg)
         {% elif act.type == 'HTTPCallAction' %}
         url = "{{act.host}}:{{act.port}}/{{act.path}}"
         response = requests.get(url, params = {"query": query_params, "path": path_params, "body": body_params})
@@ -57,7 +73,6 @@ class {{action.name|replace("_","")|capitalize}}(Action):
 
         {% endfor %}
         return
-
 
 {% endif %}
 {% endfor %}
