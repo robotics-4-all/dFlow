@@ -1,7 +1,8 @@
 entities
     Entity Doctor
         Kardiologos,
-        Odontiatros
+        Odontiatros,
+        good doc
     end
 end
 
@@ -10,7 +11,8 @@ synonyms
         mera,
         evdomada,
         mina,
-        aurio
+        aurio,
+        some day
     end
 end
 
