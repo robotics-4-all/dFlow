@@ -74,7 +74,7 @@ Entity: TrainableEntity | PretrainedEntity;
 
 TrainableEntity:
     'Entity' name=ID
-        words+=Word[',']
+        words+=Words[',']
     'end'
 ;
 
@@ -99,7 +99,7 @@ PretrainedEntity:
     'CARDINAL'
 ;
 
-Word:
+Words:
     /[-\w ]*\b/
 ;
 ```
@@ -123,7 +123,7 @@ end
 ```
 Synonym:
     'Synonym' name=ID
-        words+=Word[',']
+        words+=Words[',']
     'end'
 ;
 ```
