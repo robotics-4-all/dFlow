@@ -98,6 +98,10 @@ PretrainedEntity:
     'ORDINAL'       |
     'CARDINAL'
 ;
+
+Word:
+    /[-\w ]*\b/
+;
 ```
 
 ##### Example
