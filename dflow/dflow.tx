@@ -149,11 +149,11 @@ Action: name=ID actions+=ActionTypes;
 ActionTypes: SpeakAction | FireEventAction | HTTPCallAction;
 
 SpeakAction:
-    'Speak' '(' text=STRING ')'
+    'Speak' '(' text+=TextType ')'
 ;
 
 FireEventAction:
-    'FireEvent' '(' uri=STRING ',' msg=STRING ')'
+    'FireEvent' '(' uri=STRING ',' msg=TextType ')'
 ;
 
 HTTPCallAction:
@@ -172,10 +172,10 @@ Words:
     /[-\w ]*\b/
 ;
 
+TextType: TextStr | TextEntity;
 
-TextType:
-  STRING|/\w*\b/
-;
+TextStr: STRING;
+TextEntity: entity=[Entity];
 
 // === Fully Qualified Names Rule ===
 FQN: ID('.'ID)*;

@@ -60,11 +60,17 @@ class {{action.name|replace("_","")|capitalize}}(Action):
     def run(self, dispatcher, tracker, domain):
         {% for act in action.actions %}
         {% if act.type == 'SpeakAction' %}
-        dispatcher.utter_message(text = "{{act.text}}")
+        {% for entity in act.entities %}
+        {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
+        {% endfor %}
+        dispatcher.utter_message(text = f"{{act.text}}")
         {% elif act.type == 'FireEventAction' %}
         dispatcher.utter_message(text = 'Send fire event')
         publisher = _local_node.create_publisher(topic = {{act.uri}})
-        msg = json.dumps({{act.msg}}, ensure_ascii=False)
+        {% for entity in act.entities %}
+        {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
+        {% endfor %}
+        msg = json.dumps("{{act.msg}}", ensure_ascii=False)
         publisher.publish(msg)
         {% elif act.type == 'HTTPCallAction' %}
         url = "{{act.host}}:{{act.port}}/{{act.path}}"

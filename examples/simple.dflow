@@ -49,6 +49,6 @@ dialogues
             Param3: str[Doctor] = HRI('Give parameter 3 you')
         end,
         answers_2
-          Speak('Hello')
+          Speak('Hello' Doctor 'how are you')
     end
 end

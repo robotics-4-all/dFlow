@@ -164,15 +164,19 @@ def parse_model(model) -> TransformationDataModel:
                 actions = []
                 for action in response.actions:
                     if action.__class__.__name__ == 'SpeakAction':
+                        message, entities = process_text(action.text)
                         actions.append({
                             'type': action.__class__.__name__,
-                            'text': action.text
+                            'text': message,
+                            'entities': entities
                         })
                     elif action.__class__.__name__ == 'FireEventAction':
+                        message, entities = process_text(action.msg)
                         actions.append({
                             'type': action.__class__.__name__,
                             'uri': action.uri,
-                            'msg': action.msg
+                            'msg': message,
+                            'entities': entities
                         })
                         data.commlib_config = _init_commlib_node()
                     elif action.__class__.__name__ == 'HTTPCallAction':
@@ -248,3 +252,14 @@ def parse_model(model) -> TransformationDataModel:
             'responses': dialogue_responses
         })
     return data
+
+def process_text(text):
+    message = []
+    entities = []
+    for phrase in text:
+        if phrase.__class__.__name__ == 'TextEntity':
+            message.extend(["{", f"{phrase.entity.name}", "}"])
+            entities.append(phrase.entity.name)
+        else:
+            message.append(phrase)
+    return ' '.join(message), entities
