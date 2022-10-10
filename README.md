@@ -221,7 +221,7 @@ end
 
 ### Dialogues
 
-**Dialogues** are conversational flows the assistant supports. They are sets of triggers and assistant responses in ordera and each response can be an *Action* or a *Form*.
+**Dialogues** are conversational flows the assistant supports. They are sets of triggers and assistant responses in order and each response can be an *Action* or a *Form*.
 
 ```
 Dialogue:
@@ -253,7 +253,7 @@ dialogues
             Param3: str[Doctor] = HRI('Give parameter 3 you')
         end,
         answers_2
-          Speak('Hello')
+          Speak('Hello' Doctor)
     end
 end
 ```
@@ -270,11 +270,11 @@ Action: name=ID actions+=ActionTypes;
 ActionTypes: SpeakAction | FireEventAction | HTTPCallAction;
 
 SpeakAction:
-    'Speak' '(' text=STRING ')'
+    'Speak' '(' text+=TextType ')'
 ;
 
 FireEventAction:
-    'FireEvent' '(' uri=STRING ',' msg=STRING ')'
+    'FireEvent' '(' uri=STRING ',' msg=TextType ')'
 ;
 
 HTTPCallAction:
@@ -287,6 +287,11 @@ HTTPCallAction:
         '[' body_params*=STRING[','] ']' ','
     ')'
 ;
+
+TextType: TextStr | TextEntity;
+
+TextStr: STRING;
+TextEntity: entity=[Entity];
 ```
 
 #### Forms
