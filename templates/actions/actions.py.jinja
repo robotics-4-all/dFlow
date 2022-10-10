@@ -64,11 +64,11 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% elif act.type == 'FireEventAction' %}
         dispatcher.utter_message(text = 'Send fire event')
         publisher = _local_node.create_publisher(topic = {{act.uri}})
-        msg = json.dumps(msg, ensure_ascii=False)
+        msg = json.dumps({{act.msg}}, ensure_ascii=False)
         publisher.publish(msg)
         {% elif act.type == 'HTTPCallAction' %}
         url = "{{act.host}}:{{act.port}}/{{act.path}}"
-        response = requests.get(url, params = {"query": query_params, "path": path_params, "body": body_params})
+        response = requests.get(url, params = {"query": {{act.query_params}}, "path": {{actpath_params}}, "body": {{act.body_params}}})
         {% endif %}
 
         {% endfor %}
