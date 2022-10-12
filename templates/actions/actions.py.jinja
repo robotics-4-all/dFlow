@@ -5,23 +5,7 @@ from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted
 
 import requests, re, json
-{% if commlib_config %}
-import commlib.transports.redis as comm
-
-conn_params = comm.ConnectionParameters(
-    host="{{commlib_config._local_broker_host}}",
-    port="{{commlib_config._local_broker_port}}",
-    db="{{commlib_config._local_broker_db}}"
-)
-transport_type = TransportType.REDIS
-
-conn_params.credentials.username = "{{commlib_config._local_broker_username}}"
-conn_params.credentials.password = "{{commlib_config._local_broker_password}}"
-_local_node = Node(node_name='rasa_action_server',
-                        transport_type=transport_type,
-                        transport_connection_params=conn_params,
-                        debug={{commlib_config.debug}})
-{% endif %}
+from datetime import datetime
 
 {% for action in actions %}
 {% if action.validation_method is defined %}
@@ -65,13 +49,17 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% endfor %}
         dispatcher.utter_message(text = f"{{act.text}}")
         {% elif act.type == 'FireEventAction' %}
-        dispatcher.utter_message(text = 'Send fire event')
-        publisher = _local_node.create_publisher(topic = {{act.uri}})
         {% for entity in act.entities %}
         {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
         {% endfor %}
-        msg = json.dumps("{{act.msg}}", ensure_ascii=False)
-        publisher.publish(msg)
+        ts = datetime.timestamp(datetime.now())
+        event_data = {
+            "id": "id",
+            "type": "event",
+            "timestamp": int(datetime.timestamp(datetime.now())),
+            "payload": {"message": "{{act.msg}}", "uri": "{{act.uri}}" }
+        }
+        dispatcher.utter_message(json_message = event_data)
         {% elif act.type == 'HTTPCallAction' %}
         url = "{{act.host}}:{{act.port}}/{{act.path}}"
         response = requests.get(url, params = {"query": {{act.query_params}}, "path": {{actpath_params}}, "body": {{act.body_params}}})
