@@ -169,7 +169,6 @@ ExtractionSource: ExtractFromIntent | ExtractFromEntity;
 
 ExtractFromIntent: intent=[Trigger] ':' value=ParameterValue;
 ExtractFromEntity: entity=[Entity];
-
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
@@ -177,12 +176,11 @@ ExtractFromEntity: entity=[Entity];
 // ----------------------------------------------------------------------
 ActionGroup:
     'ActionGroup' name=ID
-        actions+=ActionTypes
+        actions+=Action
     'end'
 ;
 
-
-ActionTypes: SpeakAction | FireEventAction | RESTCallAction;
+Action: SpeakAction | FireEventAction | RESTCallAction;
 
 SpeakAction:
     'Speak' '(' text+=Text ')'
@@ -198,7 +196,6 @@ RESTCallAction: EServiceHTTP;
 
 // GENERAL --------------------------------------------------------------
 // ----------------------------------------------------------------------
-
 HTTPVerb: 'GET'|'POST'|'PUT';
 
 DictItem:
