@@ -138,30 +138,33 @@ HRIParamSource:
     'HRI' '(' askSlot=STRING (',' '['extract+=ExtractionSource[','] ']')? ')'
 ;
 
-EServiceParamSource:
+EServiceParamSource: EServiceHTTP;
+
+EServiceHTTP:
     'EServiceHTTP' '('
         (verb=HTTPVerb ',')
         (host=STRING ',')
         (port=INT ',')
         (path=STRING ',')
         (
-        ('[' query_params*=EServiceParam[','] ']' ',')?
-        ('[' path_params*=EServiceParam[','] ']' ',')?
-        ('[' body_params*=EServiceParam[','] ']' ',')?
+        ('query=' '[' query_params*=EServiceParam[','] ']' ',')?
+        ('path=' '[' path_params*=EServiceParam[','] ']' ',')?
+        ('body=' '[' body_params*=EServiceParam[','] ']' ',')?
         )#
     ')'
 ;
 
 EServiceParam: name=ID '=' value=ParameterValue;
 
-ParameterValue: INT | FLOAT | STRING | BOOL | List | Dict;
+ParameterValue: INT | FLOAT | STRING | BOOL | List | Dict | FormParamRef;
 ParameterTypeDef: 'int' | 'float' | 'str' | 'bool' | 'list' | 'dict';
 
-ExtractionSource: ExtractFromText | ExtractFromIntent | ExtractFromEntity;
+ExtractionSource: ExtractFromIntent | ExtractFromEntity;
 
-ExtractFromText: 'text';
 ExtractFromIntent: intent=[Trigger] ':' value=ParameterValue;
 ExtractFromEntity: entity=[Entity];
+
+FormParamRef: param=[FormParam|FQN|^dialogues*.responses.params];
 
 // ACTIONS --------------------------------------------------------------
 // ----------------------------------------------------------------------
@@ -182,19 +185,7 @@ FireEventAction:
     'FireEvent' '(' uri=STRING ',' msg=Text ')'
 ;
 
-RESTCallAction:
-    'RESTCall' '('
-        (verb=HTTPVerb ',')
-        (host=STRING ',')
-        (port=INT ',')
-        (path=STRING ',')
-        (
-        ('[' query_params*=EServiceParam[','] ']' ',')?
-        ('[' path_params*=EServiceParam[','] ']' ',')?
-        ('[' body_params*=EServiceParam[','] ']' ',')?
-        )#
-    ')'
-;
+RESTCallAction: EServiceHTTP;
 
 // ----------------------------------------------------------------------
 
