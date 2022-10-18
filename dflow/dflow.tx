@@ -225,7 +225,7 @@ Words:
     /[-\w ]*\b/
 ;
 
-Text: TextStr | FormParamRef;
+Text: TextStr | FormParamRef | TextEntity;
 
 TextStr: STRING;
 TextEntity: entity=[Entity|FQN|^entities];
