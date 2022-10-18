@@ -33,6 +33,21 @@ triggers
     end
 end
 
+eservices
+    EServiceHTTP weather_svc
+        verb: GET
+        host: 'r4a.issel.ee.auth.gr'
+        port: 8080
+        path: '/weather'
+    end
+    EServiceHTTP storage_svc
+        verb: POST
+        host: 'r4a.issel.ee.auth.gr'
+        port: 8080
+        path: '/storage'
+    end
+end
+
 dialogues
     Dialogue DialA
         on: find_doctor
@@ -52,13 +67,12 @@ dialogues
         responses:
             SlotForm SF1
                 slot1: str = HRI('Give parameter 1')
-                slot2: str = EServiceHTTP(GET, 'r4a.issel.ee.auth.gr', 8080,
-                    '/weather', query=[city=SF1.slot1],)
+                slot2: str = weather_svc(query=[city=SF1.slot1],
+                    filter_response=resp.weather.forecast,)
             end,
             ActionGroup answers
               Speak('The weather is ' SF1.slot2)
-              EServiceHTTP(POST, 'r4a.issel.ee.auth.gr', 8080, '/storage',
-                  query=[data={weather: SF1.slot2, p2: 'asd', p3: [10, 0, 2]}],)
+              storage_svc(query=[data={weather: SF1.slot2, p2: 'asd', p3: [10, 0, 2]}],)
             end
     end
 end

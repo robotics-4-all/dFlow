@@ -21,25 +21,37 @@
 
 dFlow:
     (
-    'entities'
+    ('entities'
         entities*=TrainableEntity
-    'end'
-    )?
-    (
-    'synonyms'
+    'end')?
+
+    ('synonyms'
         synonyms*=Synonym
-    'end'
-    )?
-    (
-    'triggers'
+    'end')?
+
+    ('triggers'
         triggers+=Trigger
-    'end'
-    )?
-    (
-    'dialogues'
+    'end')?
+
+    ('dialogues'
         dialogues+=Dialogue
+    'end')?
+
+    ('eservices'
+        eservices*=EServiceDef
+    'end')?
+    )#
+;
+
+EServiceDef: EServiceDefHTTP;
+
+EServiceDefHTTP:
+    'EServiceHTTP' name=ID
+        'verb:' verb=HTTPVerb
+        'host:' host=STRING
+        'port:' port=INT
+        'path:' path=STRING
     'end'
-    )?
 ;
 
 // ENTITIY --------------------------------------------------------------
@@ -144,18 +156,15 @@ HRIParamSource:
     'HRI' '(' askSlot=STRING (',' '['extract+=ExtractionSource[','] ']')? ')'
 ;
 
-EServiceParamSource: EServiceHTTP;
+EServiceParamSource: EServiceCallHTTP;
 
-EServiceHTTP:
-    'EServiceHTTP' '('
-        (verb=HTTPVerb ',')
-        (host=STRING ',')
-        (port=INT ',')
-        (path=STRING ',')
+EServiceCallHTTP:
+    eserviceRef=[EServiceDef|FQN|eservices]'('
         (
         ('query=' '[' query_params*=EServiceParam[','] ']' ',')?
         ('path=' '[' path_params*=EServiceParam[','] ']' ',')?
         ('body=' '[' body_params*=EServiceParam[','] ']' ',')?
+        ('filter_response=' respFilter=EServiceResponseFilter ',')?
         )#
     ')'
 ;
@@ -169,6 +178,8 @@ ExtractionSource: ExtractFromIntent | ExtractFromEntity;
 
 ExtractFromIntent: intent=[Trigger] ':' value=ParameterValue;
 ExtractFromEntity: entity=[Entity];
+
+EServiceResponseFilter: 'resp'('.'ID)*;
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
@@ -190,7 +201,7 @@ FireEventAction:
     'FireEvent' '(' uri=STRING ',' msg=Text ')'
 ;
 
-RESTCallAction: EServiceHTTP;
+RESTCallAction: EServiceCallHTTP;
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
