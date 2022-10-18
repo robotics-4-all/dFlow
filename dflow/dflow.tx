@@ -125,22 +125,38 @@ SlotForm:
 ;
 
 FormParam:
-    name=ID ':' type=ParameterType '[' extract+=ExtractionSource[','] ']' '=' source=FormParamSource
+    name=ID ':' type=ParameterTypeDef '=' source=FormParamSource
 ;
 
-FormParamSource: HRIParamSource;
+FormParamSource: HRIParamSource | EServiceParamSource;
 
 HRIParamSource:
-    'HRI' '(' askSlot=STRING ')'
+    'HRI' '(' askSlot=STRING (',' '['extract+=ExtractionSource[','] ']')? ')'
 ;
 
-ParameterType: 'int' | 'float' | 'str' | 'bool';
-ParameterDefault: STRING | INT | FLOAT | BOOL;
+EServiceParamSource:
+    'EServiceHTTP' '('
+        (verb=HTTPVerb ',')
+        (host=STRING ',')
+        (port=INT ',')
+        (path=STRING ',')
+        (
+        ('[' query_params*=EServiceParam[','] ']' ',')?
+        ('[' path_params*=EServiceParam[','] ']' ',')?
+        ('[' body_params*=EServiceParam[','] ']' ',')?
+        )#
+    ')'
+;
+
+EServiceParam: name=ID '=' value=ParameterValue;
+
+ParameterValue: INT | FLOAT | STRING | BOOL | List | Dict;
+ParameterTypeDef: 'int' | 'float' | 'str' | 'bool' | 'list' | 'dict';
 
 ExtractionSource: ExtractFromText | ExtractFromIntent | ExtractFromEntity;
 
 ExtractFromText: 'text';
-ExtractFromIntent: intent=[Trigger] ':' value=ParameterDefault;
+ExtractFromIntent: intent=[Trigger] ':' value=ParameterValue;
 ExtractFromEntity: entity=[Entity];
 
 // ACTIONS --------------------------------------------------------------
@@ -149,21 +165,24 @@ ActionGroup: name=ID actions+=ActionTypes;
 ActionTypes: SpeakAction | FireEventAction | RESTCallAction;
 
 SpeakAction:
-    'Speak' '(' text+=TextType ')'
+    'Speak' '(' text+=Text ')'
 ;
 
 FireEventAction:
-    'FireEvent' '(' uri=STRING ',' msg=TextType ')'
+    'FireEvent' '(' uri=STRING ',' msg=Text ')'
 ;
 
 RESTCallAction:
     'RESTCall' '('
-        host=STRING ','
-        port=INT ','
-        path=STRING ','
-        '[' query_params*=STRING[','] ']' ','
-        '[' path_params*=STRING[','] ']' ','
-        '[' body_params*=STRING[','] ']' ','
+        (verb=HTTPVerb ',')
+        (host=STRING ',')
+        (port=INT ',')
+        (path=STRING ',')
+        (
+        ('[' query_params*=EServiceParam[','] ']' ',')?
+        ('[' path_params*=EServiceParam[','] ']' ',')?
+        ('[' body_params*=EServiceParam[','] ']' ',')?
+        )#
     ')'
 ;
 
@@ -171,11 +190,34 @@ RESTCallAction:
 
 // GENERAL --------------------------------------------------------------
 // ----------------------------------------------------------------------
+
+HTTPVerb: 'GET'|'POST'|'PUT';
+
+DictItem:
+    name=STRING ':' value=DictTypes
+;
+
+DictTypes:
+    NUMBER | STRING | BOOL | Dict | List
+;
+
+Dict:
+    '{' items*=DictItem[','] '}'
+;
+
+List:
+    '[' items*=ListElements[','] ']'
+;
+
+ListElements:
+    NUMBER | STRING | BOOL | List | Dict
+;
+
 Words:
     /[-\w ]*\b/
 ;
 
-TextType: TextStr | TextParam;
+Text: TextStr | TextParam;
 
 TextParam: param=[FormParam|FQN|^dialogues*.responses.params];
 TextStr: STRING;
