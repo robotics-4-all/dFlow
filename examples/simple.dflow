@@ -34,24 +34,20 @@ triggers
 end
 
 dialogues
-    Dialogue DialA
-        on: external_1
-        responses: answers
-          Speak('Hello')
-          Speak('Hey there')
-    end
-
     Dialogue DialB
         on: find_doctor
-        responses: SlotForm AF1
-            slot1: int = HRI('Give parameter 1', [text])
-            slot2: bool = HRI('Give parameter 2', [find_doctor:True, external_1:False])
-            slot3: str = HRI('Give parameter 3 you', [Doctor])
-            slot4: str = EServiceHTTP(GET, 'r4a.issel.ee.auth.gr', 8080, '/weather',)
-            slot5: dict = EServiceHTTP(GET, 'r4a.issel.ee.auth.gr', 8080, '/pharmacies',)
-        end,
-        answers_2
-          Speak('Hello' AF1.slot1 'how are you')
-          Speak('The weathjer is ' AF1.slot4)
+        responses:
+            SlotForm AF1
+                slot1: int = HRI('Give parameter 1', [text])
+                slot2: bool = HRI('Give parameter 2', [find_doctor:True, external_1:False])
+                slot3: str = HRI('Give parameter 3 you', [Doctor])
+                slot4: str = EServiceHTTP(GET, 'r4a.issel.ee.auth.gr', 8080, '/weather',)
+                slot5: list = EServiceHTTP(GET, 'r4a.issel.ee.auth.gr', 8080, '/pharmacies',)
+            end,
+            ActionGroup answers
+              Speak('Hello' AF1.slot1 'how are you')
+              Speak('The weather is ' AF1.slot4)
+              Speak('Available pharmacies ' AF1.slot5)
+            end
     end
 end

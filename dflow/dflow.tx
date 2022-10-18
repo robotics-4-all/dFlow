@@ -111,12 +111,16 @@ IntentPhraseSynonym: 'S:' synonym=[Synonym|FQN];
 
 Dialogue:
     'Dialogue' name=ID
-        'on:' onTrigger=[Trigger|FQN]
-        'responses:' responses+=Response[',']
+        'on:' onTrigger=[Trigger|FQN|^triggers]
+        'responses:' responses+=DialogueResponse[',']
     'end'
 ;
 
-Response: ActionGroup | SlotForm;
+DialogueResponseDef:
+    'response' (name=ID)? response=DialogueResponse
+;
+
+DialogueResponse: ActionGroup | SlotForm;
 
 SlotForm:
     'SlotForm' name=ID
@@ -161,7 +165,13 @@ ExtractFromEntity: entity=[Entity];
 
 // ACTIONS --------------------------------------------------------------
 // ----------------------------------------------------------------------
-ActionGroup: name=ID actions+=ActionTypes;
+ActionGroup:
+    'ActionGroup' name=ID
+        actions+=ActionTypes
+    'end'
+;
+
+
 ActionTypes: SpeakAction | FireEventAction | RESTCallAction;
 
 SpeakAction:
