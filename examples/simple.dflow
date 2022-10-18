@@ -43,12 +43,12 @@ dialogues
 
     Dialogue DialB
         on: find_doctor
-        responses: Form AF1
-            Param1: int[text] = HRI('Give parameter 1')
-            Param2: bool[find_doctor:True, external_1:False] = HRI('Give parameter 2')
-            Param3: str[Doctor] = HRI('Give parameter 3 you')
+        responses: SlotForm AF1
+            slot1: int[text] = HRI('Give parameter 1')
+            slot2: bool[find_doctor:True, external_1:False] = HRI('Give parameter 2')
+            slot3: str[Doctor] = HRI('Give parameter 3 you')
         end,
         answers_2
-          Speak('Hello' Doctor 'how are you')
+          Speak('Hello' AF1.slot1 'how are you')
     end
 end
