@@ -57,7 +57,7 @@ dialogues
             end,
             ActionGroup answers
               Speak('The weather is ' SF1.slot2)
-              EServiceHTTP(GET, 'r4a.issel.ee.auth.gr', 8080, '/storage',
+              EServiceHTTP(POST, 'r4a.issel.ee.auth.gr', 8080, '/storage',
                   query=[data=SF1.slot2],)
             end
     end
