@@ -43,6 +43,7 @@ dFlow:
 ;
 
 // ENTITIY --------------------------------------------------------------
+// ----------------------------------------------------------------------
 Entity: TrainableEntity | PretrainedEntity;
 
 TrainableEntity:
@@ -71,7 +72,7 @@ PretrainedEntity:
     'ORDINAL'       |
     'CARDINAL'
 ;
-
+// ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
 Synonym:
@@ -80,9 +81,10 @@ Synonym:
     'end'
 ;
 
+// TRIGGER --------------------------------------------------------------
+// ----------------------------------------------------------------------
 Trigger: Intent | Event;
 
-// INTENT
 Intent:
     'Intent' name=ID
         phrases+=IntentPhraseComplex[',']
@@ -106,9 +108,11 @@ IntentPhraseTE: 'TE:' trainable=[TrainableEntity|FQN];
 IntentPhrasePE: 'PE:' pretrained=[PretrainedEntity|FQN] ('[' refPreValues*=STRING[','] ']')?;
 
 IntentPhraseSynonym: 'S:' synonym=[Synonym|FQN];
-
+// ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
+// DIALOGUE -------------------------------------------------------------
+// ----------------------------------------------------------------------
 Dialogue:
     'Dialogue' name=ID
         'on:' onTrigger=[Trigger|FQN|^triggers]
@@ -131,6 +135,8 @@ SlotForm:
 FormParam:
     name=ID ':' type=ParameterTypeDef '=' source=FormParamSource
 ;
+
+FormParamRef: param=[FormParam|FQN|^dialogues*.responses.params];
 
 FormParamSource: HRIParamSource | EServiceParamSource;
 
@@ -164,7 +170,8 @@ ExtractionSource: ExtractFromIntent | ExtractFromEntity;
 ExtractFromIntent: intent=[Trigger] ':' value=ParameterValue;
 ExtractFromEntity: entity=[Entity];
 
-FormParamRef: param=[FormParam|FQN|^dialogues*.responses.params];
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
 // ACTIONS --------------------------------------------------------------
 // ----------------------------------------------------------------------
@@ -186,7 +193,7 @@ FireEventAction:
 ;
 
 RESTCallAction: EServiceHTTP;
-
+// ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
 // GENERAL --------------------------------------------------------------
@@ -195,11 +202,11 @@ RESTCallAction: EServiceHTTP;
 HTTPVerb: 'GET'|'POST'|'PUT';
 
 DictItem:
-    name=STRING ':' value=DictTypes
+    name=ID ':' value=DictTypes
 ;
 
 DictTypes:
-    NUMBER | STRING | BOOL | Dict | List
+    NUMBER | STRING | BOOL | Dict | List | FormParamRef
 ;
 
 Dict:
@@ -211,18 +218,19 @@ List:
 ;
 
 ListElements:
-    NUMBER | STRING | BOOL | List | Dict
+    NUMBER | STRING | BOOL | List | Dict | FormParamRef
 ;
 
 Words:
     /[-\w ]*\b/
 ;
 
-Text: TextStr | TextParam;
+Text: TextStr | FormParamRef;
 
-TextParam: param=[FormParam|FQN|^dialogues*.responses.params];
 TextStr: STRING;
-TextEntity: entity=[Entity|FQN|entities];
+TextEntity: entity=[Entity|FQN|^entities];
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
 // === Fully Qualified Names Rule ===
 FQN: ID('.'ID)*;

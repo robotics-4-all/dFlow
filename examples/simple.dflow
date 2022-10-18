@@ -58,7 +58,7 @@ dialogues
             ActionGroup answers
               Speak('The weather is ' SF1.slot2)
               EServiceHTTP(POST, 'r4a.issel.ee.auth.gr', 8080, '/storage',
-                  query=[data=SF1.slot2],)
+                  query=[data={weather: SF1.slot2, p2: 'asd', p3: [10, 0, 2]}],)
             end
     end
 end
