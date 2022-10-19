@@ -1,5 +1,5 @@
 triggers
-  Trigger ask_weather
+  Intent ask_weather
     "I want to tell me the weather",
     "Tell me the weather please",
     "I want to tell me the weather for" PE:LOC['Thessaloniki', 'Athens'],
@@ -17,16 +17,16 @@ eservices
     end
 end
 
-Dialogue:
+dialogues
   Dialogue weather_dialogue
         on: ask_weather
         responses:
-          FormSlot  form1
-            city_slot: str = HRI('For which city?', [Entity LOC])
-            time_slot: str = HRI('For when?', [Entity TIME])
+          Form form1
+            city_slot: str = HRI('For which city?', [LOC])
+            time_slot: str = HRI('For when?', [TIME])
             answer: str = weather_svc(query=[city=form1.city_slot, time=form1.time_slot],
                 filter_response=resp.weather.forecast,)
-          end
+          end,
           ActionGroup answer_back
             Speak('The weather is ' form1.answer)
           end

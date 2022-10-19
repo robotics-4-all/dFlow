@@ -136,10 +136,10 @@ DialogueResponseDef:
     'response' (name=ID)? response=DialogueResponse
 ;
 
-DialogueResponse: ActionGroup | SlotForm;
+DialogueResponse: ActionGroup | Form;
 
-SlotForm:
-    'SlotForm' name=ID
+Form:
+    'Form' name=ID
         params+=FormParam
     'end'
 ;
@@ -177,7 +177,9 @@ ParameterTypeDef: 'int' | 'float' | 'str' | 'bool' | 'list' | 'dict';
 ExtractionSource: ExtractFromIntent | ExtractFromEntity;
 
 ExtractFromIntent: intent=[Trigger] ':' value=ParameterValue;
-ExtractFromEntity: entity=[Entity];
+ExtractFromEntity: ExtractFromPretrainedEntity | ExtractFromTrainableEntity;
+ExtractFromPretrainedEntity: entity=[PretrainedEntity|FQN|^entities*];
+ExtractFromTrainableEntity: entity=[TrainableEntity|FQN|^entities*];
 
 EServiceResponseFilter: 'resp'('.'ID)*;
 // ----------------------------------------------------------------------
