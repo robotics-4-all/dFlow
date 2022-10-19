@@ -55,17 +55,20 @@ dialogues
     Dialogue DialB
         on: find_doctor
         responses: Form AF1
-            Param1: int[text] = HRI('Give me a number')
-            Param2: bool[affirm:True, deny:False] = HRI('yes/no')
-            Param3: str[text] = HRI('Give a name')
+            Param1: int = HRI('Give me a number', [text])
+            Param2: bool = HRI('yes/no', [affirm:True, deny:False])
+            Param3: str = HRI('Give a name', [text])
         end,
-        answers_2
+        ActionGroup answers_2
           Speak('perfect thanks!')
+        end
     end
 
     Dialogue dial3
       on: time
-      responses: say_time
+      responses: ActionGroup say_time
           Speak('12:40')
+          FireEvent('bot/event/external_1', 'bye bye')
+        end
     end
 end
