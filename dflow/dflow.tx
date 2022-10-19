@@ -128,15 +128,11 @@ IntentPhraseSynonym: 'S:' synonym=[Synonym|FQN];
 Dialogue:
     'Dialogue' name=ID
         'on:' onTrigger=[Trigger|FQN|^triggers]
-        'responses:' responses+=DialogueResponse[',']
+        'responses:' responses+=Response[',']
     'end'
 ;
 
-DialogueResponseDef:
-    'response' (name=ID)? response=DialogueResponse
-;
-
-DialogueResponse: ActionGroup | Form;
+Response: ActionGroup | Form;
 
 Form:
     'Form' name=ID
@@ -235,10 +231,9 @@ Words:
     /[-\w ]*\b/
 ;
 
-Text: TextStr | FormParamRef | TextEntity;
+Text: TextStr | FormParamRef;
 
 TextStr: STRING;
-TextEntity: entity=[Entity|FQN|^entities];
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
