@@ -1,0 +1,23 @@
+triggers
+  Intent fill_information
+    "Hello I am" PE:PERSON['John', 'Nick'],
+    "Hi my name is" PE:PERSON
+    "I am 30 years old"
+    "I'm" PE:PERSON "and I am 20 years old"
+  end
+end
+
+
+dialogues
+  Dialogue dialogue1
+        on: fill_information
+        responses:
+          Form form1
+            name: str = HRI('What's your name?', [PERSON])
+            age: int = HRI('How old are you?')
+          end,
+          ActionGroup answer_back
+            Speak('Glad to meet you ' form1.name)
+          end
+  end
+end
