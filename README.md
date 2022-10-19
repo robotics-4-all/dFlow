@@ -60,6 +60,7 @@ The grammar of the language has four main attributes:
 
 - Entities
 - Synonyms
+- Services
 - Triggers
 - Dialogues
 
@@ -138,6 +139,36 @@ synonyms
         month,
         tomorrow,
         now
+    end
+end
+```
+
+### Services
+
+**External services** are HTTP endpoints that can be used as part of the assistant's responses. Their url and verb are defined globaly, while their parameters are specified inside the dialogue section where they are called.
+
+```
+EServiceDef: EServiceDefHTTP;
+
+EServiceDefHTTP:
+    'EServiceHTTP' name=ID
+        'verb:' verb=HTTPVerb
+        'host:' host=STRING
+        'port:' port=INT
+        'path:' path=STRING
+    'end'
+;
+```
+
+##### Example
+
+```
+eservices
+    EServiceHTTP weather_svc
+        verb: GET
+        host: 'r4a.issel.ee.auth.gr'
+        port: 8080
+        path: '/weather'
     end
 end
 ```
@@ -226,12 +257,12 @@ end
 ```
 Dialogue:
     'Dialogue' name=ID
-        'on:' onTrigger=[Trigger|FQN]
+        'on:' onTrigger=[Trigger|FQN|^triggers]
         'responses:' responses+=Response[',']
     'end'
 ;
 
-Response: Action | Form;
+Response: ActionGroup | Form;
 ```
 
 ##### Example
@@ -248,12 +279,12 @@ dialogues
     Dialogue DialB
         on: find_doctor
         responses: Form AF1
-            Param1: int[text] = HRI('Give parameter 1')
-            Param2: bool[find_doctor:True, external_1:False] = HRI('Give parameter 2')
-            Param3: str[Doctor] = HRI('Give parameter 3 you')
+            Param1: int = HRI('Give parameter 1', [text])
+            Param2: bool = HRI('Give parameter 2', [find_doctor:True, external_1:False])
+            Param3: str = HRI('Give parameter 3 you', [Doctor])
         end,
         answers_2
-          Speak('Hello' Doctor)
+          Speak('Hello' AF1.Param3)
     end
 end
 ```
@@ -266,63 +297,105 @@ An action is an assistant response that can either:
 - Call an HTTP endpoint
 
 ```
-Action: name=ID actions+=ActionTypes;
-ActionTypes: SpeakAction | FireEventAction | HTTPCallAction;
+ActionGroup:
+    'ActionGroup' name=ID
+        actions+=Action
+    'end'
+;
+
+Action: SpeakAction | FireEventAction | RESTCallAction;
 
 SpeakAction:
-    'Speak' '(' text+=TextType ')'
+    'Speak' '(' text+=Text ')'
 ;
 
 FireEventAction:
-    'FireEvent' '(' uri=STRING ',' msg=TextType ')'
+    'FireEvent' '(' uri=STRING ',' msg=Text ')'
 ;
 
-HTTPCallAction:
-    'RESTCall' '('
-        host=STRING ','
-        port=INT ','
-        path=STRING ','
-        '[' query_params*=STRING[','] ']' ','
-        '[' path_params*=STRING[','] ']' ','
-        '[' body_params*=STRING[','] ']' ','
+RESTCallAction: EServiceCallHTTP;
+
+EServiceCallHTTP:
+    eserviceRef=[EServiceDef|FQN|eservices]'('
+        (
+        ('query=' '[' query_params*=EServiceParam[','] ']' ',')?
+        ('path=' '[' path_params*=EServiceParam[','] ']' ',')?
+        ('body=' '[' body_params*=EServiceParam[','] ']' ',')?
+        ('filter_response=' respFilter=EServiceResponseFilter ',')?
+        )#
     ')'
 ;
 
-TextType: TextStr | TextEntity;
+EServiceParam: name=ID '=' value=ParameterValue;
+
+ParameterValue: INT | FLOAT | STRING | BOOL | List | Dict | FormParamRef;
+ParameterTypeDef: 'int' | 'float' | 'str' | 'bool' | 'list' | 'dict';
+
+HTTPVerb: 'GET'|'POST'|'PUT';
+
+DictItem:
+    name=ID ':' value=DictTypes
+;
+
+DictTypes:
+    NUMBER | STRING | BOOL | Dict | List | FormParamRef
+;
+
+Dict:
+    '{' items*=DictItem[','] '}'
+;
+
+List:
+    '[' items*=ListElements[','] ']'
+;
+
+ListElements:
+    NUMBER | STRING | BOOL | List | Dict | FormParamRef
+;
+
+Words:
+    /[-\w ]*\b/
+;
+
+Text: TextStr | FormParamRef;
 
 TextStr: STRING;
-TextEntity: entity=[Entity];
+
 ```
 
 #### Forms
 
-A From is a conversational pattern to collect information and store them in form parameters or *slots* following business logic. The assistant requests each slot using a specific text and extracts information from the user expression. Each slot is of one of the 4 types (int, float, text, bool) and considers the user expression to be filled. It can contain the entire processed text, an extracted entity, or  a specific value which is set in case the user states a particular intent.
+A From is a conversational pattern to collect information and store it in form parameters or *slots* following business logic. Information can be collected via an *HRI*  interaction, in which the assistant requests each slot using a specific text and extracts information from the user expression. It can contain the entire processed text, an extracted entity, or a specific value which is set in case the user states a particular intent. The second choice is the *EServiceParamSource* interaction, in which the slot is filled with the information received from an external service, that is defined above. Each slot is of one of the 6 types: `int`, `float`, `str`, `bool`, `list` or `dict`. 
 
 ```
 Form:
     'Form' name=ID
-        params+=FormParameter
+        params+=FormParam
     'end'
 ;
 
-FormParameter:
-    name=ID ':' type=ParameterType '[' extract+=ExtractionSource[','] ']' '=' source=ParameterSource
+FormParam:
+    name=ID ':' type=ParameterTypeDef '=' source=FormParamSource
 ;
 
-ParameterSource: HRIParamResource;
+FormParamRef: param=[FormParam|FQN|^dialogues*.responses.params];
 
-HRIParamResource:
-    'HRI' '(' ask_slot=STRING ')'
+FormParamSource: HRIParamSource | EServiceParamSource;
+
+HRIParamSource:
+    'HRI' '(' askSlot=STRING (',' '['extract+=ExtractionSource[','] ']')? ')'
 ;
 
-ParameterType: 'int' | 'float' | 'str' | 'bool';
-ParameterDefault: STRING | INT | FLOAT | BOOL;
+EServiceParamSource: EServiceCallHTTP;
 
-ExtractionSource: FromText | FromIntent | FromEntity;
+ExtractionSource: ExtractFromIntent | ExtractFromEntity;
 
-FromText: 'text';
-FromIntent: intent=[Trigger] ':' value=ParameterDefault;
-FromEntity: entity=[Entity];
+ExtractFromIntent: intent=[Trigger] ':' value=ParameterValue;
+ExtractFromEntity: ExtractFromPretrainedEntity | ExtractFromTrainableEntity;
+ExtractFromPretrainedEntity: entity=[PretrainedEntity|FQN|^entities*];
+ExtractFromTrainableEntity: entity=[TrainableEntity|FQN|^entities*];
+
+EServiceResponseFilter: 'resp'('.'ID)*;
 ```
 
 ### Examples
