@@ -1,0 +1,34 @@
+triggers
+  Trigger ask_weather
+    "I want to tell me the weather",
+    "Tell me the weather please",
+    "I want to tell me the weather for" PE:LOC['Thessaloniki', 'Athens'],
+    "Tell me the weather please for" PE:TIME['tomorrow', 'today'],
+    "Tell me the weather" PE:TIME['tomorrow', 'today'] "for"  PE:LOC['Thessaloniki', 'Athens']
+  end
+end
+
+eservices
+    EServiceHTTP weather_svc
+        verb: GET
+        host: 'r4a.issel.ee.auth.gr'
+        port: 8080
+        path: '/weather'
+    end
+end
+
+Dialogue:
+  Dialogue weather_dialogue
+        on: ask_weather
+        responses:
+          FormSlot  form1
+            city_slot: str = HRI('For which city?', [Entity LOC])
+            time_slot: str = HRI('For when?', [Entity TIME])
+            answer: str = weather_svc(query=[city=form1.city_slot, time=form1.time_slot],
+                filter_response=resp.weather.forecast,)
+          end
+          ActionGroup answer_back
+            Speak('The weather is ' form1.answer)
+          end
+  end
+end
