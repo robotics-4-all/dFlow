@@ -48,8 +48,9 @@ end
 dialogues
     Dialogue DialA
         on: external_1
-        responses: answers
+        responses: ActionGroup answers
           Speak('Hello')
+        end
     end
 
     Dialogue DialB

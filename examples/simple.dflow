@@ -52,7 +52,7 @@ dialogues
     Dialogue DialA
         on: find_doctor
         responses:
-            SlotForm AF1
+            Form AF1
                 slot1: int = HRI('Give parameter 1')
                 slot2: bool = HRI('Give parameter 2',
                     [find_doctor:True, external_1:False])
@@ -65,7 +65,7 @@ dialogues
     Dialogue DialB
         on: find_doctor
         responses:
-            SlotForm SF1
+            Form SF1
                 slot1: str = HRI('Give parameter 1')
                 slot2: str = weather_svc(query=[city=SF1.slot1],
                     filter_response=resp.weather.forecast,)

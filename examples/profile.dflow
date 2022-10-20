@@ -13,7 +13,7 @@ dialogues
         on: fill_information
         responses:
           Form form1
-            name: str = HRI('What's your name?', [PERSON])
+            name: str = HRI('What\'s your name?', [PERSON])
             age: int = HRI('How old are you?')
           end,
           ActionGroup answer_back
