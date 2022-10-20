@@ -63,7 +63,7 @@ dialogues
             end
     end
     Dialogue DialB
-        on: find_doctor
+        on: external_1
         responses:
             Form SF1
                 slot1: str = HRI('Give parameter 1')
