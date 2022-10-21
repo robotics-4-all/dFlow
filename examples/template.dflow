@@ -1,0 +1,50 @@
+entities
+    Entity ## entity name
+        ## values
+    end
+end
+
+synonyms
+    Synonym ##name
+        ## values
+    end
+end
+
+eservices
+    EServiceHTTP ## service name
+        verb: ## GET/POST/PUT
+        host: ## str
+        port: ## int
+        path: ## str
+    end
+end
+
+triggers
+  Intent ## intent name
+    ## intent examples
+    ## eg "one two three"
+    ## PE:LOC['example 1'] for pretrained entities
+    ## TE:entity_name for trainable entities
+  end
+
+  Event ## event name
+    ## uri
+  end
+end
+
+dialogues
+  Dialogue ## name
+        on: ## trigger_name
+        responses:
+        ## Form or ActionGroup
+          Form ## name
+            ##slot_name: slot_type = HRI(request_expression, mapping)
+            ##slot_name: slot_type = service_name(query, filter_response)
+          end,
+          ActionGroup ## actiongroup name
+            # Speak()
+            # FireEvent()
+            # service_name
+          end
+  end
+end
