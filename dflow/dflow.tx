@@ -162,14 +162,13 @@ EServiceCallHTTP:
         ('header=' '[' header_params*=EServiceParam[','] ']' ',')?
         ('path=' '[' path_params*=EServiceParam[','] ']' ',')?
         ('body=' '[' body_params*=EServiceParam[','] ']' ',')?
-        ('filter_response=' respFilter=EServiceResponseFilter ',')?
         )#
-    ')'
+    ')' ('[' response_filter=EServiceResponseFilter ']')?
 ;
 
 EServiceParam: name=ID '=' value=ParameterValue;
 
-ParameterValue: INT | FLOAT | STRING | BOOL | List | Dict | FormParamRef;
+ParameterValue: INT | FLOAT | STRING | BOOL | List | Dict | FormParamIndex;
 ParameterTypeDef: 'int' | 'float' | 'str' | 'bool' | 'list' | 'dict';
 
 ExtractionSource: ExtractFromIntent | ExtractFromEntity;
@@ -179,7 +178,7 @@ ExtractFromEntity: ExtractFromPretrainedEntity | ExtractFromTrainableEntity;
 ExtractFromPretrainedEntity: entity=[PretrainedEntity|FQN|^entities*];
 ExtractFromTrainableEntity: entity=[TrainableEntity|FQN|^entities*];
 
-EServiceResponseFilter: 'resp'('.'ID)*;
+EServiceResponseFilter: ID('.'ID)*;
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
@@ -214,7 +213,7 @@ DictItem:
 ;
 
 DictTypes:
-    NUMBER | STRING | BOOL | Dict | List | FormParamRef
+    NUMBER | STRING | BOOL | Dict | List | FormParamIndex
 ;
 
 Dict:
@@ -226,16 +225,18 @@ List:
 ;
 
 ListElements:
-    NUMBER | STRING | BOOL | List | Dict | FormParamRef
+    NUMBER | STRING | BOOL | List | Dict | FormParamIndex
 ;
 
 Words:
     /[-\w ]*\b/
 ;
 
-Text: TextStr | FormParamRef;
+Text: TextStr | FormParamIndex;
 
 TextStr: STRING;
+
+FormParamIndex: FormParamRef('['ID('.'ID)*']')?;
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
