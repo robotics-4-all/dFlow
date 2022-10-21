@@ -128,7 +128,7 @@ IntentPhraseSynonym: 'S:' synonym=[Synonym|FQN];
 // ----------------------------------------------------------------------
 Dialogue:
     'Dialogue' name=ID
-        'on:' onTrigger=[Trigger|FQN|^triggers]
+        'on:' onTrigger+=[Trigger|FQN|^triggers][',']
         'responses:' responses+=Response[',']
     'end'
 ;

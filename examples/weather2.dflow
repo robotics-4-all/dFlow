@@ -1,7 +1,10 @@
 triggers
   Intent ask_weather
     "I want to tell me the weather",
-    "Tell me the weather please",
+    "Tell me the weather please"
+  end
+
+  Intent ask_weather_2
     "I want to tell me the weather for" PE:LOC['Thessaloniki', 'Athens'],
     "Tell me the weather please for" PE:TIME['tomorrow', 'today'],
     "Tell me the weather" PE:TIME['tomorrow', 'today'] "for"  PE:LOC['Thessaloniki', 'Athens']
@@ -19,7 +22,7 @@ end
 
 dialogues
   Dialogue weather_dialogue
-        on: ask_weather
+        on: ask_weather, ask_weather_2
         responses:
           Form form1
             city_slot: str = HRI('For which city?', [LOC])
