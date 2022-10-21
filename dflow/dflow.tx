@@ -47,10 +47,11 @@ EServiceDef: EServiceDefHTTP;
 
 EServiceDefHTTP:
     'EServiceHTTP' name=ID
-        'verb:' verb=HTTPVerb
-        'host:' host=STRING
-        'port:' port=INT
-        'path:' path=STRING
+        (  'verb:' verb=HTTPVerb
+          'host:' host=STRING
+          ('port:' port=INT)?
+          ('path:' path=STRING)?
+        )#
     'end'
 ;
 
@@ -158,6 +159,7 @@ EServiceCallHTTP:
     eserviceRef=[EServiceDef|FQN|eservices]'('
         (
         ('query=' '[' query_params*=EServiceParam[','] ']' ',')?
+        ('header=' '[' header_params*=EServiceParam[','] ']' ',')?
         ('path=' '[' path_params*=EServiceParam[','] ']' ',')?
         ('body=' '[' body_params*=EServiceParam[','] ']' ',')?
         ('filter_response=' respFilter=EServiceResponseFilter ',')?

@@ -1,0 +1,39 @@
+triggers
+  Intent ask_weather
+    "I want to tell me the weather",
+    "Tell me the weather please",
+    "I want to tell me the weather for" PE:LOC['Thessaloniki', 'Athens'],
+    "Tell me the weather please for" PE:LOC
+  end
+end
+
+eservices
+    EServiceHTTP weather_svc
+        verb: GET
+        host: 'https://api.openweathermap.org/'
+        path: '/data/2.5/weather'
+    end
+end
+
+dialogues
+  Dialogue weather_dialogue
+    on: ask_weather
+    responses:
+      Form form1
+        city_slot: str = HRI('For which city?', [LOC])
+        temperature: str = weather_svc(query=[
+                q=form1.city_slot, appid=78600716392dfe624501737afec11634,
+                units=metric, lang=en
+                ],
+            filter_response=resp.main.temperature)
+        description: str = weather_svc(query=[
+            q=form1.city_slot, appid=78600716392dfe624501737afec11634,
+              units=metric, lang=en
+              ],
+          filter_response=resp.weather.0.description)
+      end,
+      ActionGroup answer_back
+        Speak('The temperature is ' form1.temperature 'and the description is' form1.description)
+      end
+  end
+end

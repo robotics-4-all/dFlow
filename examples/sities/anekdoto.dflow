@@ -1,0 +1,33 @@
+triggers
+  Intent ask_joke
+    "I want to tell me a joke",
+    "Tell me a joke please",
+    "something funny",
+    "make me laugh"
+  end
+end
+
+eservices
+    EServiceHTTP jokes_service
+        verb: GET
+        host: 'https://platform.sities-project.gr/'
+        port: 4000
+        path: '/jokes/' # how to manipulate custom actions eg calculate random int
+    end
+end
+
+dialogues
+  Dialogue weather_dialogue
+    on: ask_joke
+    responses:
+      Form form1
+        joke: str = jokes_service(header=[
+                Authorization="Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNpdGllc2NvbW1vbkBnbWFpbC5jb20iLCJpZCI6IjVlZWI0NTNmNThjMzZmNTA4NzdjMjZhMSIsInJvbGVzIjpbImRldmVsb3BlciIsIm93bmVyIiwicHJvZHVjZXIiXSwiaWF0IjoxNjA0NjUzNjYxfQ.sNVFTn-_hSBAE5XV4IQwfFfqFVZBVkJxTq1MfjhJbuU"
+                ],
+            filter_response=resp.joke.text)
+      end,
+      ActionGroup answer_back
+        Speak(form1.joke)
+      end
+  end
+end
