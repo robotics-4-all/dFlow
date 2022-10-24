@@ -1,15 +1,15 @@
 intents:
 {% for intent in intents %}
-  - {{intent["name"]}}
+  - {{intent.name}}
 {% endfor %}
 {% for event in events %}
-  - {{event["name"]}}
+  - {{event.name}}
 {% endfor %}
 
 {% if entities %}
 entities:
 {% for entity in entities %}
-  - {{entity["name"]}}
+  - {{entity.name}}
 {% endfor %}
 {% for entity in pretrained_entities %}
   - {{entity}}
