@@ -47,17 +47,23 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% for entity in act.entities %}
         {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
         {% endfor %}
+        {% for slot in act.slots %}
+        {{slot}} = tracker.get_slot('{{slot}}')
+        {% endfor %}
         dispatcher.utter_message(text = f"{{act.text}}")
         {% elif act.type == 'FireEventAction' %}
         {% for entity in act.entities %}
         {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
+        {% endfor %}
+        {% for slot in act.slots %}
+        {{slot}} = tracker.get_slot('{{slot}}')
         {% endfor %}
         ts = datetime.timestamp(datetime.now())
         event_data = {
             "id": "id",
             "type": "event",
             "timestamp": int(datetime.timestamp(datetime.now())),
-            "payload": {"message": "{{act.msg}}", "uri": "{{act.uri}}" }
+            "payload": {"message": f"{{act.msg}}", "uri": "{{act.uri}}" }
         }
         dispatcher.utter_message(json_message = event_data)
         {% elif act.type == 'HTTPCallAction' %}
