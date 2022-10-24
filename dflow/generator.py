@@ -34,6 +34,7 @@ class TransformationDataModel(BaseModel):
     pretrained_entities: List[Dict[str, Any]] = []
     intents: List[Dict[str, Any]] = []
     events: List[Dict[str, Any]] = []
+    eservices: List[Dict[str, Any]] = []
     stories: List[Dict[str, Any]] = []
     actions: List[Dict[str, Any]] = []
     rules: List[Dict[str, Any]] = []
@@ -82,6 +83,7 @@ def dflow_generate_rasa(metamodel, model, output_path, overwrite,
                                     pretrained_entities=data.pretrained_entities,
                                     entities=data.entities,
                                     events=data.events,
+                                    eservices=data.eservices,
                                     stories=data.stories,
                                     actions=data.actions,
                                     rules=data.rules,
@@ -108,6 +110,18 @@ def parse_model(model) -> TransformationDataModel:
             pass
         else:
             data.entities.append({'name': entity.name, 'words': entity.words})
+
+    for service in model.eservices:
+        service_list = {}
+        service_list['name'] = service.name
+        service_list['verb'] = service.verb
+        service_list['host'] = service.host
+        if service.port:
+            service_list['port'] = service.port
+        else:
+            service_list['port'] = ''
+        service_list['path'] = service.path
+        data.eservices.append(service_list)
 
     pretrained_entities_examples = {}
 
