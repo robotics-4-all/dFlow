@@ -34,7 +34,7 @@ class TransformationDataModel(BaseModel):
     pretrained_entities: List[Dict[str, Any]] = []
     intents: List[Dict[str, Any]] = []
     events: List[Dict[str, Any]] = []
-    eservices: List[Dict[str, Any]] = []
+    eservices: Dict[str, Any] = {}
     stories: List[Dict[str, Any]] = []
     actions: List[Dict[str, Any]] = []
     rules: List[Dict[str, Any]] = []
@@ -112,16 +112,15 @@ def parse_model(model) -> TransformationDataModel:
             data.entities.append({'name': entity.name, 'words': entity.words})
 
     for service in model.eservices:
-        service_list = {}
-        service_list['name'] = service.name
-        service_list['verb'] = service.verb
-        service_list['host'] = service.host
+        service_info = {}
+        service_info['verb'] = service.verb
+        service_info['host'] = service.host
         if service.port:
-            service_list['port'] = service.port
+            service_info['port'] = service.port
         else:
-            service_list['port'] = ''
-        service_list['path'] = service.path
-        data.eservices.append(service_list)
+            service_info['port'] = ''
+        service_info['path'] = service.path
+        data.eservices[service.name] = service_info
 
     pretrained_entities_examples = {}
 
