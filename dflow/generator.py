@@ -173,19 +173,21 @@ def parse_model(model) -> TransformationDataModel:
                 actions = []
                 for action in response.actions:
                     if action.__class__.__name__ == 'SpeakAction':
-                        message, entities = process_text(action.text)
+                        message, entities, slots = process_text(action.text)
                         actions.append({
                             'type': action.__class__.__name__,
                             'text': message,
-                            'entities': entities
+                            'entities': entities,
+                            'slots': slots
                         })
                     elif action.__class__.__name__ == 'FireEventAction':
-                        message, entities = process_text(action.msg)
+                        message, entities, slots = process_text(action.msg)
                         actions.append({
                             'type': action.__class__.__name__,
                             'uri': action.uri,
                             'msg': message,
-                            'entities': entities
+                            'entities': entities,
+                            'slots': slots
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
                         actions.append({
@@ -268,10 +270,14 @@ def process_text(text):
         return text, []
     message = []
     entities = []
+    slots = []
     for phrase in text:
         if phrase.__class__.__name__ == 'TextEntity':
             message.extend(["{", f"{phrase.entity.name}", "}"])
             entities.append(phrase.entity.name)
+        elif phrase.__class__.__name__ == 'FormParamRef':
+            slots.append(phrase.param.name)
+            message.extend(["{", f"{phrase.param.name}", "}"])
         else:
             message.append(phrase)
-    return ' '.join(message), entities
+    return ' '.join(message), entities, slots
