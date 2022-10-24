@@ -161,7 +161,7 @@ def parse_model(model) -> TransformationDataModel:
 
     for dialogue in model.dialogues:
         name = dialogue.name
-        intent = dialogue.onTrigger.name
+        intents = dialogue.onTrigger
         dialogue_responses = []
         for i in range(len(dialogue.responses)) :
             response = dialogue.responses[i]
@@ -198,13 +198,14 @@ def parse_model(model) -> TransformationDataModel:
             elif response.__class__.__name__ == 'Form':
                 form = f"{response.name}_form"
                 dialogue_responses.append({"name": form, "form": True})
-                data.rules.append({
-                    'name': f"Activate {form}",
-                    'form': form,
-                    'intent': intent,
-                    'responses': dialogue_responses.copy(),
-                    'type': 'Activate'
-                })
+                for intent in intents:
+                    data.rules.append({
+                        'name': f"Activate {form}",
+                        'form': form,
+                        'intent': intent.name,
+                        'responses': dialogue_responses.copy(),
+                        'type': 'Activate'
+                    })
                 if i < len(dialogue.responses) - 1:
                     next_actions = [{"name": f"action_{action.name}", "form": False} for action in dialogue.responses[i+1:]]
                 else:
@@ -213,7 +214,6 @@ def parse_model(model) -> TransformationDataModel:
                 data.rules.append({
                     'name': f"Submit {form}",
                     'form': form,
-                    'intent': intent,
                     'responses': next_actions,
                     'type': 'Submit'
                 })
@@ -251,11 +251,12 @@ def parse_model(model) -> TransformationDataModel:
                 data.forms.append({'name': form, 'slots': form_data})
                 if validation_data != []:
                     data.actions.append({'name': f'validate_{form}', 'validation_method': True, 'info': validation_data})
-        data.stories.append({
-            'name': name,
-            'intent': intent,
-            'responses': dialogue_responses
-        })
+        for intent in intents:
+            data.stories.append({
+                'name': name,
+                'intent': intent.name,
+                'responses': dialogue_responses
+            })
     return data
 
 def process_text(text):
