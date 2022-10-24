@@ -192,7 +192,7 @@ def parse_model(model) -> TransformationDataModel:
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
                         actions.append({
                             'type': action.__class__.__name__,
-                            'verb': action.eserviceRef.verb,
+                            'verb': action.eserviceRef.verb.lower(),
                             'url': data.eservices[action.eserviceRef.name]['url'],
                             'query_params': action.query_params,
                             'header_params': action.header_params,

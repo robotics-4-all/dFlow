@@ -66,9 +66,21 @@ class {{action.name|replace("_","")|capitalize}}(Action):
             "payload": {"message": f"{{act.msg}}", "uri": "{{act.uri}}" }
         }
         dispatcher.utter_message(json_message = event_data)
-        {% elif act.type == 'HTTPCallAction' %}
-        url = "{{act.host}}:{{act.port}}/{{act.path}}"
-        response = requests.get(url, params = {"query": {{act.query_params}}, "path": {{actpath_params}}, "body": {{act.body_params}}})
+        {% elif act.type == 'EServiceCallHTTP' %}
+        {% if act.verb == 'get' %}
+        response = requests.{{act.verb}}({{act.url}},
+                headers = {{act.header_params}},
+                params = {{act.query_params}},
+              # "path": {{act.path_params}}
+                )
+        {% else %}
+        response = requests.{{act.verb}}({{act.url}},
+                headers = {{act.header_params}},
+                data = {{act.body_params}},
+                params = {{act.query_params}},
+              # "path": {{act.path_params}},
+              )
+        {% endif %}
         {% endif %}
 
         {% endfor %}
