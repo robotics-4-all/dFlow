@@ -200,7 +200,7 @@ def parse_model(model) -> TransformationDataModel:
                 dialogue_responses.append({"name": form, "form": True})
                 for intent in intents:
                     data.rules.append({
-                        'name': f"Activate {form}",
+                        'name': f"Activate {form} with {intent.name}",
                         'form': form,
                         'intent': intent.name,
                         'responses': dialogue_responses.copy(),
@@ -253,7 +253,7 @@ def parse_model(model) -> TransformationDataModel:
                     data.actions.append({'name': f'validate_{form}', 'validation_method': True, 'info': validation_data})
         for intent in intents:
             data.stories.append({
-                'name': name,
+                'name': f"{name} - {intent.name}",
                 'intent': intent.name,
                 'responses': dialogue_responses
             })
