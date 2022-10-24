@@ -117,9 +117,12 @@ def parse_model(model) -> TransformationDataModel:
         service_info['host'] = service.host
         if service.port:
             service_info['port'] = service.port
+            port = f":{service.port}"
         else:
             service_info['port'] = ''
+            port = ''
         service_info['path'] = service.path
+        service_info['url'] = f"{service_info['host']}{port}{service_info['path']}"
         data.eservices[service.name] = service_info
 
     pretrained_entities_examples = {}
@@ -165,7 +168,7 @@ def parse_model(model) -> TransformationDataModel:
         dialogue_responses = []
         for i in range(len(dialogue.responses)) :
             response = dialogue.responses[i]
-            if response.__class__.__name__ == 'Action':
+            if response.__class__.__name__ == 'ActionGroup':
                 dialogue_responses.append({"name": f"action_{response.name}", "form": False})
                 actions = []
                 for action in response.actions:
@@ -184,15 +187,16 @@ def parse_model(model) -> TransformationDataModel:
                             'msg': message,
                             'entities': entities
                         })
-                    elif action.__class__.__name__ == 'HTTPCallAction':
+                    elif action.__class__.__name__ == 'EServiceCallHTTP':
                         actions.append({
                             'type': action.__class__.__name__,
-                            'host': action.host,
-                            'port': action.port,
-                            'path': action.path,
+                            'verb': action.eserviceRef.verb,
+                            'url': data.eservices[action.eserviceRef.name]['url'],
                             'query_params': action.query_params,
+                            'header_params': action.header_params,
                             'path_params': action.path_params,
-                            'body_params': action.body_params
+                            'body_params': action.body_params,
+                            'response_filter': action.response_filter
                         })
                 data.actions.append({"name": f"action_{response.name}", "actions": actions})
             elif response.__class__.__name__ == 'Form':
