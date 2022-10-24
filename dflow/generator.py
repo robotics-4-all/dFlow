@@ -109,6 +109,8 @@ def parse_model(model) -> TransformationDataModel:
         else:
             data.entities.append({'name': entity.name, 'words': entity.words})
 
+    pretrained_entities_examples = {}
+
     for trigger in model.triggers:
         if trigger.__class__.__name__ == 'Intent':
             examples = []
@@ -131,8 +133,13 @@ def parse_model(model) -> TransformationDataModel:
                         name = phrase.pretrained
                         if name not in data.pretrained_entities:
                             data.pretrained_entities.append(name)
+                            pretrained_entities_examples[name] = []
                         if phrase.refPreValues != []:
-                            text.append(phrase.refPreValues)
+                            pretrained_entities_examples[name].extend(
+                                [example for example in phrase.refPreValues if example not in pretrained_entities_examples[name]]
+                                )
+                        if pretrained_entities_examples[name] != []:
+                            text.append(pretrained_entities_examples[name])
                 example = [' '.join(sentence) for sentence in itertools.product(*text)]
                 examples.extend(example)
             data.intents.append({'name': trigger.name, 'examples': examples})
