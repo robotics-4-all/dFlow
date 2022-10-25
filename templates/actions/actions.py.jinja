@@ -70,18 +70,18 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% elif act.type == 'SetSlot' %}
         output.append(SlotSet({{act.slot}}, {{act.value}}))
         {% elif act.type == 'EServiceCallHTTP' %}
+        {% for key, value in act.path_params %}
+        {{key}} = {{value}}
         {% if act.verb == 'get' %}
-        response = requests.{{act.verb}}({{act.url}},
+        response = requests.{{act.verb}}(f"{{act.url}}",
                 headers = {{act.header_params}},
-                params = {{act.query_params}},
-              # "path": {{act.path_params}}
+                params = {{act.query_params}}
                 )
         {% else %}
-        response = requests.{{act.verb}}({{act.url}},
+        response = requests.{{act.verb}}(f"{{act.url}}",
                 headers = {{act.header_params}},
                 data = {{act.body_params}},
-                params = {{act.query_params}},
-              # "path": {{act.path_params}},
+                params = {{act.query_params}}
               )
         {% endif %}
         {% endif %}

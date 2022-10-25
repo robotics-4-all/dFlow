@@ -1,6 +1,6 @@
 from os import path, mkdir, getcwd, chmod
 from textx import generator, metamodel_from_file
-import jinja2, argparse, itertools, shutil
+import jinja2, argparse, itertools, shutil, re
 
 from textxjinja import textx_jinja_generator
 import textx.scoping.providers as scoping_providers
@@ -196,14 +196,18 @@ def parse_model(model) -> TransformationDataModel:
                             'value': action.value
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
+                        path_params = process_http_params(action.path_params)
+                        validation = validate_path_params(data.eservices[action.eserviceRef.name]['url'], path_params)
+                        if not validation:
+                            raise Exception('Service path and path params do not match.')
                         actions.append({
                             'type': action.__class__.__name__,
                             'verb': action.eserviceRef.verb.lower(),
                             'url': data.eservices[action.eserviceRef.name]['url'],
-                            'query_params': action.query_params,
-                            'header_params': action.header_params,
-                            'path_params': action.path_params,
-                            'body_params': action.body_params,
+                            'query_params': process_http_params(action.query_params),
+                            'path_params': path_params,
+                            'header_params': process_http_params(action.header_params),
+                            'body_params': process_http_params(action.body_params),
                             'response_filter': action.response_filter
                         })
                 data.actions.append({"name": f"action_{response.name}", "actions": actions})
@@ -287,3 +291,11 @@ def process_text(text):
         else:
             message.append(phrase)
     return ' '.join(message), entities, slots
+
+def process_http_params(params):
+    return params
+
+def validate_path_params(url, path_params):
+    ''' Check wether all path_params keys and params in url match. '''
+    url_params = re.findall("{[a-z|A-Z]+}", url)
+    return url_params == path_params.keys()
