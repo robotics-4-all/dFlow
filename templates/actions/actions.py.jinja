@@ -70,6 +70,9 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% elif act.type == 'SetSlot' %}
         output.append(SlotSet("{{act.slot}}", "{{act.value}}"))
         {% elif act.type == 'EServiceCallHTTP' %}
+        {% for slot in act.slots %}
+        {{slot}} = tracker.get_slot('{{slot}}')
+        {% endfor %}
         {% for key, value in act.path_params.items() %}
         {{key}} = "{{value}}"
         {% endfor %}
