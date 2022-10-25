@@ -43,6 +43,7 @@ class {{action.name|replace("_","")|capitalize}}(Action):
 
     def run(self, dispatcher, tracker, domain):
         {% for act in action.actions %}
+        output = []
         {% if act.type == 'SpeakAction' %}
         {% for entity in act.entities %}
         {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
@@ -66,6 +67,8 @@ class {{action.name|replace("_","")|capitalize}}(Action):
             "payload": {"message": f"{{act.msg}}", "uri": "{{act.uri}}" }
         }
         dispatcher.utter_message(json_message = event_data)
+        {% elif act.type == 'SetSlot' %}
+        output.append(SlotSet({{act.slot}}, {{act.value}}))
         {% elif act.type == 'EServiceCallHTTP' %}
         {% if act.verb == 'get' %}
         response = requests.{{act.verb}}({{act.url}},
@@ -84,7 +87,7 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% endif %}
 
         {% endfor %}
-        return
+        return output
 
 {% endif %}
 {% endfor %}

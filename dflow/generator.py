@@ -189,6 +189,12 @@ def parse_model(model) -> TransformationDataModel:
                             'entities': entities,
                             'slots': slots
                         })
+                    elif action.__class__.__name__ == 'SetSlot':
+                        actions.append({
+                            'type': action.__class__.__name__,
+                            'slot': action.slotRef.param.name,
+                            'value': action.value
+                        })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
                         actions.append({
                             'type': action.__class__.__name__,
