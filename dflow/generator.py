@@ -51,6 +51,8 @@ def dflow_generate_rasa(metamodel, model, output_path, overwrite,
     # Prepare generating file directory
     if output_path is None:
         out_dir = srcgen_folder
+    else:
+        out_dir = output_path
 
     if not path.exists(out_dir):
         mkdir(out_dir)
@@ -329,4 +331,4 @@ def process_http_params(params):
 def validate_path_params(url, path_params):
     ''' Check wether all path_params keys and params in url match. '''
     url_params = re.findall("{[a-z|A-Z]+}", url)
-    return url_params == path_params.keys()
+    return url_params == list(path_params.keys())
