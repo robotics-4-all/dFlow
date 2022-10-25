@@ -190,11 +190,16 @@ ActionGroup:
     'end'
 ;
 
-Action: SpeakAction | FireEventAction | RESTCallAction;
+Action: SpeakAction | FireEventAction | RESTCallAction | SetFormSlot;
 
 SpeakAction:
     'Speak' '(' text+=Text ')'
 ;
+
+SetFormSlot:
+    'SetSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')'
+;
+
 
 FireEventAction:
     'FireEvent' '(' uri=STRING ',' msg=Text ')'

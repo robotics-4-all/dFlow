@@ -33,6 +33,33 @@ dialogues
           end,
           ActionGroup answer_back
             Speak('The weather is ' form1.answer[weather.forecast])
+            SetSlot(form1.time_slot, 10)
           end
   end
 end
+
+
+//Dialogue weather_dialogue
+//    on: ask_weather, ask_weather_2
+//    slots:
+//        p1: int = 10
+//        p2 str = "skata"
+//        p3 str[Optional] = "skata"
+//
+//    flow a:
+//        p1 = HRI('blabla', [LOC])
+//        p2 = weather_svc()
+//        if p2 > GoTo(p1)
+//
+//    flow b:
+//        p1 = HRI('blabla', [LOC])
+//        p2 = weather_svc()
+//        GoTo(flow a)
+
+//    flow c:
+//        p1 = HRI('blabla', [LOC])
+//        p2 = weather_svc()
+//        if p2 > GoTo(p1)
+
+//    flow a -{on_intent_1}> flow b
+
