@@ -114,3 +114,4 @@ srcgen/
 
 # Rasa generation scripts
 /gen/*
+/dflow/gen/*
