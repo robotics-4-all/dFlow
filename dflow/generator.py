@@ -196,7 +196,10 @@ def parse_model(model) -> TransformationDataModel:
                             'value': action.value
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
-                        path_params = process_http_params(action.path_params)
+                        path_params, path_slots = process_http_params(action.path_params)
+                        query_params, query_slots = process_http_params(action.query_params)
+                        header_params, header_slots = process_http_params(action.header_params)
+                        body_params, body_slots = process_http_params(action.body_params)
                         validation = validate_path_params(data.eservices[action.eserviceRef.name]['url'], path_params)
                         if not validation:
                             raise Exception('Service path and path params do not match.')
@@ -204,11 +207,12 @@ def parse_model(model) -> TransformationDataModel:
                             'type': action.__class__.__name__,
                             'verb': action.eserviceRef.verb.lower(),
                             'url': data.eservices[action.eserviceRef.name]['url'],
-                            'query_params': process_http_params(action.query_params),
+                            'query_params': query_params,
                             'path_params': path_params,
-                            'header_params': process_http_params(action.header_params),
-                            'body_params': process_http_params(action.body_params),
-                            'response_filter': action.response_filter
+                            'header_params': header_params,
+                            'body_params': body_params,
+                            'response_filter': action.response_filter,
+                            'slots': list(set(path_slots + query_slots + header_slots + body_slots))
                         })
                 data.actions.append({"name": f"action_{response.name}", "actions": actions})
             elif response.__class__.__name__ == 'Form':
@@ -293,7 +297,34 @@ def process_text(text):
     return ' '.join(message), entities, slots
 
 def process_http_params(params):
-    return params
+    results = {}
+    slots = []
+    if isinstance(params, (int, str, bool, float)):
+        return params, []
+    for param in params:
+        if param.value.__class__.__name__ == 'Dict':
+            dict_results = {}
+            for item in param.value.items:
+                item_results, item_slots = process_http_params(item.value)
+                slots.extend(item_slots)
+                dict_results[item.name] = item_results
+            results[param.name] = dict_results
+        elif param.value.__class__.__name__ == 'List':
+            list_results = []
+            for item in param.value.items:
+                item_results, item_slots = process_http_params(item)
+                slots.extend(item_slots)
+                if isinstance(item_results, (int, str, bool, float)):
+                    item_results = [item_results]
+                list_results.extend(item_results)
+            results[param.name] = list_results
+        elif param.value.__class__.__name__ == 'FormParamRef':
+            new_slot = ["{", f"{param.value.param.name}", "}"]
+            results[param.name] = ' '.join(new_slot)
+            slots.append(f"{param.value.param.name}")
+        else:
+            results[param.name] = param.value
+    return results, list(set(slots))
 
 def validate_path_params(url, path_params):
     ''' Check wether all path_params keys and params in url match. '''
