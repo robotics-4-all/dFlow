@@ -173,7 +173,7 @@ def parse_model(model) -> TransformationDataModel:
                             text.append(pretrained_entities_examples[name])
                 example = [' '.join(sentence) for sentence in itertools.product(*text)]
                 examples.extend(example)
-            data.intents.append({'name': trigger.name, 'examples': examples})
+            data.intents.append({'name': trigger.name, 'examples': list(set(examples))})
         else:
             data.events.append({'name': trigger.name, 'uri': trigger.uri})
 
