@@ -270,7 +270,9 @@ UserProfileProperty:
     'SURNAME'   |
     'AGE'       |
     'EMAIL'     |
-    'PHONE'
+    'PHONE'		|
+    'CITY'		|
+    'ADDRESS'
 ;
 
 // ----------------------------------------------------------------------
