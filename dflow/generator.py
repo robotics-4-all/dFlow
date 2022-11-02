@@ -260,30 +260,63 @@ def parse_model(model) -> TransformationDataModel:
                     extract_slot = []
                     extract_from_text = False
                     form_data.append(slot.name)
-                    for extract_method in slot.extract:
-                        if extract_method.__class__.__name__ == 'str':
-                            extract_slot.append({'type': extract_method.__class__.__name__})    # extract_method == 'text'
-                            extract_from_text = True
-                        elif extract_method.__class__.__name__ == 'FromIntent':
-                            extract_slot.append({
-                                'type': extract_method.__class__.__name__,
-                                'intent': extract_method.intent.name,
-                                'value': extract_method.value
-                            })
-                        elif extract_method.__class__.__name__ == 'FromEntity':
-                            extract_slot.append({'type': extract_method.__class__.__name__, 'entity': extract_method.entity.name})
-                    if extract_from_text and slot.type in ['int', 'float']:
+                    if slot.source.__class__.__name__ == 'EServiceCallHTTP':
+                        path_params, path_slots = process_http_params(slot.source.path_params)
+                        query_params, query_slots = process_http_params(slot.source.query_params)
+                        header_params, header_slots = process_http_params(slot.source.header_params)
+                        body_params, body_slots = process_http_params(slot.source.body_params)
+                        validation = validate_path_params(data.eservices[slot.source.eserviceRef.name]['url'], path_params)
+                        if not validation:
+                            raise Exception('Service path and path params do not match.')
+                        slot_service_info = {
+                            'type': slot.source.__class__.__name__,
+                            'verb': slot.source.eserviceRef.verb.lower(),
+                            'url': data.eservices[slot.source.eserviceRef.name]['url'],
+                            'query_params': query_params,
+                            'path_params': path_params,
+                            'header_params': header_params,
+                            'body_params': body_params,
+                            'response_filter': process_response_filter(slot.source.response_filter),
+                            'slots': list(set(path_slots + query_slots + header_slots + body_slots))
+                        }
                         validation_data.append({
                             'form': form,
                             'name': slot.name,
                             'method': f'extract_{slot.name}',
-                            'type': slot.type
-                        }) # extract_method == 'text
+                            'type': slot.type,
+                            'source_type': slot.source.__class__.__name__,
+                            'data': slot_service_info
+                        })
+                        extract_slot.append({'type': 'custom'})
+                    elif slot.source.__class__.__name__ == 'HRIParamSource':
+                        for extract_method in slot.source.extract:
+                            if extract_method.__class__.__name__ == 'ExtractFromIntent':
+                                extract_slot.append({
+                                    'type': 'from_intent',
+                                    'intent': extract_method.intent.name,
+                                    'value': extract_method.value
+                                })
+                            elif extract_method.__class__.__name__ == 'ExtractFromTrainableEntity':
+                                extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity.name}) ## to check this
+                            elif extract_method.__class__.__name__ == 'ExtractFromPretrainedEntity':
+                                extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity})
+                            elif extract_method == []:  # no method given, extract from text
+                                extract_slot.append({'type': 'from_text'})
+                                extract_from_text = True
+                        if extract_from_text and slot.type in ['int', 'float']:
+                            validation_data.append({
+                                'form': form,
+                                'name': slot.name,
+                                'method': f'extract_{slot.name}',
+                                'source_type': slot.source.__class__.__name__,
+                                'type': slot.type
+                            })
+                        text, _, _ = process_text(slot.source.askSlot)
+                        data.responses.append({
+                            'name': f"utter_ask_{form}_{slot.name}",
+                            'text': text
+                        })
                     data.slots.append({'name': slot.name, 'form': form, 'type': slot.type, 'extract_methods': extract_slot})
-                    data.responses.append({
-                        'name': f"utter_ask_{form}_{slot.name}",
-                        'text': process_text(slot.source.ask_slot)
-                    })
                 data.forms.append({'name': form, 'slots': form_data})
                 if validation_data != []:
                     data.actions.append({'name': f'validate_{form}', 'validation_method': True, 'info': validation_data})
@@ -298,7 +331,7 @@ def parse_model(model) -> TransformationDataModel:
 def process_text(text):
     """ Takes a Text entity, processes the entities, slots, and user properties and converts them to string."""
     if isinstance(text, str):
-        return text, []
+        return text, [], []
     message = []
     entities = []
     slots = []
@@ -310,6 +343,8 @@ def process_text(text):
             slots.append(phrase.param.name)
             message.extend(["{", f"{phrase.param.name}", "}"])
         elif phrase.__class__.__name__ == 'UserPropertyDef':
+            pass
+        elif phrase.__class__.__name__ == 'SystemPropertyDef':
             pass
         else:
             message.append(phrase)
@@ -344,6 +379,10 @@ def process_http_params(params):
         else:
             results[param.name] = param.value
     return results, list(set(slots))
+
+def process_response_filter(text):
+    """ Convert response filtering to template-ready string. """
+    return ''.join([f"[{word}]" if word.isnumeric() else f"[\'{word}\']" for word in text.split('.')])
 
 def validate_path_params(url, path_params):
     ''' Check whether all path_params keys and params in url match. '''

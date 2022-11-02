@@ -20,18 +20,41 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
         output = {}
         requested_slot = tracker.get_slot('requested_slot')
         if requested_slot == "{{slot.name}}":
-            text = tracker.latest_message['text']
             {{slot.name}} = None
+            {% if slot.source_type == 'EServiceCallHTTP' %}
+            {% for slot in slot.data.slots %}
+            {{slot}} = tracker.get_slot('{{slot}}')
+            {% endfor %}
+            {% for key, value in slot.data.path_params.items() %}
+            {{key}} = "{{value}}"
+            {% endfor %}
+            {% if slot.data.verb == 'get' %}
+            response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
+                    headers = {{slot.data.header_params}},
+                    params = {{slot.data.query_params}}
+                    )
+            {% else %}
+            response = requests.{{act.verb}}(f"{{act.url}}",
+                    headers = {{act.header_params}},
+                    data = {{act.body_params}},
+                    params = {{act.query_params}}
+                  )
+            {% endif %}
+            {{slot.name}} = response.json(){{slot.data.response_filter}}
+            output["{{slot.name}}"] = {{slot.name}}
+            {% elif slot.source_type == 'HRIParamSource' %}
+            text = tracker.latest_message['text']
             {% if slot.type == 'int' %}
             numbers = re.findall("\d+", text)
             {% elif slot.type == 'float' %}
             numbers = re.findall("\d+\.\d+", text)
             {% else %}
-            reuturn
+            return
             {% endif %}
             if len(numbers):
                 {{slot.name}} = {{slot.type}}(numbers[0])
             output["{{slot.name}}"] = {{slot.name}}
+            {% endif %}
         return output
 
 {% endfor %}
