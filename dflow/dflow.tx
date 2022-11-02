@@ -150,7 +150,7 @@ FormParamRef: param=[FormParam|FQN|^dialogues*.responses.params];
 FormParamSource: HRIParamSource | EServiceParamSource;
 
 HRIParamSource:
-    'HRI' '(' askSlot=STRING (',' '['extract+=ExtractionSource[','] ']')? ')'
+    'HRI' '(' askSlot+=Text (',' '['extract+=ExtractionSource[','] ']')? ')'
 ;
 
 EServiceParamSource: EServiceCallHTTP;
@@ -168,11 +168,27 @@ EServiceCallHTTP:
 
 EServiceParam: name=ID '=' value=ParameterValue;
 
-ParameterValue: INT | FLOAT | STRING | BOOL | List | Dict | FormParamIndex;
-ParameterTypeDef: 'int' | 'float' | 'str' | 'bool' | 'list' | 'dict';
+ParameterValue:
+    INT                 |
+    FLOAT               |
+    STRING              |
+    BOOL                |
+    List                |
+    Dict                |
+    FormParamIndex      |
+    UserParamDef
+;
+
+ParameterTypeDef:
+    'int'   |
+    'float' |
+    'str'   |
+    'bool'  |
+    'list'  |
+    'dict'
+;
 
 ExtractionSource: ExtractFromIntent | ExtractFromEntity;
-
 ExtractFromIntent: intent=[Trigger] ':' value=ParameterValue;
 ExtractFromEntity: ExtractFromPretrainedEntity | ExtractFromTrainableEntity;
 ExtractFromPretrainedEntity: entity=[PretrainedEntity|FQN|^entities*];
@@ -210,7 +226,11 @@ RESTCallAction: EServiceCallHTTP;
 
 // GENERAL --------------------------------------------------------------
 // ----------------------------------------------------------------------
-HTTPVerb: 'GET'|'POST'|'PUT';
+HTTPVerb:
+    'GET'   |
+    'POST'  |
+    'PUT'
+;
 
 DictItem:
     name=ID ':' value=DictTypes
@@ -236,11 +256,22 @@ Words:
     /[-\w ]*\b/
 ;
 
-Text: TextStr | FormParamIndex;
+Text: TextStr | UserParamDef | FormParamIndex;
 
 TextStr: STRING;
 
 FormParamIndex: FormParamRef('['ID('.'ID)*']')?;
+
+UserParamDef: 'USER:' param=[UserProfileParam|FQN];
+
+UserProfileParam:
+    'NAME'      |
+    'SURNAME'   |
+    'AGE'       |
+    'EMAIL'     |
+    'PHONE'
+;
+
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 

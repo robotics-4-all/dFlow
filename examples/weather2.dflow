@@ -25,7 +25,7 @@ dialogues
         on: ask_weather, ask_weather_2
         responses:
           Form form1
-            city_slot: str = HRI('For which city?', [LOC])
+            city_slot: str = HRI("For which city" USER:NAME "?", [LOC])
             time_slot: str = HRI('For when?', [TIME])
             answer: str = weather_svc(
                 query=[city=form1.city_slot[city], time=form1.time_slot],
