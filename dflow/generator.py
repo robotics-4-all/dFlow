@@ -296,9 +296,9 @@ def parse_model(model) -> TransformationDataModel:
                                     'intent': extract_method.intent.name,
                                     'value': extract_method.value
                                 })
-                            elif extract_method.__class__.__name__ == 'ExtractFromTrainableEntity':
-                                extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity.name}) ## to check this
-                            elif extract_method.__class__.__name__ == 'ExtractFromPretrainedEntity':
+                            elif extract_method.__class__.__name__ == 'TrainableEntityRef':
+                                extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity.name})
+                            elif extract_method.__class__.__name__ == 'PretrainedEntityRef':
                                 extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity})
                             elif extract_method == []:  # no method given, extract from text
                                 extract_slot.append({'type': 'from_text'})
