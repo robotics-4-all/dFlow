@@ -11,6 +11,15 @@ triggers
   end
 end
 
+entities
+    Entity Doctor
+        Kardiologos,
+        Odontiatros,
+        good doc
+    end
+end
+
+
 eservices
     EServiceHTTP weather_svc
         verb: GET
@@ -25,8 +34,8 @@ dialogues
         on: ask_weather, ask_weather_2
         responses:
           Form form1
-            city_slot: str = HRI("For which city" USER:NAME "?", [LOC])
-            time_slot: str = HRI('For when?', [TIME])
+            city_slot: str = HRI("For which city" USER:NAME "?", [PE:LOC])
+            time_slot: str = HRI('For when?', [TE:Doctor])
             answer: str = weather_svc(
                 query=[city=form1.city_slot[city], time=form1.time_slot, user=USER:NAME],
             )[weather.forecast]
