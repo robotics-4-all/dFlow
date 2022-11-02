@@ -388,9 +388,12 @@ def process_http_params(params):
 
 def process_response_filter(text):
     """ Convert response filtering to template-ready string. """
+    if text is None:
+        return ''
     return ''.join([f"[{word}]" if word.isnumeric() else f"[\'{word}\']" for word in text.split('.')])
 
 def validate_path_params(url, path_params):
     ''' Check whether all path_params keys and params in url match. '''
     url_params = re.findall("{[a-z|A-Z]+}", url)
+    url_params = [url[1:-1] for url in url_params]  # Discard brackets
     return url_params == list(path_params.keys())
