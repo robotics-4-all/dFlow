@@ -113,6 +113,23 @@ def parse_model(model) -> TransformationDataModel:
         else:
             data.entities.append({'name': entity.name, 'words': entity.words})
 
+    pretrained_entities_examples = {}
+    for trigger in model.triggers:
+        if trigger.__class__.__name__ == 'Intent':
+            for complex_phrase in trigger.phrases:
+                for phrase in complex_phrase.phrases:
+                    if phrase.__class__.__name__ == "IntentPhrasePE":
+                        name = phrase.pretrained
+                        if name not in data.pretrained_entities:
+                            data.pretrained_entities.append(name)
+                        if name not in pretrained_entities_examples:
+                            pretrained_entities_examples[name] = []
+                        if phrase.refPreValues != []:
+                            pretrained_entities_examples[name].extend(phrase.refPreValues)
+
+    for key, values in pretrained_entities_examples.items():
+        pretrained_entities_examples[key] = list(set(values))
+
     for service in model.eservices:
         service_info = {}
         service_info['verb'] = service.verb
@@ -126,8 +143,6 @@ def parse_model(model) -> TransformationDataModel:
         service_info['path'] = service.path
         service_info['url'] = f"{service_info['host']}{port}{service_info['path']}"
         data.eservices[service.name] = service_info
-
-    pretrained_entities_examples = {}
 
     for trigger in model.triggers:
         if trigger.__class__.__name__ == 'Intent':
@@ -149,13 +164,6 @@ def parse_model(model) -> TransformationDataModel:
                         text.append([synonym])
                     elif phrase.__class__.__name__ == "IntentPhrasePE":
                         name = phrase.pretrained
-                        if name not in data.pretrained_entities:
-                            data.pretrained_entities.append(name)
-                            pretrained_entities_examples[name] = []
-                        if phrase.refPreValues != []:
-                            pretrained_entities_examples[name].extend(
-                                [example for example in phrase.refPreValues if example not in pretrained_entities_examples[name]]
-                                )
                         if pretrained_entities_examples[name] != []:
                             text.append(pretrained_entities_examples[name])
                 example = [' '.join(sentence) for sentence in itertools.product(*text)]
