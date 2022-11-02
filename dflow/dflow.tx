@@ -175,8 +175,9 @@ ParameterValue:
     BOOL                |
     List                |
     Dict                |
+    UserParamDef        |
     FormParamIndex      |
-    UserParamDef
+	Text
 ;
 
 ParameterTypeDef:
