@@ -282,7 +282,7 @@ def parse_model(model) -> TransformationDataModel:
                     data.slots.append({'name': slot.name, 'form': form, 'type': slot.type, 'extract_methods': extract_slot})
                     data.responses.append({
                         'name': f"utter_ask_{form}_{slot.name}",
-                        'text': slot.source.ask_slot
+                        'text': process_text(slot.source.ask_slot)
                     })
                 data.forms.append({'name': form, 'slots': form_data})
                 if validation_data != []:
@@ -296,6 +296,7 @@ def parse_model(model) -> TransformationDataModel:
     return data
 
 def process_text(text):
+    """ Takes a Text entity, processes the entities, slots, and user properties and converts them to string."""
     if isinstance(text, str):
         return text, []
     message = []
@@ -308,6 +309,8 @@ def process_text(text):
         elif phrase.__class__.__name__ == 'FormParamRef':
             slots.append(phrase.param.name)
             message.extend(["{", f"{phrase.param.name}", "}"])
+        elif phrase.__class__.__name__ == 'UserPropertyDef':
+            pass
         else:
             message.append(phrase)
     return ' '.join(message), entities, slots
@@ -343,6 +346,6 @@ def process_http_params(params):
     return results, list(set(slots))
 
 def validate_path_params(url, path_params):
-    ''' Check wether all path_params keys and params in url match. '''
+    ''' Check whether all path_params keys and params in url match. '''
     url_params = re.findall("{[a-z|A-Z]+}", url)
     return url_params == list(path_params.keys())
