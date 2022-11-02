@@ -104,15 +104,18 @@ def dflow_generate_rasa(metamodel, model, output_path, overwrite,
 
 def parse_model(model) -> TransformationDataModel:
     data = TransformationDataModel()
+    # Extract synonyms
     for synonym in model.synonyms:
         data.synonyms.append({'name': synonym.name, 'words': synonym.words})
 
+    # Extract trainable entities
     for entity in model.entities:
         if entity.__class__.__name__ == 'PretrainedEntity':
             pass
         else:
             data.entities.append({'name': entity.name, 'words': entity.words})
 
+    # Extract pretrained entities with examples
     pretrained_entities_examples = {}
     for trigger in model.triggers:
         if trigger.__class__.__name__ == 'Intent':
@@ -130,6 +133,7 @@ def parse_model(model) -> TransformationDataModel:
     for key, values in pretrained_entities_examples.items():
         pretrained_entities_examples[key] = list(set(values))
 
+    # Extract external services
     for service in model.eservices:
         service_info = {}
         service_info['verb'] = service.verb
@@ -144,6 +148,7 @@ def parse_model(model) -> TransformationDataModel:
         service_info['url'] = f"{service_info['host']}{port}{service_info['path']}"
         data.eservices[service.name] = service_info
 
+    # Extract triggers
     for trigger in model.triggers:
         if trigger.__class__.__name__ == 'Intent':
             examples = []
@@ -172,6 +177,7 @@ def parse_model(model) -> TransformationDataModel:
         else:
             data.events.append({'name': trigger.name, 'uri': trigger.uri})
 
+    # Extract dialogues
     for dialogue in model.dialogues:
         name = dialogue.name
         intents = dialogue.onTrigger
