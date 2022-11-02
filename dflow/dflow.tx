@@ -175,7 +175,7 @@ ParameterValue:
     BOOL                |
     List                |
     Dict                |
-    UserPropertyDef     |
+    EnvPropertyDef		|
     FormParamIndex      |
 	Text
 ;
@@ -257,15 +257,17 @@ Words:
     /[-\w ]*\b/
 ;
 
-Text: TextStr | UserPropertyDef | FormParamIndex;
+Text: TextStr | EnvPropertyDef | FormParamIndex;
 
 TextStr: STRING;
 
 FormParamIndex: FormParamRef('['ID('.'ID)*']')?;
 
-UserPropertyDef: 'USER:' property=[UserProfileProperty|FQN];
+EnvPropertyDef: UserPropertyDef | SystemPropertyDef;
+UserPropertyDef: 'USER:' property=[UserProperty|FQN];
+SystemPropertyDef: 'SYSTEM:' property=[SystemProperty|FQN];
 
-UserProfileProperty:
+UserProperty:
     'NAME'      |
     'SURNAME'   |
     'AGE'       |
@@ -273,6 +275,13 @@ UserProfileProperty:
     'PHONE'		|
     'CITY'		|
     'ADDRESS'
+;
+
+SystemProperty:
+	'TIME'			|
+	'LOCATION'		|
+	'RANDOM_INT'	|
+	'RANDOM_FLOAT'
 ;
 
 // ----------------------------------------------------------------------
