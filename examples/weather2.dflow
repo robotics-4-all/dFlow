@@ -28,7 +28,7 @@ dialogues
             city_slot: str = HRI("For which city" USER:NAME "?", [LOC])
             time_slot: str = HRI('For when?', [TIME])
             answer: str = weather_svc(
-                query=[city=form1.city_slot[city], time=form1.time_slot],
+                query=[city=form1.city_slot[city], time=form1.time_slot, user=USER:NAME],
             )[weather.forecast]
           end,
           ActionGroup answer_back
@@ -37,29 +37,3 @@ dialogues
           end
   end
 end
-
-
-//Dialogue weather_dialogue
-//    on: ask_weather, ask_weather_2
-//    slots:
-//        p1: int = 10
-//        p2 str = "skata"
-//        p3 str[Optional] = "skata"
-//
-//    flow a:
-//        p1 = HRI('blabla', [LOC])
-//        p2 = weather_svc()
-//        if p2 > GoTo(p1)
-//
-//    flow b:
-//        p1 = HRI('blabla', [LOC])
-//        p2 = weather_svc()
-//        GoTo(flow a)
-
-//    flow c:
-//        p1 = HRI('blabla', [LOC])
-//        p2 = weather_svc()
-//        if p2 > GoTo(p1)
-
-//    flow a -{on_intent_1}> flow b
-
