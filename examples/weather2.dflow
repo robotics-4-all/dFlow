@@ -32,7 +32,7 @@ dialogues
             )[weather.forecast]
           end,
           ActionGroup answer_back
-            Speak('The weather is ' form1.answer[weather.forecast])
+            Speak('Dear' USER:NAME 'the weather in' USER:CITY 'is' form1.answer[weather.forecast])
             SetSlot(form1.time_slot, 10)
           end
   end
