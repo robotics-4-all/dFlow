@@ -289,20 +289,22 @@ def parse_model(model) -> TransformationDataModel:
                         })
                         extract_slot.append({'type': 'custom'})
                     elif slot.source.__class__.__name__ == 'HRIParamSource':
-                        for extract_method in slot.source.extract:
-                            if extract_method.__class__.__name__ == 'ExtractFromIntent':
-                                extract_slot.append({
-                                    'type': 'from_intent',
-                                    'intent': extract_method.intent.name,
-                                    'value': extract_method.value
-                                })
-                            elif extract_method.__class__.__name__ == 'TrainableEntityRef':
-                                extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity.name})
-                            elif extract_method.__class__.__name__ == 'PretrainedEntityRef':
-                                extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity})
-                            elif extract_method == []:  # no method given, extract from text
-                                extract_slot.append({'type': 'from_text'})
-                                extract_from_text = True
+                        # No method given, extract from text
+                        if slot.source.extract == []:
+                            extract_slot.append({'type': 'from_text'})
+                            extract_from_text = True
+                        else:
+                            for extract_method in slot.source.extract:
+                                if extract_method.__class__.__name__ == 'ExtractFromIntent':
+                                    extract_slot.append({
+                                        'type': 'from_intent',
+                                        'intent': extract_method.intent.name,
+                                        'value': extract_method.value
+                                    })
+                                elif extract_method.__class__.__name__ == 'TrainableEntityRef':
+                                    extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity.name})
+                                elif extract_method.__class__.__name__ == 'PretrainedEntityRef':
+                                    extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity})
                         if extract_from_text and slot.type in ['int', 'float']:
                             validation_data.append({
                                 'form': form,
