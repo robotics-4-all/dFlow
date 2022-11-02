@@ -353,9 +353,15 @@ def process_text(text):
 def process_http_params(params):
     results = {}
     slots = []
+    if params == []:
+        return {}, []
     if isinstance(params, (int, str, bool, float)):
         return params, []
     for param in params:
+        if param.__class__.__name__ == 'FormParamRef':
+            new_slot = ["{", f"{param.param.name}", "}"]
+            slots.append(f"{params.param.name}")
+            return ' '.join(new_slot), slots
         if param.value.__class__.__name__ == 'Dict':
             dict_results = {}
             for item in param.value.items:
