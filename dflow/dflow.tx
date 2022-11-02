@@ -175,7 +175,7 @@ ParameterValue:
     BOOL                |
     List                |
     Dict                |
-    EnvPropertyDef		|
+    EnvPropertyDef		  |
     FormParamIndex      |
 	Text
 ;
