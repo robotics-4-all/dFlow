@@ -109,6 +109,8 @@ def parse_model(model) -> TransformationDataModel:
     for synonym in model.synonyms:
         data.synonyms.append({'name': synonym.name, 'words': synonym.words})
         synonyms_dictionary[synonym.name] = synonym.words
+        if not len(synonym.words):
+            raise Exception(f'No examples given for synonym {synonym.name}')
 
     # Extract trainable entities
     entities_dictionary = {}
@@ -118,6 +120,8 @@ def parse_model(model) -> TransformationDataModel:
         else:
             data.entities.append({'name': entity.name, 'words': entity.words})
             entities_dictionary[entity.name] = entity.words
+            if not len(entity.words):
+                raise Exception(f'No examples given for entity {entity.name}')
 
     # Extract pretrained entities with examples
     pretrained_entities_examples = {}
