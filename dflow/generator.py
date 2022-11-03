@@ -105,15 +105,19 @@ def dflow_generate_rasa(metamodel, model, output_path, overwrite,
 def parse_model(model) -> TransformationDataModel:
     data = TransformationDataModel()
     # Extract synonyms
+    synonyms_dictionary = {}
     for synonym in model.synonyms:
         data.synonyms.append({'name': synonym.name, 'words': synonym.words})
+        synonyms_dictionary[synonym.name] = synonym.words
 
     # Extract trainable entities
+    entities_dictionary = {}
     for entity in model.entities:
         if entity.__class__.__name__ == 'PretrainedEntity':
             pass
         else:
             data.entities.append({'name': entity.name, 'words': entity.words})
+            entities_dictionary[entity.name] = entity.words
 
     # Extract pretrained entities with examples
     pretrained_entities_examples = {}
@@ -159,12 +163,12 @@ def parse_model(model) -> TransformationDataModel:
                         text.append([phrase])
                     elif phrase.__class__.__name__ == "IntentPhraseTE":
                         name = phrase.trainable.name
-                        words = [entity["words"] for entity in data.entities if entity['name'] == name]
+                        words = entities_dictionary[name]
                         entities_rasa_format = [f"[{ent}]({name})" for ent in words[0]]
                         text.append(entities_rasa_format)
                     elif phrase.__class__.__name__ == "IntentPhraseSynonym":
                         name = phrase.synonym.name
-                        words = [synonym["words"] for synonym in data.synonyms if synonym['name'] == name]
+                        words = synonyms_dictionary[name]
                         synonym = words[0][0]
                         text.append([synonym])
                     elif phrase.__class__.__name__ == "IntentPhrasePE":
