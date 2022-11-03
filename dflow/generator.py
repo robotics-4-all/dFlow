@@ -140,6 +140,8 @@ def parse_model(model) -> TransformationDataModel:
 
     for key, values in pretrained_entities_examples.items():
         pretrained_entities_examples[key] = list(set(values))
+        if not len(list(set(values))):
+            print(f'WARNING: No example given in Pretrained Entity {key}')
 
     # Extract external services
     for service in model.eservices:
