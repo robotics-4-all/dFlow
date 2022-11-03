@@ -181,6 +181,11 @@ def parse_model(model) -> TransformationDataModel:
         else:
             data.events.append({'name': trigger.name, 'uri': trigger.uri})
 
+    # Validate non duplicate dialogue names
+    names = [d.name for d in model.dialogues]
+    if len(names) != len(set(names)):
+        raise Exception('Duplicate dialogue names given!')
+
     # Extract dialogues
     for dialogue in model.dialogues:
         name = dialogue.name
