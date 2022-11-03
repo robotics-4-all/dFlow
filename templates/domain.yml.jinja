@@ -20,9 +20,9 @@ entities:
 slots:
 {% for slot in slots %}
   {{slot.name}}:
-    {% if slot.type in ['int', 'list', 'dict'] %}
+    {% if slot.type in ['int', 'list', 'dict', 'float'] %}
     type: any
-    {% elif slot.type in ['float', 'bool'] %}
+    {% elif slot.type in ['bool'] %}
     type: {{slot.type}}
     {% elif slot.type == 'str' %}
     type: text
