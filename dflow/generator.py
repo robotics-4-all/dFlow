@@ -181,6 +181,11 @@ def parse_model(model) -> TransformationDataModel:
         else:
             data.events.append({'name': trigger.name, 'uri': trigger.uri})
 
+    # Validate for at least 2 examples per intent
+    for intent in data.intents:
+        if len(intent['examples']) < 2:
+            raise Exception(f'Only {len(intent["examples"])} given in intent {intent["name"]}! At least 2 are needed!')
+
     # Validate non duplicate dialogue names
     names = [d.name for d in model.dialogues]
     if len(names) != len(set(names)):
