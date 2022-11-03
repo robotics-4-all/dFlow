@@ -25,7 +25,7 @@ srcgen_folder = path.join(path.realpath(getcwd()), 'gen')
 #             "*.*": scoping_providers.FQN()
 #         }
 #     )
-# model = mm.model_from_file('../examples/simple.dflow')
+# model = mm.model_from_file('../examples/weather2.dflow')
 
 
 class TransformationDataModel(BaseModel):
@@ -235,7 +235,17 @@ def parse_model(model) -> TransformationDataModel:
                             'response_filter': action.response_filter,
                             'slots': list(set(path_slots + query_slots + header_slots + body_slots))
                         })
-                data.actions.append({"name": f"action_{response.name}", "actions": actions})
+                # Validate action before appending it to data object
+                validation = True
+                for action_group in data.actions:
+                    if action_group['name'] == f"action_{response.name}":
+                        if action_group['actions'] == actions:
+                            print(f'WARNING: Action Group {action_group["name"]} defined twice...')
+                            validation = False
+                        else:
+                            raise Exception(f'Action Group {action_group["name"]} defined twice with different actions!')
+                if validation:
+                    data.actions.append({"name": f"action_{response.name}", "actions": actions})
             elif response.__class__.__name__ == 'Form':
                 form = f"{response.name}_form"
                 dialogue_responses.append({"name": form, "form": True})
