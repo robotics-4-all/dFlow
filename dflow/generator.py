@@ -201,13 +201,14 @@ def parse_model(model) -> TransformationDataModel:
                             'slots': slots
                         })
                     elif action.__class__.__name__ == 'FireEventAction':
-                        message, entities, slots = process_text(action.msg)
+                        msg_message, msg_entities, msg_slots = process_text(action.msg)
+                        uri_message, uri_entities, uri_slots = process_text(action.uri)
                         actions.append({
                             'type': action.__class__.__name__,
-                            'uri': action.uri,
-                            'msg': message,
-                            'entities': entities,
-                            'slots': slots
+                            'uri': uri_message.replace(' ', ''),
+                            'msg': msg_message,
+                            'entities': msg_entities + uri_entities,
+                            'slots': msg_slots + uri_slots
                         })
                     elif action.__class__.__name__ == 'SetSlot':
                         actions.append({

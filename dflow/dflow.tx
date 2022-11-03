@@ -224,7 +224,7 @@ SetSlot:
 ;
 
 FireEventAction:
-    'FireEvent' '(' uri=STRING ',' msg=Text ')'
+    'FireEvent' '(' uri+=Text ',' msg+=Text ')'
 ;
 
 RESTCallAction: EServiceCallHTTP;
