@@ -38,8 +38,8 @@ slots:
       entity: {{extraction.entity}}
     {% endif %}
       conditions:
-      - active_loop: {{slot.form}}
-      requested_slot: {{slot.name}}
+      - active_loop: {{extraction.form}}
+        requested_slot: {{slot.name}}
     {% endfor %}
 
 {% endfor %}

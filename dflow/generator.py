@@ -1,6 +1,8 @@
 from os import path, mkdir, getcwd, chmod
 from textx import generator, metamodel_from_file
 import jinja2, argparse, itertools, shutil, re
+from itertools import groupby
+from operator import itemgetter
 
 from textxjinja import textx_jinja_generator
 import textx.scoping.providers as scoping_providers
@@ -197,6 +199,7 @@ def parse_model(model) -> TransformationDataModel:
     if len(names) != len(set(names)):
         raise Exception('Duplicate dialogue names given!')
 
+    data_slots = []
     # Extract dialogues
     for dialogue in model.dialogues:
         name = dialogue.name
@@ -318,24 +321,25 @@ def parse_model(model) -> TransformationDataModel:
                             'source_type': slot.source.__class__.__name__,
                             'data': slot_service_info
                         })
-                        extract_slot.append({'type': 'custom'})
+                        extract_slot.append({'type': 'custom', 'form': form})
                     elif slot.source.__class__.__name__ == 'HRIParamSource':
                         # No method given, extract from text
                         if slot.source.extract == []:
-                            extract_slot.append({'type': 'from_text'})
+                            extract_slot.append({'type': 'from_text', 'form': form})
                             extract_from_text = True
                         else:
                             for extract_method in slot.source.extract:
                                 if extract_method.__class__.__name__ == 'ExtractFromIntent':
                                     extract_slot.append({
                                         'type': 'from_intent',
+                                        'form': form,
                                         'intent': extract_method.intent.name,
                                         'value': extract_method.value
                                     })
                                 elif extract_method.__class__.__name__ == 'TrainableEntityRef':
-                                    extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity.name})
+                                    extract_slot.append({'type': 'from_entity', 'form': form, 'entity': extract_method.entity.name})
                                 elif extract_method.__class__.__name__ == 'PretrainedEntityRef':
-                                    extract_slot.append({'type': 'from_entity', 'entity': extract_method.entity})
+                                    extract_slot.append({'type': 'from_entity', 'form': form, 'entity': extract_method.entity})
                         if extract_from_text and slot.type in ['int', 'float']:
                             validation_data.append({
                                 'form': form,
@@ -349,7 +353,7 @@ def parse_model(model) -> TransformationDataModel:
                             'name': f"utter_ask_{form}_{slot.name}",
                             'text': text
                         })
-                    data.slots.append({'name': slot.name, 'form': form, 'type': slot.type, 'extract_methods': extract_slot})
+                    data_slots.append({'name': slot.name, 'type': slot.type, 'extract_methods': extract_slot})
                 data.forms.append({'name': form, 'slots': form_data})
                 if validation_data != []:
                     data.actions.append({'name': f'validate_{form}', 'validation_method': True, 'info': validation_data})
@@ -359,6 +363,24 @@ def parse_model(model) -> TransformationDataModel:
                 'intent': intent.name,
                 'responses': dialogue_responses
             })
+
+    # Validate and merge slots with similar name for the domain file
+    data_slots = sorted(data_slots, key = itemgetter('name'))
+    for k, v in groupby(data_slots, key = itemgetter('name')):
+        slots = list(v)
+        types = [slot['type'] for slot in slots]
+        type = types[0]
+        # Check same named slots to have the same type
+        if len(set(types)) > 1:
+            raise Exception(f"Error! More than one slot types given to slot named {k}. Please set the same type or modify the slot names!")
+        # Merge them into one dict
+        extract_methods = []
+        for slot in slots:
+            for method in slot['extract_methods']:
+                if method not in extract_methods:
+                    extract_methods.append(method)
+        data.slots.append({'name': k, 'type': type, 'extract_methods': extract_methods})
+
     return data
 
 def process_text(text):
