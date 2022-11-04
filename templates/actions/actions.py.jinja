@@ -51,9 +51,8 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {% for slot in slot.data.slots %}
             {{slot}} = tracker.get_slot('{{slot}}')
             {% endfor %}
-            {% for key, value in slot.data.path_params.items() %}
-            {{key}} = "{{value}}"
-            {% endfor %}
+            path_params = {{slot.data.path_params}}
+
             {% for property in slot.data.system_properties %}
             {{property}} = compute_system_properties("{{property}}")
             {% endfor %}
@@ -62,34 +61,14 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {% endfor %}
             {% if slot.data.verb == 'get' %}
             response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
-                headers = {
-                    {% for key, value in slot.data.header_params.items() %}
-                    {{key}} = f"{{value}}"
-                    {% endfor %}
-                },
-                params = {
-                    {% for key, value in slot.data.query_params.items() %}
-                    {{key}} = f"{{value}}"
-                    {% endfor %}
-                }
+                headers = {{slot.data.header_params}},
+                params = {{slot.data.query_params}}
             )
             {% else %}
             response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
-                headers = {
-                    {% for key, value in slot.data.header_params.items() %}
-                    {{key}} = f"{{value}}"
-                    {% endfor %}
-                },
-                data = {
-                    {% for key, value in slot.data.body_params.items() %}
-                    {{key}} = f"{{value}}"
-                    {% endfor %}
-                },
-                params = {
-                    {% for key, value in slot.data.query_params.items() %}
-                    {{key}} = f"{{value}}"
-                    {% endfor %}
-                }
+                headers = {{slot.data.header_params}},
+                data = {{slot.data.body_params}},
+                params = {{slot.data.query_params}}
               )
             {% endif %}
             try:
@@ -172,39 +151,17 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% for property in act.user_properties %}
         {{property}} = compute_user_properties("{{property}}")
         {% endfor %}
-        {% for key, value in act.path_params.items() %}
-        {{key}} = "{{value}}"
-        {% endfor %}
+        path_params = {{act.path_params}}
         {% if act.verb == 'get' %}
         response = requests.{{act.verb}}(f"{{act.url}}",
-            headers = {
-                {% for key, value in act.header_params.items() %}
-                {{key}} = f"{{value}}"
-                {% endfor %}
-            },
-            params = {
-              {% for key, value in act.query_params.items() %}
-              {{key}} = f"{{value}}"
-              {% endfor %}
-            }
+            headers = {{act.header_params}},
+            params = {{act.query_params}}
         )
         {% else %}
         response = requests.{{act.verb}}(f"{{act.url}}",
-            headers = {
-                {% for key, value in act.header_params.items() %}
-                {{key}} = f"{{value}}"
-                {% endfor %}
-            },
-            data = {
-              {% for key, value in act.body_params.items() %}
-              {{key}} = f"{{value}}"
-              {% endfor %}
-            },
-            params = {
-              {% for key, value in act.query_params.items() %}
-              {{key}} = f"{{value}}"
-              {% endfor %}
-            }
+            headers = {{act.header_params}},
+            data = {{act.body_params}},
+            params = {{act.query_params}}
         )
         {% endif %}
         {% endif %}

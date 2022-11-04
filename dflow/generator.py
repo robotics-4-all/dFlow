@@ -473,61 +473,60 @@ def process_eservice_params(params):
         with the names as keys and the value as values for each one.
         It also returns all needed slots, user and system properties.
     """
-    results = {}
+    results = '{'
     slots = []
     user_properties = []
     system_properties = []
-    if params == []:
-        return {}, [], [], []
-    if isinstance(params, (int, str, bool, float)):
-        return params, [], [], []
-    if params.__class__.__name__ == 'FormParamRef':
-        new_slot = ["{", f"{params.param.name}", "}"]
-        slots.append(f"{params.param.name}")
-        return ' '.join(new_slot), slots, user_properties, system_properties
-    elif params.__class__.__name__ == 'UserPropertyDef':
-        new_slot = ["{", f"{params.name}", "}"]
-        user_properties.append(params.name)
-        return ' '.join(new_slot), slots, user_properties, system_properties
-    elif params.__class__.__name__ == 'SystemPropertyDef':
-        new_slot = ["{", f"{params.name}", "}"]
-        system_properties.append(params.name)
-        return ' '.join(new_slot), slots, user_properties, system_properties
+    print(params.__class__.__name__)
+    if params.__class__.__name__ != 'list':
+        return process_parameter_value(params)
     for param in params:
         if param.value.__class__.__name__ == 'Dict':
-            dict_results = {}
+            dict_results = '{'
             for item in param.value.items:
                 item_results, item_slots, item_user_properties, item_system_properties = process_eservice_params(item.value)
                 slots.extend(item_slots)
                 user_properties.extend(item_user_properties)
                 system_properties.extend(item_system_properties)
-                dict_results[item.name] = item_results
-            results[param.name] = dict_results
+                dict_results = dict_results + f"'{item.name}': {item_results}, "
+            dict_results = dict_results + '}'
+            results = results + f"'{param.name}': {dict_results}, "
         elif param.value.__class__.__name__ == 'List':
-            list_results = []
+            list_results = '['
             for item in param.value.items:
                 item_results, item_slots, item_user_properties, item_system_properties = process_eservice_params(item)
                 slots.extend(item_slots)
                 user_properties.extend(item_user_properties)
                 system_properties.extend(item_system_properties)
-                if isinstance(item_results, (int, str, bool, float)):
-                    item_results = [item_results]
-                list_results.extend(item_results)
+                list_results = list_results + item_results
             results[param.name] = list_results
-        elif param.value.__class__.__name__ == 'FormParamRef':
-            new_slot = ["{", f"{param.value.param.name}", "}"]
-            results[param.name] = ' '.join(new_slot)
-            slots.append(f"{param.value.param.name}")
-        elif param.value.__class__.__name__ == 'UserPropertyDef':
-            new_slot = ["{", f"{param.name}", "}"]
-            user_properties.append(param.name)
-            results[param.name] = ' '.join(new_slot)
-        elif param.value.__class__.__name__ == 'SystemPropertyDef':
-            new_slot = ["{", f"{param.name}", "}"]
-            system_properties.append(param.name)
-            results[param.name] = ' '.join(new_slot)
+            list_results = list_results + ']'
         else:
-            results[param.name] = param.value
+            param_result, param_slots, param_user_properties, param_system_properties = process_parameter_value(param.value)
+            slots.extend(param_slots)
+            user_properties.extend(param_user_properties)
+            system_properties.extend(param_system_properties)
+            if results != '{':
+                results = results + ', '
+            results = results + param_result
+            print('param_result: ', param_result)
+        #
+        # if param.value.__class__.__name__ == 'FormParamRef':
+        #     new_slot = ["{", f"{param.value.param.name}", "}"]
+        #     results[param.name] = ' '.join(new_slot)
+        #     slots.append(f"{param.value.param.name}")
+        # elif param.value.__class__.__name__ == 'UserPropertyDef':
+        #     new_slot = ["{", f"{param.name}", "}"]
+        #     user_properties.append(param.name)
+        #     results[param.name] = ' '.join(new_slot)
+        # elif param.value.__class__.__name__ == 'SystemPropertyDef':
+        #     new_slot = ["{", f"{param.name}", "}"]
+        #     system_properties.append(param.name)
+        #     results[param.name] = ' '.join(new_slot)
+        # else:
+        #     results[param.name] = param.value
+    results = results + '}'
+    print(results)
     return results, list(set(slots)), list(set(user_properties)), list(set(system_properties))
 
 def process_response_filter(text):
@@ -538,6 +537,7 @@ def process_response_filter(text):
 
 def validate_path_params(url, path_params):
     ''' Check whether all path_params keys and params in url match. '''
+    return True
     url_params = re.findall("{[a-z|A-Z]+}", url)
     url_params = [url[1:-1] for url in url_params]  # Discard brackets
     return url_params == list(path_params.keys())
