@@ -4,8 +4,34 @@ from rasa_sdk import Action, Tracker, FormValidationAction
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted
 
-import requests, re, json
+import requests, re, json, random
 from datetime import datetime
+
+def compute_system_properties(property):
+    if property == 'TIME':
+      return datetime.now().strftime("%I:%M")
+    if property == 'LOCATION':
+      return ''
+    if property == 'RANDOM_INT':
+      return random.randint(0,100)
+    if property == 'RANDOM_FLOAT':
+      return random.random()
+
+def compute_user_properties(property):
+    if property == 'NAME':
+      return ''
+    if property == 'SURNAME':
+      return ''
+    if property == 'AGE':
+      return ''
+    if property == 'EMAIL':
+      return ''
+    if property == 'PHONE':
+      return ''
+    if property == 'CITY':
+      return ''
+    if property == 'ADDRESS':
+      return ''
 
 {% for action in actions %}
 {% if action.validation_method is defined %}
@@ -76,6 +102,12 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% endfor %}
         {% for slot in act.slots %}
         {{slot}} = tracker.get_slot('{{slot}}')
+        {% endfor %}
+        {% for property in act.system_properties %}
+        {{property}} = compute_system_properties("{{property}}")
+        {% endfor %}
+        {% for property in act.user_properties %}
+        {{property}} = compute_user_properties("{{property}}")
         {% endfor %}
         dispatcher.utter_message(text = f"{{act.text}}")
         {% elif act.type == 'FireEventAction' %}

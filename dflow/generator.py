@@ -212,28 +212,32 @@ def parse_model(model) -> TransformationDataModel:
                 actions = []
                 for action in response.actions:
                     if action.__class__.__name__ == 'SpeakAction':
-                        message, entities, slots = process_text(action.text)
+                        message, entities, slots, user_properties, system_properties = process_text(action.text)
                         actions.append({
                             'type': action.__class__.__name__,
                             'text': message,
                             'entities': entities,
-                            'slots': slots
+                            'slots': slots,
+                            'user_properties': user_properties,
+                            'system_properties': system_properties
                         })
                     elif action.__class__.__name__ == 'FireEventAction':
-                        msg_message, msg_entities, msg_slots = process_text(action.msg)
-                        uri_message, uri_entities, uri_slots = process_text(action.uri)
+                        msg_message, msg_entities, msg_slots, msg_user_properties, msg_system_properties = process_text(action.msg)
+                        uri_message, uri_entities, uri_slots, uri_user_properties, uri_system_properties = process_text(action.uri)
                         actions.append({
                             'type': action.__class__.__name__,
                             'uri': uri_message.replace(' ', ''),
                             'msg': msg_message,
                             'entities': msg_entities + uri_entities,
-                            'slots': msg_slots + uri_slots
+                            'slots': msg_slots + uri_slots,
+                            'user_properties': msg_user_properties+uri_user_properties,
+                            'system_properties': msg_system_properties+uri_system_properties
                         })
                     elif action.__class__.__name__ == 'SetSlot':
                         actions.append({
                             'type': action.__class__.__name__,
                             'slot': action.slotRef.param.name,
-                            'value': action.value
+                            'value': action.value   # needs processing
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
                         path_params, path_slots = process_eservice_params(action.path_params)
@@ -348,10 +352,10 @@ def parse_model(model) -> TransformationDataModel:
                                 'source_type': slot.source.__class__.__name__,
                                 'type': slot.type
                             })
-                        text, _, _ = process_text(slot.source.askSlot)
+                        message, entities, slots, user_properties, system_properties = process_text(slot.source.askSlot)
                         data.responses.append({
                             'name': f"utter_ask_{form}_{slot.name}",
-                            'text': text
+                            'text': message
                         })
                     data_slots.append({'name': slot.name, 'type': slot.type, 'extract_methods': extract_slot})
                 data.forms.append({'name': form, 'slots': form_data})
@@ -386,10 +390,12 @@ def parse_model(model) -> TransformationDataModel:
 def process_text(text):
     """ Takes a Text entity, processes the entities, slots, and user properties and converts them to string."""
     if isinstance(text, str):
-        return text, [], []
+        return text, [], [], [], []
     message = []
     entities = []
     slots = []
+    user_properties = []
+    system_properties = []
     for phrase in text:
         if phrase.__class__.__name__ == 'TextEntity':
             message.extend(["{", f"{phrase.entity.name}", "}"])
@@ -398,12 +404,14 @@ def process_text(text):
             slots.append(phrase.param.name)
             message.extend(["{", f"{phrase.param.name}", "}"])
         elif phrase.__class__.__name__ == 'UserPropertyDef':
-            pass
+            message.extend(["{", f"{phrase.property}", "}"])
+            user_properties.append(phrase.property)
         elif phrase.__class__.__name__ == 'SystemPropertyDef':
-            pass
+            message.extend(["{", f"{phrase.property}", "}"])
+            system_properties.append(phrase.property)
         else:
             message.append(phrase)
-    return ' '.join(message), entities, slots
+    return ' '.join(message), entities, slots, user_properties, system_properties
 
 def process_eservice_params(params):
     results = {}
