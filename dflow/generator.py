@@ -426,20 +426,20 @@ def process_eservice_params(params):
         return {}, [], [], []
     if isinstance(params, (int, str, bool, float)):
         return params, [], [], []
+    if params.__class__.__name__ == 'FormParamRef':
+        new_slot = ["{", f"{params.param.name}", "}"]
+        slots.append(f"{params.param.name}")
+        return ' '.join(new_slot), slots, user_properties, system_properties
+    elif params.__class__.__name__ == 'UserPropertyDef':
+        new_slot = ["{", f"{params.name}", "}"]
+        user_properties.append(params.name)
+        return ' '.join(new_slot), slots, user_properties, system_properties
+    elif params.__class__.__name__ == 'SystemPropertyDef':
+        new_slot = ["{", f"{params.name}", "}"]
+        system_properties.append(params.name)
+        return ' '.join(new_slot), slots, user_properties, system_properties
     for param in params:
-        if param.__class__.__name__ == 'FormParamRef':
-            new_slot = ["{", f"{param.param.name}", "}"]
-            slots.append(f"{params.param.name}")
-            return ' '.join(new_slot), slots, user_properties, system_properties
-        elif param.__class__.__name__ == 'UserPropertyDef':
-            new_slot = ["{", f"{param.name}", "}"]
-            user_properties.append(param.name)
-            return ' '.join(new_slot), slots, user_properties, system_properties
-        elif param.__class__.__name__ == 'SystemPropertyDef':
-            new_slot = ["{", f"{param.name}", "}"]
-            system_properties.append(param.name)
-            return ' '.join(new_slot), slots, user_properties, system_properties
-        elif param.value.__class__.__name__ == 'Dict':
+        if param.value.__class__.__name__ == 'Dict':
             dict_results = {}
             for item in param.value.items:
                 item_results, item_slots, item_user_properties, item_system_properties = process_eservice_params(item.value)
