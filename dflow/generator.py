@@ -240,10 +240,10 @@ def parse_model(model) -> TransformationDataModel:
                             'value': action.value   # needs processing
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
-                        path_params, path_slots = process_eservice_params(action.path_params)
-                        query_params, query_slots = process_eservice_params(action.query_params)
-                        header_params, header_slots = process_eservice_params(action.header_params)
-                        body_params, body_slots = process_eservice_params(action.body_params)
+                        path_params, path_slots, path_user_properties, path_system_properties = process_eservice_params(action.path_params)
+                        query_params, query_slots, query_user_properties, query_system_properties = process_eservice_params(action.query_params)
+                        header_params, header_slots, header_user_properties, header_system_properties = process_eservice_params(action.header_params)
+                        body_params, body_slots, body_user_properties, body_system_properties = process_eservice_params(action.body_params)
                         validation = validate_path_params(data.eservices[action.eserviceRef.name]['url'], path_params)
                         if not validation:
                             raise Exception('Service path and path params do not match.')
@@ -256,7 +256,9 @@ def parse_model(model) -> TransformationDataModel:
                             'header_params': header_params,
                             'body_params': body_params,
                             'response_filter': action.response_filter,
-                            'slots': list(set(path_slots + query_slots + header_slots + body_slots))
+                            'slots': list(set(path_slots + query_slots + header_slots + body_slots)),
+                            'user_properties': list(set(path_user_properties+query_user_properties+header_user_properties+body_user_properties)),
+                            'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties))
                         })
                 # Validate action before appending it to data object
                 validation = True
@@ -299,10 +301,10 @@ def parse_model(model) -> TransformationDataModel:
                     extract_from_text = False
                     form_data.append(slot.name)
                     if slot.source.__class__.__name__ == 'EServiceCallHTTP':
-                        path_params, path_slots = process_eservice_params(slot.source.path_params)
-                        query_params, query_slots = process_eservice_params(slot.source.query_params)
-                        header_params, header_slots = process_eservice_params(slot.source.header_params)
-                        body_params, body_slots = process_eservice_params(slot.source.body_params)
+                        path_params, path_slots, path_user_properties, path_system_properties = process_eservice_params(slot.source.path_params)
+                        query_params, query_slots, query_user_properties, query_system_properties = process_eservice_params(slot.source.query_params)
+                        header_params, header_slots, header_user_properties, header_system_properties = process_eservice_params(slot.source.header_params)
+                        body_params, body_slots, body_user_properties, body_system_properties = process_eservice_params(slot.source.body_params)
                         validation = validate_path_params(data.eservices[slot.source.eserviceRef.name]['url'], path_params)
                         if not validation:
                             raise Exception('Service path and path params do not match.')
@@ -315,7 +317,9 @@ def parse_model(model) -> TransformationDataModel:
                             'header_params': header_params,
                             'body_params': body_params,
                             'response_filter': process_response_filter(slot.source.response_filter),
-                            'slots': list(set(path_slots + query_slots + header_slots + body_slots))
+                            'slots': list(set(path_slots + query_slots + header_slots + body_slots)),
+                            'user_properties': list(set(path_user_properties+query_user_properties+header_user_properties+body_user_properties)),
+                            'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties))
                         }
                         validation_data.append({
                             'form': form,
@@ -416,27 +420,41 @@ def process_text(text):
 def process_eservice_params(params):
     results = {}
     slots = []
+    user_properties = []
+    system_properties = []
     if params == []:
-        return {}, []
+        return {}, [], [], []
     if isinstance(params, (int, str, bool, float)):
-        return params, []
+        return params, [], [], []
     for param in params:
         if param.__class__.__name__ == 'FormParamRef':
             new_slot = ["{", f"{param.param.name}", "}"]
             slots.append(f"{params.param.name}")
-            return ' '.join(new_slot), slots
-        if param.value.__class__.__name__ == 'Dict':
+            return ' '.join(new_slot), slots, user_properties, system_properties
+        elif param.__class__.__name__ == 'UserPropertyDef':
+            new_slot = ["{", f"{param.name}", "}"]
+            user_properties.append(param.name)
+            return ' '.join(new_slot), slots, user_properties, system_properties
+        elif param.__class__.__name__ == 'SystemPropertyDef':
+            new_slot = ["{", f"{param.name}", "}"]
+            system_properties.append(param.name)
+            return ' '.join(new_slot), slots, user_properties, system_properties
+        elif param.value.__class__.__name__ == 'Dict':
             dict_results = {}
             for item in param.value.items:
-                item_results, item_slots = process_eservice_params(item.value)
+                item_results, item_slots, item_user_properties, item_system_properties = process_eservice_params(item.value)
                 slots.extend(item_slots)
+                user_properties.extend(item_user_properties)
+                system_properties.extend(item_system_properties)
                 dict_results[item.name] = item_results
             results[param.name] = dict_results
         elif param.value.__class__.__name__ == 'List':
             list_results = []
             for item in param.value.items:
-                item_results, item_slots = process_eservice_params(item)
+                item_results, item_slots, item_user_properties, item_system_properties = process_eservice_params(item)
                 slots.extend(item_slots)
+                user_properties.extend(item_user_properties)
+                system_properties.extend(item_system_properties)
                 if isinstance(item_results, (int, str, bool, float)):
                     item_results = [item_results]
                 list_results.extend(item_results)
@@ -445,9 +463,17 @@ def process_eservice_params(params):
             new_slot = ["{", f"{param.value.param.name}", "}"]
             results[param.name] = ' '.join(new_slot)
             slots.append(f"{param.value.param.name}")
+        elif param.value.__class__.__name__ == 'UserPropertyDef':
+            new_slot = ["{", f"{param.name}", "}"]
+            user_properties.append(param.name)
+            results[param.name] = ' '.join(new_slot)
+        elif param.value.__class__.__name__ == 'SystemPropertyDef':
+            new_slot = ["{", f"{param.name}", "}"]
+            system_properties.append(param.name)
+            results[param.name] = ' '.join(new_slot)
         else:
             results[param.name] = param.value
-    return results, list(set(slots))
+    return results, list(set(slots)), list(set(user_properties)), list(set(system_properties))
 
 def process_response_filter(text):
     """ Convert response filtering to template-ready string. """

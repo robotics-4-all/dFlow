@@ -8,29 +8,29 @@ import requests, re, json, random
 from datetime import datetime
 
 def compute_system_properties(property):
-    if property == 'TIME':
+    if property.lower() == 'time':
       return datetime.now().strftime("%I:%M")
-    if property == 'LOCATION':
+    if property.lower() == 'location':
       return ''
-    if property == 'RANDOM_INT':
+    if property.lower() == 'random_int':
       return random.randint(0,100)
-    if property == 'RANDOM_FLOAT':
+    if property.lower() == 'random_float':
       return random.random()
 
 def compute_user_properties(property):
-    if property == 'NAME':
+    if property.lower() == 'name':
       return ''
-    if property == 'SURNAME':
+    if property.lower() == 'surname':
       return ''
-    if property == 'AGE':
+    if property.lower() == 'age':
       return ''
-    if property == 'EMAIL':
+    if property.lower() == 'email':
       return ''
-    if property == 'PHONE':
+    if property.lower() == 'phone':
       return ''
-    if property == 'CITY':
+    if property.lower() == 'city':
       return ''
-    if property == 'ADDRESS':
+    if property.lower() == 'address':
       return ''
 
 {% for action in actions %}
@@ -54,17 +54,43 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {% for key, value in slot.data.path_params.items() %}
             {{key}} = "{{value}}"
             {% endfor %}
+            {% for property in slot.data.system_properties %}
+            {{property}} = compute_system_properties("{{property}}")
+            {% endfor %}
+            {% for property in slot.data.user_properties %}
+            {{property}} = compute_user_properties("{{property}}")
+            {% endfor %}
             {% if slot.data.verb == 'get' %}
             response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
-                    headers = {{slot.data.header_params}},
-                    params = {{slot.data.query_params}}
-                    )
+                headers = {
+                    {% for key, value in slot.data.header_params.items() %}
+                    {{key}} = f"{{value}}"
+                    {% endfor %}
+                },
+                params = {
+                    {% for key, value in slot.data.query_params.items() %}
+                    {{key}} = f"{{value}}"
+                    {% endfor %}
+                }
+            )
             {% else %}
             response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
-                    headers = {{slot.data.header_params}},
-                    data = {{slot.data.body_params}},
-                    params = {{slot.data.query_params}}
-                  )
+                headers = {
+                    {% for key, value in slot.data.header_params.items() %}
+                    {{key}} = f"{{value}}"
+                    {% endfor %}
+                },
+                data = {
+                    {% for key, value in slot.data.data_params.items() %}
+                    {{key}} = f"{{value}}"
+                    {% endfor %}
+                },
+                params = {
+                    {% for key, value in slot.data.query_params.items() %}
+                    {{key}} = f"{{value}}"
+                    {% endfor %}
+                }
+              )
             {% endif %}
             try:
                 {{slot.name}} = response.json(){{slot.data.response_filter}}
@@ -131,20 +157,46 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% for slot in act.slots %}
         {{slot}} = tracker.get_slot('{{slot}}')
         {% endfor %}
+        {% for property in act.system_properties %}
+        {{property}} = compute_system_properties("{{property}}")
+        {% endfor %}
+        {% for property in act.user_properties %}
+        {{property}} = compute_user_properties("{{property}}")
+        {% endfor %}
         {% for key, value in act.path_params.items() %}
         {{key}} = "{{value}}"
         {% endfor %}
         {% if act.verb == 'get' %}
         response = requests.{{act.verb}}(f"{{act.url}}",
-                headers = {{act.header_params}},
-                params = {{act.query_params}}
-                )
+            headers = {
+                {% for key, value in act.header_params.items() %}
+                {{key}} = f"{{value}}"
+                {% endfor %}
+            },
+            params = {
+              {% for key, value in act.query_params.items() %}
+              {{key}} = f"{{value}}"
+              {% endfor %}
+            }
+        )
         {% else %}
         response = requests.{{act.verb}}(f"{{act.url}}",
-                headers = {{act.header_params}},
-                data = {{act.body_params}},
-                params = {{act.query_params}}
-              )
+            headers = {
+                {% for key, value in act.header_params.items() %}
+                {{key}} = f"{{value}}"
+                {% endfor %}
+            },
+            data = {
+              {% for key, value in act.body_params.items() %}
+              {{key}} = f"{{value}}"
+              {% endfor %}
+            },
+            params = {
+              {% for key, value in act.query_params.items() %}
+              {{key}} = f"{{value}}"
+              {% endfor %}
+            }
+        )
         {% endif %}
         {% endif %}
 
