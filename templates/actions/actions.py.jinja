@@ -81,7 +81,7 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
                     {% endfor %}
                 },
                 data = {
-                    {% for key, value in slot.data.data_params.items() %}
+                    {% for key, value in slot.data.body_params.items() %}
                     {{key}} = f"{{value}}"
                     {% endfor %}
                 },
