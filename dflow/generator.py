@@ -236,10 +236,10 @@ def parse_model(model) -> TransformationDataModel:
                             'value': action.value
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
-                        path_params, path_slots = process_http_params(action.path_params)
-                        query_params, query_slots = process_http_params(action.query_params)
-                        header_params, header_slots = process_http_params(action.header_params)
-                        body_params, body_slots = process_http_params(action.body_params)
+                        path_params, path_slots = process_eservice_params(action.path_params)
+                        query_params, query_slots = process_eservice_params(action.query_params)
+                        header_params, header_slots = process_eservice_params(action.header_params)
+                        body_params, body_slots = process_eservice_params(action.body_params)
                         validation = validate_path_params(data.eservices[action.eserviceRef.name]['url'], path_params)
                         if not validation:
                             raise Exception('Service path and path params do not match.')
@@ -295,10 +295,10 @@ def parse_model(model) -> TransformationDataModel:
                     extract_from_text = False
                     form_data.append(slot.name)
                     if slot.source.__class__.__name__ == 'EServiceCallHTTP':
-                        path_params, path_slots = process_http_params(slot.source.path_params)
-                        query_params, query_slots = process_http_params(slot.source.query_params)
-                        header_params, header_slots = process_http_params(slot.source.header_params)
-                        body_params, body_slots = process_http_params(slot.source.body_params)
+                        path_params, path_slots = process_eservice_params(slot.source.path_params)
+                        query_params, query_slots = process_eservice_params(slot.source.query_params)
+                        header_params, header_slots = process_eservice_params(slot.source.header_params)
+                        body_params, body_slots = process_eservice_params(slot.source.body_params)
                         validation = validate_path_params(data.eservices[slot.source.eserviceRef.name]['url'], path_params)
                         if not validation:
                             raise Exception('Service path and path params do not match.')
@@ -405,7 +405,7 @@ def process_text(text):
             message.append(phrase)
     return ' '.join(message), entities, slots
 
-def process_http_params(params):
+def process_eservice_params(params):
     results = {}
     slots = []
     if params == []:
@@ -420,14 +420,14 @@ def process_http_params(params):
         if param.value.__class__.__name__ == 'Dict':
             dict_results = {}
             for item in param.value.items:
-                item_results, item_slots = process_http_params(item.value)
+                item_results, item_slots = process_eservice_params(item.value)
                 slots.extend(item_slots)
                 dict_results[item.name] = item_results
             results[param.name] = dict_results
         elif param.value.__class__.__name__ == 'List':
             list_results = []
             for item in param.value.items:
-                item_results, item_slots = process_http_params(item)
+                item_results, item_slots = process_eservice_params(item)
                 slots.extend(item_slots)
                 if isinstance(item_results, (int, str, bool, float)):
                     item_results = [item_results]
