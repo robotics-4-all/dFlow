@@ -152,7 +152,16 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         }
         dispatcher.utter_message(json_message = event_data)
         {% elif act.type == 'SetSlot' %}
-        output.append(SlotSet("{{act.slot}}", "{{act.value}}"))
+        {% for slot in act.slots %}
+        {{slot}} = tracker.get_slot('{{slot}}')
+        {% endfor %}
+        {% for property in act.system_properties %}
+        {{property}} = compute_system_properties("{{property}}")
+        {% endfor %}
+        {% for property in act.user_properties %}
+        {{property}} = compute_user_properties("{{property}}")
+        {% endfor %}
+        output.append(SlotSet("{{act.slot}}", {{act.value}}))
         {% elif act.type == 'EServiceCallHTTP' %}
         {% for slot in act.slots %}
         {{slot}} = tracker.get_slot('{{slot}}')

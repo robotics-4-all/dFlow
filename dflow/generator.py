@@ -234,10 +234,14 @@ def parse_model(model) -> TransformationDataModel:
                             'system_properties': msg_system_properties+uri_system_properties
                         })
                     elif action.__class__.__name__ == 'SetSlot':
+                        result, slots, user_properties, system_properties = process_parameter_value(action.value)
                         actions.append({
                             'type': action.__class__.__name__,
                             'slot': action.slotRef.param.name,
-                            'value': action.value   # needs processing
+                            'value': result,
+                            'slots': slots,
+                            'user_properties': user_properties,
+                            'system_properties': system_properties
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
                         path_params, path_slots, path_user_properties, path_system_properties = process_eservice_params(action.path_params)
@@ -417,7 +421,58 @@ def process_text(text):
             message.append(phrase)
     return ' '.join(message), entities, slots, user_properties, system_properties
 
+def process_parameter_value(param):
+    """
+        Takes a ParameterValue entity and recursively creates a tempale-ready string
+        to send to the templates.
+        It also returns all needed slots, user and system properties.
+    """
+    slots = []
+    user_properties = []
+    system_properties = []
+    if param == []:
+        param = ''
+    elif isinstance(param, (int, str, bool, float)):
+        result = str(param)
+        return result, [], [], []
+    elif param.__class__.__name__ == 'Dict':
+        result = '{'
+        for item in param.items:
+            item_results, item_slots, item_user_properties, item_system_properties = process_parameter_value(item.value)
+            slots.extend(item_slots)
+            user_properties.extend(item_user_properties)
+            system_properties.extend(item_system_properties)
+            result = result + f"'{item.name}': {item_results}, "
+        result = result + '}'
+    elif param.__class__.__name__ == 'List':
+        result = '['
+        for item in param.items:
+            item_results, item_slots, item_user_properties, item_system_properties = process_parameter_value(item)
+            slots.extend(item_slots)
+            user_properties.extend(item_user_properties)
+            system_properties.extend(item_system_properties)
+            result = result + item_results
+        result = result + ']'
+    elif param.__class__.__name__ == 'FormParamRef':
+        new_slot = ['f"{', f"{param.param.name}", '}"']
+        result = ''.join(new_slot)
+        slots.append(f"{param.param.name}")
+    elif param.__class__.__name__ == 'UserPropertyDef':
+        new_slot = ['f"{', f"{param.property}", '}"']
+        result = ''.join(new_slot)
+        user_properties.append(param.property)
+    elif param.__class__.__name__ == 'SystemPropertyDef':
+        new_slot = ['f"{', f"{param.property}", '}"']
+        result = ''.join(new_slot)
+        system_properties.append(param.property)
+    return result, slots, user_properties, system_properties
+
 def process_eservice_params(params):
+    """
+        Takes an EServiceParam entity (name, value) and recursively creates a dictionary
+        with the names as keys and the value as values for each one.
+        It also returns all needed slots, user and system properties.
+    """
     results = {}
     slots = []
     user_properties = []
