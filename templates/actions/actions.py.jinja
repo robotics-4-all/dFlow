@@ -51,8 +51,9 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {% for slot in slot.data.slots %}
             {{slot}} = tracker.get_slot('{{slot}}')
             {% endfor %}
-            path_params = {{slot.data.path_params}}
-
+            {% for key, value in slot.data.path_params.items() %}
+            {{key}} = "{{value}}"
+            {% endfor %}
             {% for property in slot.data.system_properties %}
             {{property}} = compute_system_properties("{{property}}")
             {% endfor %}
@@ -151,7 +152,9 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% for property in act.user_properties %}
         {{property}} = compute_user_properties("{{property}}")
         {% endfor %}
-        path_params = {{act.path_params}}
+        {% for key, value in act.path_params.items() %}
+        {{key}} = "{{value}}"
+        {% endfor %}
         {% if act.verb == 'get' %}
         response = requests.{{act.verb}}(f"{{act.url}}",
             headers = {{act.header_params}},
