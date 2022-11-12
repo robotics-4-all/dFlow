@@ -210,37 +210,40 @@ def parse_model(model) -> TransformationDataModel:
             if response.__class__.__name__ == 'ActionGroup':
                 dialogue_responses.append({"name": f"action_{response.name}", "form": False})
                 actions = []
+                actions_slots = []
+                actions_user_properties = []
+                actions_entities = []
                 for action in response.actions:
                     if action.__class__.__name__ == 'SpeakAction':
                         message, entities, slots, user_properties, system_properties = process_text(action.text)
+                        actions_slots.extend(slots)
+                        actions_user_properties.extend(user_properties)
+                        actions_entities.extend(entities)
                         actions.append({
                             'type': action.__class__.__name__,
                             'text': message,
-                            'entities': entities,
-                            'slots': slots,
-                            'user_properties': user_properties,
                             'system_properties': system_properties
                         })
                     elif action.__class__.__name__ == 'FireEventAction':
                         msg_message, msg_entities, msg_slots, msg_user_properties, msg_system_properties = process_text(action.msg)
                         uri_message, uri_entities, uri_slots, uri_user_properties, uri_system_properties = process_text(action.uri)
+                        actions_slots.extend(msg_slots + uri_slots)
+                        actions_user_properties.extend(msg_user_properties+uri_user_properties)
+                        actions_entities.extend(msg_entities + uri_entities)
                         actions.append({
                             'type': action.__class__.__name__,
                             'uri': uri_message.replace(' ', ''),
                             'msg': msg_message,
-                            'entities': msg_entities + uri_entities,
-                            'slots': msg_slots + uri_slots,
-                            'user_properties': msg_user_properties+uri_user_properties,
                             'system_properties': msg_system_properties+uri_system_properties
                         })
                     elif action.__class__.__name__ == 'SetSlot':
                         result, slots, user_properties, system_properties = process_parameter_value(action.value)
+                        actions_slots.extend(slots)
+                        actions_user_properties.extend(user_properties)
                         actions.append({
                             'type': action.__class__.__name__,
                             'slot': action.slotRef.param.name,
                             'value': result,
-                            'slots': slots,
-                            'user_properties': user_properties,
                             'system_properties': system_properties
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
@@ -251,6 +254,9 @@ def parse_model(model) -> TransformationDataModel:
                         validation = validate_path_params(data.eservices[action.eserviceRef.name]['url'], path_params)
                         if not validation:
                             raise Exception('Service path and path params do not match.')
+                        actions_slots.extend(path_slots + query_slots + header_slots + body_slots)
+                        actions_user_properties.extend(path_user_properties+query_user_properties+header_user_properties+body_user_properties)
+
                         actions.append({
                             'type': action.__class__.__name__,
                             'verb': action.eserviceRef.verb.lower(),
@@ -260,8 +266,6 @@ def parse_model(model) -> TransformationDataModel:
                             'header_params': header_params,
                             'body_params': body_params,
                             'response_filter': action.response_filter,
-                            'slots': list(set(path_slots + query_slots + header_slots + body_slots)),
-                            'user_properties': list(set(path_user_properties+query_user_properties+header_user_properties+body_user_properties)),
                             'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties))
                         })
                 # Validate action before appending it to data object
@@ -273,8 +277,18 @@ def parse_model(model) -> TransformationDataModel:
                             validation = False
                         else:
                             raise Exception(f'Action Group {action_group["name"]} defined twice with different actions!')
+                # Merge slots/entities etc before appending
                 if validation:
-                    data.actions.append({"name": f"action_{response.name}", "actions": actions})
+                    actions_slots = list(set(actions_slots))
+                    actions_user_properties = list(set(actions_user_properties))
+                    actions_entities = list(set(actions_entities))
+                    data.actions.append({
+                        "name": f"action_{response.name}",
+                        "actions": actions,
+                        "slots": actions_slots,
+                        "user_properties": actions_user_properties,
+                        "entities": actions_entities
+                    })
             elif response.__class__.__name__ == 'Form':
                 form = f"{response.name}_form"
                 dialogue_responses.append({"name": form, "form": True})
@@ -381,12 +395,12 @@ def parse_model(model) -> TransformationDataModel:
                         message, entities, slots, user_properties, system_properties = process_text(slot.source.askSlot)
                         data.actions.append({
                             'name': f"action_ask_{form}_{slot.name}",
+                            'entities': entities,
+                            'slots': slots,
+                            'user_properties': user_properties,
                             'actions': [{
                                 'type': 'AskSlot',
                                 'text': message,
-                                'entities': entities,
-                                'slots': slots,
-                                'user_properties': user_properties,
                                 'system_properties': system_properties
                             }]
                         })

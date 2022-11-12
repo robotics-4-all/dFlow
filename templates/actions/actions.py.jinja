@@ -122,29 +122,24 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         return "{{action.name}}"
 
     def run(self, dispatcher, tracker, domain):
-        {% for act in action.actions %}
-        output = []
-        {% if act.type in ['SpeakAction', 'AskSlot'] %}
-        {% for entity in act.entities %}
+        {% for entity in action.entities %}
         {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
         {% endfor %}
-        {% for slot in act.slots %}
+        {% for slot in action.slots %}
         {{slot}} = tracker.get_slot('{{slot}}')
         {% endfor %}
+        {% for property in action.user_properties %}
+        {{property}} = compute_user_properties("{{property}}")
+        {% endfor %}
+        output = []
+
+        {% for act in action.actions %}
+        {% if act.type in ['SpeakAction', 'AskSlot'] %}
         {% for property in act.system_properties %}
         {{property}} = compute_system_properties("{{property}}")
         {% endfor %}
-        {% for property in act.user_properties %}
-        {{property}} = compute_user_properties("{{property}}")
-        {% endfor %}
         dispatcher.utter_message(text = f"{{act.text}}")
         {% elif act.type == 'FireEventAction' %}
-        {% for entity in act.entities %}
-        {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
-        {% endfor %}
-        {% for slot in act.slots %}
-        {{slot}} = tracker.get_slot('{{slot}}')
-        {% endfor %}
         ts = datetime.timestamp(datetime.now())
         event_data = {
             "id": "id",
@@ -154,25 +149,13 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         }
         dispatcher.utter_message(json_message = event_data)
         {% elif act.type == 'SetSlot' %}
-        {% for slot in act.slots %}
-        {{slot}} = tracker.get_slot('{{slot}}')
-        {% endfor %}
         {% for property in act.system_properties %}
         {{property}} = compute_system_properties("{{property}}")
-        {% endfor %}
-        {% for property in act.user_properties %}
-        {{property}} = compute_user_properties("{{property}}")
         {% endfor %}
         output.append(SlotSet("{{act.slot}}", {{act.value}}))
         {% elif act.type == 'EServiceCallHTTP' %}
-        {% for slot in act.slots %}
-        {{slot}} = tracker.get_slot('{{slot}}')
-        {% endfor %}
         {% for property in act.system_properties %}
         {{property}} = compute_system_properties("{{property}}")
-        {% endfor %}
-        {% for property in act.user_properties %}
-        {{property}} = compute_user_properties("{{property}}")
         {% endfor %}
         {% for key, value in act.path_params.items() %}
         {{key}} = "{{value}}"
