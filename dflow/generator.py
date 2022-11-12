@@ -361,9 +361,16 @@ def parse_model(model) -> TransformationDataModel:
                                 'type': slot.type
                             })
                         message, entities, slots, user_properties, system_properties = process_text(slot.source.askSlot)
-                        data.responses.append({
-                            'name': f"utter_ask_{form}_{slot.name}",
-                            'text': message
+                        data.actions.append({
+                            'name': f"action_ask_{form}_{slot.name}",
+                            'actions': [{
+                                'type': 'AskSlot',
+                                'text': message,
+                                'entities': entities,
+                                'slots': slots,
+                                'user_properties': user_properties,
+                                'system_properties': system_properties
+                            }]
                         })
                     data_slots.append({'name': slot.name, 'type': slot.type, 'extract_methods': extract_slot})
                 data.forms.append({'name': form, 'slots': form_data})

@@ -102,7 +102,7 @@ class {{action.name|replace("_","")|capitalize}}(Action):
     def run(self, dispatcher, tracker, domain):
         {% for act in action.actions %}
         output = []
-        {% if act.type == 'SpeakAction' %}
+        {% if act.type in ['SpeakAction', 'AskSlot'] %}
         {% for entity in act.entities %}
         {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
         {% endfor %}
