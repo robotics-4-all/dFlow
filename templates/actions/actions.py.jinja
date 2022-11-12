@@ -78,6 +78,27 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             except:
                 print(f'Error retrieving response from {{slot.data.url}} with code {response.status_code}.')
             {% elif slot.source_type == 'HRIParamSource' %}
+            {% if slot.source_method is defined and slot.source_method == 'from_intent' %}
+            intent = tracker.latest_message.get("intent", {}).get("name")
+            {% for data in slot.data %}
+            if intent == '{{data.intent}}':
+                {% for slot in data.slots %}
+                {{slot}} = tracker.get_slot('{{slot}}')
+                {% endfor %}
+                {% for property in slot.data.system_properties %}
+                {{property}} = compute_system_properties("{{property}}")
+                {% endfor %}
+                {% for property in slot.data.user_properties %}
+                {{property}} = compute_user_properties("{{property}}")
+                {% endfor %}
+                {% if slot.type in ['bool', 'int', 'float'] %}
+                {{slot.name}} = {{data.value}}
+                {% else %}
+                {{slot.name}} = f"{{data.value}}"
+                {% endif %}
+            {% endfor %}
+            output["{{slot.name}}"] = {{slot.name}}
+            {% else %}
             text = tracker.latest_message['text']
             {% if slot.type == 'int' %}
             numbers = re.findall("\d+", text)
@@ -89,6 +110,7 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             if len(numbers):
                 {{slot.name}} = {{slot.type}}(numbers[0])
             output["{{slot.name}}"] = {{slot.name}}
+            {% endif %}
             {% endif %}
         return output
 

@@ -340,18 +340,36 @@ def parse_model(model) -> TransformationDataModel:
                             extract_slot.append({'type': 'from_text', 'form': form})
                             extract_from_text = True
                         else:
+                            slot_from_intent_info = []
                             for extract_method in slot.source.extract:
                                 if extract_method.__class__.__name__ == 'ExtractFromIntent':
-                                    extract_slot.append({
+                                    value, slots, user_properties, system_properties = process_parameter_value(extract_method.value)
+                                    slot_from_intent_info.append({
                                         'type': 'from_intent',
                                         'form': form,
                                         'intent': extract_method.intent.name,
-                                        'value': extract_method.value
+                                        'value': value,
+                                        'slots': slots,
+                                        'user_properties': user_properties,
+                                        'system_properties': system_properties
                                     })
                                 elif extract_method.__class__.__name__ == 'TrainableEntityRef':
                                     extract_slot.append({'type': 'from_entity', 'form': form, 'entity': extract_method.entity.name})
                                 elif extract_method.__class__.__name__ == 'PretrainedEntityRef':
                                     extract_slot.append({'type': 'from_entity', 'form': form, 'entity': extract_method.entity})
+                            # Merge all from_intent information and pass them (if they exist) to validation_data list
+                            # so that the correct value will be assigned inside Rasa action server
+                            if slot_from_intent_info != []:
+                                extract_slot.append({'type': 'custom', 'form': form})
+                                validation_data.append({
+                                    'form': form,
+                                    'name': slot.name,
+                                    'method': f'extract_{slot.name}',
+                                    'type': slot.type,
+                                    'source_type': slot.source.__class__.__name__,
+                                    'source_method': 'from_intent',
+                                    'data': slot_from_intent_info
+                                })
                         if extract_from_text and slot.type in ['int', 'float']:
                             validation_data.append({
                                 'form': form,
