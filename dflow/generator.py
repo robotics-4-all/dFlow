@@ -458,7 +458,7 @@ def process_parameter_value(param):
     if param == []:
         param = ''
     elif isinstance(param, (int, str, bool, float)):
-        result = str(param)
+        result = f"\"{param}\""
         return result, [], [], []
     elif param.__class__.__name__ == 'Dict':
         result = '{'
@@ -495,8 +495,9 @@ def process_parameter_value(param):
 def process_eservice_params(params):
     """
         Takes an EServiceParam entity (name, value) and recursively creates a dictionary
-        with the names as keys and the value as values for each one.
+        with the names as keys and the value as values for each one in a f-string format.
         It also returns all needed slots, user and system properties.
+        That way all needed slots and properties can be included inside the f-strings of the values.
     """
     results = '{'
     slots = []
@@ -505,6 +506,7 @@ def process_eservice_params(params):
     if params.__class__.__name__ != 'list':
         return process_parameter_value(params)
     for param in params:
+        results = results + f"\"{param.name}\": "
         if param.value.__class__.__name__ == 'Dict':
             dict_results = '{'
             for item in param.value.items:
@@ -514,25 +516,27 @@ def process_eservice_params(params):
                 system_properties.extend(item_system_properties)
                 dict_results = dict_results + f"'{item.name}': {item_results}, "
             dict_results = dict_results + '}'
-            results = results + f"'{param.name}': {dict_results}, "
+            results = results + f"{dict_results}, "
         elif param.value.__class__.__name__ == 'List':
             list_results = '['
-            for item in param.value.items:
+            list_length = len(param.value.items)
+            for i in range(len(param.value.items)):
+                item = param.value.items[i]
                 item_results, item_slots, item_user_properties, item_system_properties = process_eservice_params(item)
                 slots.extend(item_slots)
                 user_properties.extend(item_user_properties)
                 system_properties.extend(item_system_properties)
                 list_results = list_results + item_results
-            results[param.name] = list_results
+                if i < list_length - 1:
+                    list_results = list_results + ', '
             list_results = list_results + ']'
+            results = results + f"{list_results}, "
         else:
             param_result, param_slots, param_user_properties, param_system_properties = process_parameter_value(param.value)
             slots.extend(param_slots)
             user_properties.extend(param_user_properties)
             system_properties.extend(param_system_properties)
-            if results != '{':
-                results = results + ', '
-            results = results + param_result
+            results = results + param_result + ', '
     results = results + '}'
     return results, list(set(slots)), list(set(user_properties)), list(set(system_properties))
 
