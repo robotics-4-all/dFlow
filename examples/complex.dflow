@@ -55,21 +55,23 @@ dialogues
 
     Dialogue DialB
         on: find_doctor
-        responses: Form AF1
-            Param1: int = HRI('Give me a number', [text])
+        responses:
+          Form AF1
+            Param1: int = HRI('Give me a number')
             Param2: bool = HRI('yes/no', [affirm:True, deny:False])
-            Param3: str = HRI('Give a name', [text])
-        end,
-        ActionGroup answers_2
-          Speak('perfect thanks!')
-        end
+            Param3: str = HRI('Give a name')
+          end,
+          ActionGroup answers_2
+            Speak('perfect thanks!')
+            FireEvent('external/complete' AF1.Param2, 'bye bye' AF1.Param1)
+          end
     end
 
     Dialogue dial3
       on: time
-      responses: ActionGroup say_time
-          Speak('12:40')
-          FireEvent('bot/event/external_1', 'bye bye')
+      responses:
+        ActionGroup say_time
+          Speak('The time is ' SYSTEM: time)
         end
     end
 end

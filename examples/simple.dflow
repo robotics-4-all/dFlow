@@ -24,8 +24,8 @@ triggers
         "I want to call" TE:Doctor S:date_period,
         "I want to call" TE:Doctor "test" S:date_period "test",
         "I want to call" PE:PERSON "test",
-        "I want to call" PE:PERSON["Test"] "test",
         "I want to call" TE:Doctor "test" S:date_period "test" PE:PERSON["Test","Test"]
+        "I want to call" PE:PERSON["Test","Test"] "test",
     end
 
     Event external_1
@@ -43,8 +43,8 @@ eservices
     EServiceHTTP storage_svc
         verb: POST
         host: 'r4a.issel.ee.auth.gr'
-        port: 8080
-        path: '/storage'
+        port: 00
+        path: '/{username}'
     end
 end
 
@@ -53,10 +53,10 @@ dialogues
         on: find_doctor
         responses:
             Form AF1
-                slot1: int = HRI('Give parameter 1')
-                slot2: bool = HRI('Give parameter 2',
+                slot1: str = HRI('Give parameter 1', [PE:PERSON])
+                slot2: str = HRI('Give parameter 2',
                     [find_doctor:True, external_1:False])
-                slot3: str = HRI('Give parameter 3 you', [Doctor])
+                slot3: str = HRI('Give parameter 3 you' AF1.slot1, [TE:Doctor])
             end,
             ActionGroup answers
               Speak('Hello' AF1.slot1 'how are you')
@@ -67,12 +67,11 @@ dialogues
         responses:
             Form SF1
                 slot1: str = HRI('Give parameter 1')
-                slot2: str = weather_svc(query=[city=SF1.slot1],
-                    filter_response=resp.weather.forecast,)
+                slot2: str = storage_svc(query=[city={a:SF1.slot1, b:0}],path=[username='mario'],)
             end,
-            ActionGroup answers
-              Speak('The weather is ' SF1.slot2)
-              storage_svc(query=[data={weather: SF1.slot2, p2: 'asd', p3: [10, 0, 2]}],)
+            ActionGroup answers2
+              Speak('The weather is ' SF1.slot1)
+              storage_svc(query=[city=SF1.slot1], path=[username='mario'],)
             end
     end
 end

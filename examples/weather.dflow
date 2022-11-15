@@ -22,10 +22,9 @@ dialogues
         on: ask_weather
         responses:
           Form form1
-            city_slot: str = HRI('For which city?', [LOC])
-            time_slot: str = HRI('For when?', [TIME])
-            answer: str = weather_svc(query=[city=form1.city_slot, time=form1.time_slot],
-                filter_response=resp.weather.forecast,)
+            city_slot: str = HRI('For which city?', [PE:LOC])
+            time_slot: str = HRI('For when?', [PE:TIME])
+            answer: str = weather_svc(query=[city=form1.city_slot, time=form1.time_slot],)[weather.forecast]
           end,
           ActionGroup answer_back
             Speak('The weather is ' form1.answer)

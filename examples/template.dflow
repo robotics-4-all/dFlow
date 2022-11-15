@@ -39,7 +39,7 @@ dialogues
         ## Form or ActionGroup
           Form ## name
             ##slot_name: slot_type = HRI(request_expression, mapping)
-            ##slot_name: slot_type = service_name(query, filter_response)
+            ##slot_name: slot_type = service_name(query,)[filter_response]
           end,
           ActionGroup ## actiongroup name
             # Speak()
