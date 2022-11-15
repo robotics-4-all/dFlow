@@ -51,12 +51,13 @@ pip install .
 To generate a metamodel from `metamodel.dflow` file to a complete Rasa model, run the following.
 
 ```
+cd dflow
 textx generate metamodel.dflow --target rasa -o output_path (Default: ./gen/)
 ```
 
 ## Grammar
 
-The grammar of the language has four main attributes:
+The grammar of the language has the following five attributes:
 
 - Entities
 - Synonyms
@@ -145,18 +146,25 @@ end
 
 ### Services
 
-**External services** are HTTP endpoints that can be used as part of the assistant's responses. Their url and verb are defined globaly, while their parameters are specified inside the dialogue section where they are called.
+**External services** are HTTP endpoints that can be used as part of the assistant's responses. Their url and verb are defined globally, while their parameters are specified inside the dialogue section where they are called.
 
 ```
 EServiceDef: EServiceDefHTTP;
 
 EServiceDefHTTP:
     'EServiceHTTP' name=ID
-        'verb:' verb=HTTPVerb
-        'host:' host=STRING
-        'port:' port=INT
-        'path:' path=STRING
+        (  'verb:' verb=HTTPVerb
+          'host:' host=STRING
+          ('port:' port=INT)?
+          ('path:' path=STRING)?
+        )#
     'end'
+;
+
+HTTPVerb:
+    'GET'   |
+    'POST'  |
+    'PUT'
 ;
 ```
 
@@ -189,16 +197,20 @@ Intent:
         phrases+=IntentPhraseComplex[',']
     'end'
 ;
-
 IntentPhraseComplex: phrases+=IntentPhrase;
 
-IntentPhrase: IntentPhraseStr | IntentPhraseTE | IntentPhraseSynonym | IntentPhrasePE;
+IntentPhrase:
+    IntentPhraseStr |
+    IntentPhraseSynonym |
+    TrainableEntityRef |
+    PretrainedEntityRef
+;
 
 IntentPhraseStr: STRING;
 
-IntentPhraseTE: 'TE:' trainable=[TrainableEntity|FQN];
+TrainableEntityRef: 'TE:' entity=[TrainableEntity|FQN|^entities*];
 
-IntentPhrasePE: 'PE:' pretrained=[PretrainedEntity|FQN] ('[' refPreValues*=STRING[','] ']')?;
+PretrainedEntityRef: 'PE:' entity=[PretrainedEntity|FQN|^entities*] ('[' refPreValues*=STRING[','] ']')?;
 
 IntentPhraseSynonym: 'S:' synonym=[Synonym|FQN];
 ```
@@ -252,12 +264,12 @@ end
 
 ### Dialogues
 
-**Dialogues** are conversational flows the assistant supports. They are sets of triggers and assistant responses in order and each response can be an *Action* or a *Form*.
+**Dialogues** are conversational flows the assistant supports. They are sets of triggers and assistant responses in order and each response can be an *ActionGroup* or a *Form*.
 
 ```
 Dialogue:
     'Dialogue' name=ID
-        'on:' onTrigger=[Trigger|FQN|^triggers]
+        'on:' onTrigger+=[Trigger|FQN|^triggers][',']
         'responses:' responses+=Response[',']
     'end'
 ;
@@ -278,13 +290,16 @@ dialogues
 
     Dialogue DialB
         on: find_doctor
-        responses: Form AF1
-            Param1: int = HRI('Give parameter 1', [text])
-            Param2: bool = HRI('Give parameter 2', [find_doctor:True, external_1:False])
-            Param3: str = HRI('Give parameter 3 you', [Doctor])
-        end,
-        answers_2
-          Speak('Hello' AF1.Param3)
+        responses:
+            Form AF1
+                slot1: str = HRI('Give parameter 1', [PE:PERSON])
+                slot2: str = HRI('Give parameter 2',
+                    [find_doctor:True, external_1:False])
+                slot3: str = HRI('Give parameter 3 you' AF1.slot1, [TE:Doctor])
+            end,
+            ActionGroup answers
+              Speak('Hello' AF1.slot1 'how are you')
+            end
     end
 end
 ```
@@ -292,9 +307,14 @@ end
 #### Actions
 
 An action is an assistant response that can either:
-- Speak a specific text
-- Fire an Event, or
-- Call an HTTP endpoint
+- Speak a specific text (*SpeakAction*)
+- Fire an Event (*FireEventAction*)
+- Call an HTTP endpoint (*RESTCallAction*)
+- Set a slot with a specific value (*SetSlot*) (more on slots in the [forms](#forms) section.)
+
+An ActionGroup is a collection of actions that are executed sequentially.
+
+Actions can also use real-time environment parameters, or data in general, grouped as *user* and *system* properties. User properties are user information stored locally in the device that the assistant can use, such as name, surname, age, email, phone, city and address. System properties are in-built system functions to get the current time, location, a random integer of float. That way the assistant has access to those data being device-agnostic on the same time.
 
 ```
 ActionGroup:
@@ -303,42 +323,65 @@ ActionGroup:
     'end'
 ;
 
-Action: SpeakAction | FireEventAction | RESTCallAction;
+Action: SpeakAction | FireEventAction | RESTCallAction | SetSlot;
 
 SpeakAction:
     'Speak' '(' text+=Text ')'
 ;
 
+SetSlot:
+    'SetSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')'
+;
+
 FireEventAction:
-    'FireEvent' '(' uri=STRING ',' msg=Text ')'
+    'FireEvent' '(' uri+=Text ',' msg+=Text ')'
 ;
 
 RESTCallAction: EServiceCallHTTP;
+
 
 EServiceCallHTTP:
     eserviceRef=[EServiceDef|FQN|eservices]'('
         (
         ('query=' '[' query_params*=EServiceParam[','] ']' ',')?
+        ('header=' '[' header_params*=EServiceParam[','] ']' ',')?
         ('path=' '[' path_params*=EServiceParam[','] ']' ',')?
         ('body=' '[' body_params*=EServiceParam[','] ']' ',')?
-        ('filter_response=' respFilter=EServiceResponseFilter ',')?
         )#
-    ')'
+    ')' ('[' response_filter=EServiceResponseFilter ']')?
 ;
 
 EServiceParam: name=ID '=' value=ParameterValue;
 
-ParameterValue: INT | FLOAT | STRING | BOOL | List | Dict | FormParamRef;
-ParameterTypeDef: 'int' | 'float' | 'str' | 'bool' | 'list' | 'dict';
+ParameterValue:
+    INT                 |
+    FLOAT               |
+    STRING              |
+    BOOL                |
+    List                |
+    Dict                |
+    EnvPropertyDef		  |
+    FormParamIndex      |
+	Text
+;
 
-HTTPVerb: 'GET'|'POST'|'PUT';
+ParameterTypeDef:
+    'int'   |
+    'float' |
+    'str'   |
+    'bool'  |
+    'list'  |
+    'dict'
+;
+
+EServiceResponseFilter: ID('.'ID)*;
 
 DictItem:
     name=ID ':' value=DictTypes
 ;
 
 DictTypes:
-    NUMBER | STRING | BOOL | Dict | List | FormParamRef
+    NUMBER | STRING | BOOL | Dict | List | FormParamIndex
 ;
 
 Dict:
@@ -350,22 +393,38 @@ List:
 ;
 
 ListElements:
-    NUMBER | STRING | BOOL | List | Dict | FormParamRef
+    NUMBER | STRING | BOOL | List | Dict | FormParamIndex
 ;
 
-Words:
-    /[-\w ]*\b/
-;
-
-Text: TextStr | FormParamRef;
+Text: TextStr | EnvPropertyDef | FormParamIndex;
 
 TextStr: STRING;
 
+EnvPropertyDef: UserPropertyDef | SystemPropertyDef;
+UserPropertyDef: 'USER:' property=[UserProperty|FQN];
+SystemPropertyDef: 'SYSTEM:' property=[SystemProperty|FQN];
+
+UserProperty:
+    'NAME'      |
+    'SURNAME'   |
+    'AGE'       |
+    'EMAIL'     |
+    'PHONE'		  |
+    'CITY'		  |
+    'ADDRESS'
+;
+
+SystemProperty:
+	'TIME'			  |
+	'LOCATION'		|
+	'RANDOM_INT'	|
+	'RANDOM_FLOAT'
+;
 ```
 
 #### Forms
 
-A From is a conversational pattern to collect information and store it in form parameters or *slots* following business logic. Information can be collected via an *HRI*  interaction, in which the assistant requests each slot using a specific text and extracts information from the user expression. It can contain the entire processed text, an extracted entity, or a specific value which is set in case the user states a particular intent. The second choice is the *EServiceParamSource* interaction, in which the slot is filled with the information received from an external service, that is defined above. Each slot is of one of the 6 types: `int`, `float`, `str`, `bool`, `list` or `dict`. 
+A From is a conversational pattern to collect information and store it in form parameters or *slots* following business logic. Information can be collected via an *HRI*  interaction, in which the assistant collects the information from the user. It requests each slot using a specific text and extracts the data from the user expression. It can contain the entire processed text (the extract variable is not filled), an extracted entity, or a specific value set in case the user states a particular intent. The second choice is the *EServiceParamSource* interaction, in which the slot is filled with information received from an external service, that is defined above. Each slot is of one of the 6 types: `int`, `float`, `str`, `bool`, `list` or `dict`.
 
 ```
 Form:
@@ -379,23 +438,19 @@ FormParam:
 ;
 
 FormParamRef: param=[FormParam|FQN|^dialogues*.responses.params];
+FormParamIndex: FormParamRef('['ID('.'ID)*']')?;
 
 FormParamSource: HRIParamSource | EServiceParamSource;
 
 HRIParamSource:
-    'HRI' '(' askSlot=STRING (',' '['extract+=ExtractionSource[','] ']')? ')'
+    'HRI' '(' askSlot+=Text (',' '['extract+=ExtractionSource[','] ']')? ')'
 ;
 
+ExtractionSource: ExtractFromEntity | ExtractFromIntent;
+ExtractFromIntent: intent=[Trigger|FQN|^triggers*] ':' value=ParameterValue;
+ExtractFromEntity: TrainableEntityRef | PretrainedEntityRef;
+
 EServiceParamSource: EServiceCallHTTP;
-
-ExtractionSource: ExtractFromIntent | ExtractFromEntity;
-
-ExtractFromIntent: intent=[Trigger] ':' value=ParameterValue;
-ExtractFromEntity: ExtractFromPretrainedEntity | ExtractFromTrainableEntity;
-ExtractFromPretrainedEntity: entity=[PretrainedEntity|FQN|^entities*];
-ExtractFromTrainableEntity: entity=[TrainableEntity|FQN|^entities*];
-
-EServiceResponseFilter: 'resp'('.'ID)*;
 ```
 
 ### Examples
