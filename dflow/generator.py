@@ -21,15 +21,6 @@ jinja_env = jinja2.Environment(
 srcgen_folder = path.join(path.realpath(getcwd()), 'gen')
 
 
-# mm = metamodel_from_file('dflow.tx')
-# mm.register_scope_providers(
-#         {
-#             "*.*": scoping_providers.FQN()
-#         }
-#     )
-# model = mm.model_from_file('../examples/weather2.dflow')
-
-
 class TransformationDataModel(BaseModel):
     synonyms: List[Dict[str, Any]] = []
     entities: List[Dict[str, Any]] = []
@@ -44,10 +35,14 @@ class TransformationDataModel(BaseModel):
     forms: List[Dict[str, Any]] = []
     responses: List[Dict[str, Any]] = []
 
+
 @generator('dflow', 'rasa')
-def dflow_generate_rasa(metamodel, model, output_path, overwrite,
-        debug, **custom_args):
-    "Generator for generating rasa from dflow descriptions"
+def dflow_generate_rasa(metamodel,
+                        model,
+                        output_path,
+                        overwrite,
+                        debug,
+                        **custom_args) -> None:
     data = parse_model(model)
 
     # Prepare generating file directory
@@ -103,6 +98,7 @@ def dflow_generate_rasa(metamodel, model, output_path, overwrite,
         chmod(out_file, 509)
 
     return out_dir
+
 
 def parse_model(model) -> TransformationDataModel:
     data = TransformationDataModel()
@@ -434,6 +430,7 @@ def parse_model(model) -> TransformationDataModel:
 
     return data
 
+
 def process_text(text):
     """ Takes a Text entity, processes the entities, slots, and user properties and converts them to string."""
     if isinstance(text, str):
@@ -459,6 +456,7 @@ def process_text(text):
         else:
             message.append(phrase)
     return ' '.join(message), entities, slots, user_properties, system_properties
+
 
 def process_parameter_value(param):
     """
@@ -505,6 +503,7 @@ def process_parameter_value(param):
         result = ''.join(new_slot)
         system_properties.append(param.property)
     return result, slots, user_properties, system_properties
+
 
 def process_eservice_params(params):
     """
@@ -553,6 +552,7 @@ def process_eservice_params(params):
             results = results + param_result + ', '
     results = results + '}'
     return results, list(set(slots)), list(set(user_properties)), list(set(system_properties))
+
 
 def process_eservice_params_as_dict(params):
     """
@@ -617,11 +617,13 @@ def process_eservice_params_as_dict(params):
             results[param.name] = param.value
     return results, list(set(slots)), list(set(user_properties)), list(set(system_properties))
 
+
 def process_response_filter(text):
     """ Convert response filtering to template-ready string. """
     if text is None:
         return ''
     return ''.join([f"[{word}]" if word.isnumeric() else f"[\'{word}\']" for word in text.split('.')])
+
 
 def validate_path_params(url, path_params):
     ''' Check whether all path_params keys and params in url match. '''
