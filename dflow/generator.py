@@ -21,6 +21,17 @@ jinja_env = jinja2.Environment(
 srcgen_folder = path.join(path.realpath(getcwd()), 'gen')
 
 
+TEMPLATES = [
+    'actions/actions.py.jinja', 'data/nlu.yml.jinja',
+    'data/stories.yml.jinja', 'data/rules.yml.jinja',
+    'config.yml.jinja', 'domain.yml.jinja'
+]
+
+STATIC_TEMPLATES = [
+    'credentials.yml', 'endpoints.yml'
+]
+
+
 class TransformationDataModel(BaseModel):
     synonyms: List[Dict[str, Any]] = []
     entities: List[Dict[str, Any]] = []
@@ -43,6 +54,15 @@ def dflow_generate_rasa(metamodel,
                         overwrite,
                         debug,
                         **custom_args) -> None:
+    generate(metamodel, model, output_path, overwrite, debug, **custom_args)
+
+
+def generate(metamodel,
+             model,
+             output_path,
+             overwrite,
+             debug,
+             **custom_args) -> None:
     data = parse_model(model)
 
     # Prepare generating file directory
@@ -64,14 +84,7 @@ def dflow_generate_rasa(metamodel,
         mkdir(path.join(out_dir, 'models'))
 
     # Generate
-    templates = [
-        'actions/actions.py.jinja', 'data/nlu.yml.jinja',
-        'data/stories.yml.jinja', 'data/rules.yml.jinja',
-        'config.yml.jinja', 'domain.yml.jinja'
-        ]
-    static_templates = ['credentials.yml', 'endpoints.yml']
-
-    for file in templates:
+    for file in TEMPLATES:
         gen_file_name = path.splitext(file)[0]
 
         out_file = path.join(out_dir, gen_file_name)
@@ -91,7 +104,7 @@ def dflow_generate_rasa(metamodel,
                                     responses=data.responses))
         chmod(out_file, 509)
 
-    for file in static_templates:
+    for file in STATIC_TEMPLATES:
         out_file = path.join(out_dir, file)
         template = path.join(path.join(_THIS_DIR, 'templates', file))
         shutil.copyfile(template, out_file)
