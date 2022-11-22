@@ -1,3 +1,14 @@
+entities
+    Entity Doctor
+        cardiologist,
+        dentist,
+        doc
+    end
+end
+
+synonyms
+end
+
 triggers
   Intent ask_weather
     "I want to tell me the weather",
@@ -33,5 +44,7 @@ dialogues
           end,
           ActionGroup answer_back
             Speak('Dear' USER:NAME 'the weather in' USER:CITY 'is' form1.answer)
+            FireEvent('/test', {a: 1, b: '2'})
+          end
   end
 end

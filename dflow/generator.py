@@ -21,7 +21,7 @@ jinja_env = jinja2.Environment(
     trim_blocks=True,
     lstrip_blocks=True)
 
-srcgen_folder = path.join(path.realpath(getcwd()), 'gen')
+SRC_GEN_DIR = path.join(path.realpath(getcwd()), 'gen')
 
 
 TEMPLATES = [
@@ -29,6 +29,7 @@ TEMPLATES = [
     'data/stories.yml.jinja', 'data/rules.yml.jinja',
     'config.yml.jinja', 'domain.yml.jinja'
 ]
+
 
 STATIC_TEMPLATES = [
     'credentials.yml', 'endpoints.yml'
@@ -76,7 +77,7 @@ def generate(metamodel,
 
     # Prepare generating file directory
     if output_path is None:
-        out_dir = srcgen_folder
+        out_dir = SRC_GEN_DIR
     else:
         out_dir = output_path
 
