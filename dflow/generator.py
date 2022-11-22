@@ -10,6 +10,9 @@ from rich import print
 from pydantic import BaseModel
 from typing import Any, List, Dict
 
+from dflow.utils import get_mm
+
+
 _THIS_DIR = path.realpath(getcwd())
 
 # Initialize template engine.
@@ -46,6 +49,12 @@ class TransformationDataModel(BaseModel):
     forms: List[Dict[str, Any]] = []
     responses: List[Dict[str, Any]] = []
 
+
+def codegen(model_fillepath, output_path=None, overwrite=False, debug=True,
+             **custom_args):
+    metamodel = get_mm()
+    return generate(metamodel, model_fillepath, output_path,
+                    overwrite, debug, **custom_args)
 
 @generator('dflow', 'rasa')
 def dflow_generate_rasa(metamodel,
@@ -101,7 +110,8 @@ def generate(metamodel,
                                     rules=data.rules,
                                     slots=data.slots,
                                     forms=data.forms,
-                                    responses=data.responses))
+                                    responses=data.responses)
+            )
         chmod(out_file, 509)
 
     for file in STATIC_TEMPLATES:
