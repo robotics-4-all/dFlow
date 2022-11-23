@@ -39,12 +39,15 @@ dialogues
             city_slot: str = HRI("For which city" USER:NAME "?", [PE:LOC])
             time_slot: str = HRI('For when?', [TE:Doctor])
             answer: str = weather_svc(
-                query=[city=form1.city_slot[city], time=form1.time_slot, user=USER:NAME],
+                query=[city=[form1.city_slot[city]], time=form1.time_slot, user=USER:NAME],
+                header=[city=form1.city_slot[city], time=form1.time_slot],
             )[weather.forecast]
           end,
           ActionGroup answer_back
             Speak('Dear' USER:NAME 'the weather in' USER:CITY 'is' form1.answer)
             FireEvent('/test', {a: 1, b: '2'})
+            FireEvent('/test', '/llalll')
+            FireEvent('/test', ['a', 1, 'b','2'])
           end
   end
 end

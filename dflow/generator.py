@@ -245,11 +245,11 @@ def parse_model(model) -> TransformationDataModel:
                             'system_properties': system_properties
                         })
                     elif action.__class__.__name__ == 'FireEventAction':
-                        msg_message, msg_entities, msg_slots, msg_user_properties, msg_system_properties = process_text(action.msg)
+                        msg_message, msg_slots, msg_user_properties, msg_system_properties = process_parameter_value(action.msg)
                         uri_message, uri_entities, uri_slots, uri_user_properties, uri_system_properties = process_text(action.uri)
                         actions_slots.extend(msg_slots + uri_slots)
                         actions_user_properties.extend(msg_user_properties+uri_user_properties)
-                        actions_entities.extend(msg_entities + uri_entities)
+                        actions_entities.extend(uri_entities)
                         actions.append({
                             'type': action.__class__.__name__,
                             'uri': uri_message.replace(' ', ''),
@@ -494,7 +494,7 @@ def process_parameter_value(param):
     if param == []:
         param = ''
     elif isinstance(param, (int, str, bool, float)):
-        result = f"\"{param}\""
+        result = f"'{param}'"
         return result, [], [], []
     elif param.__class__.__name__ == 'Dict':
         result = '{'
@@ -504,6 +504,8 @@ def process_parameter_value(param):
             user_properties.extend(item_user_properties)
             system_properties.extend(item_system_properties)
             result = result + f"'{item.name}': {item_results}, "
+        # Omit last comma
+        result = result[:-2]
         result = result + '}'
     elif param.__class__.__name__ == 'List':
         result = '['
@@ -512,7 +514,9 @@ def process_parameter_value(param):
             slots.extend(item_slots)
             user_properties.extend(item_user_properties)
             system_properties.extend(item_system_properties)
-            result = result + item_results
+            result = result + item_results + ','
+        # Omit last comma
+        result = result[:-1]
         result = result + ']'
     elif param.__class__.__name__ == 'FormParamRef':
         new_slot = ['f"{', f"{param.param.name}", '}"']
@@ -543,7 +547,7 @@ def process_eservice_params(params):
     if params.__class__.__name__ != 'list':
         return process_parameter_value(params)
     for param in params:
-        results = results + f"\"{param.name}\": "
+        results = results + f"'{param.name}': "
         if param.value.__class__.__name__ == 'Dict':
             dict_results = '{'
             for item in param.value.items:
@@ -552,20 +556,21 @@ def process_eservice_params(params):
                 user_properties.extend(item_user_properties)
                 system_properties.extend(item_system_properties)
                 dict_results = dict_results + f"'{item.name}': {item_results}, "
+            if len(dict_results) > 1:
+                dict_results = dict_results[:-2]
             dict_results = dict_results + '}'
             results = results + f"{dict_results}, "
         elif param.value.__class__.__name__ == 'List':
             list_results = '['
             list_length = len(param.value.items)
-            for i in range(len(param.value.items)):
-                item = param.value.items[i]
+            for item in param.value.items:
                 item_results, item_slots, item_user_properties, item_system_properties = process_eservice_params(item)
                 slots.extend(item_slots)
                 user_properties.extend(item_user_properties)
                 system_properties.extend(item_system_properties)
-                list_results = list_results + item_results
-                if i < list_length - 1:
-                    list_results = list_results + ', '
+                list_results = list_results + item_results + ', '
+            if len(list_results) > 1:
+                list_results = list_results[:-2]
             list_results = list_results + ']'
             results = results + f"{list_results}, "
         else:
@@ -574,7 +579,8 @@ def process_eservice_params(params):
             user_properties.extend(param_user_properties)
             system_properties.extend(param_system_properties)
             results = results + param_result + ', '
-    results = results + '}'
+    # Omit last comma and space
+    results = results[:-2] + '}'
     return results, list(set(slots)), list(set(user_properties)), list(set(system_properties))
 
 

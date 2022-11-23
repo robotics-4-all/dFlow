@@ -145,7 +145,7 @@ class {{action.name|replace("_","")|capitalize}}(Action):
             "id": "id",
             "type": "event",
             "timestamp": int(datetime.timestamp(datetime.now())),
-            "payload": {"message": f"{{act.msg}}", "uri": f"{{act.uri}}" }
+            "payload": {"message": {{act.msg}}, "uri": f"{{act.uri}}" }
         }
         dispatcher.utter_message(json_message = event_data)
         {% elif act.type == 'SetSlot' %}
