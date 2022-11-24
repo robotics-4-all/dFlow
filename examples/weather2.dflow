@@ -11,7 +11,8 @@ end
 
 gslots
     slotA: int = 10,
-    slotB: str = "asdas"
+    slotB: str = "asdas",
+    slotC: str
 end
 
 triggers

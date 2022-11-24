@@ -28,6 +28,11 @@ slots:
     type: text
     {% endif %}
     influence_conversation: false
+    auto_fill: false
+    {% if slot.default %}
+    initial_value: {{slot.default}}
+    {% endif %}
+    {% if slot.extract_methods %}
     mappings:
     {% for extraction in slot.extract_methods %}
     - type: {{extraction.type}}
@@ -41,7 +46,7 @@ slots:
       - active_loop: {{extraction.form}}
         requested_slot: {{slot.name}}
     {% endfor %}
-
+    {% endif %}
 {% endfor %}
 {% endif %}
 

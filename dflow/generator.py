@@ -214,12 +214,16 @@ def parse_model(model) -> TransformationDataModel:
         if len(intent['examples']) < 2:
             raise Exception(f'Only {len(intent["examples"])} given in intent {intent["name"]}! At least 2 are needed!')
 
+    # Add global slots
+    for slot in model.gslots:
+        data.slots.append({'name': slot.name, 'type': 'any', 'default': slot.default, 'extract_methods': None})
+
     # Validate non duplicate dialogue names
     names = [d.name for d in model.dialogues]
     if len(names) != len(set(names)):
         raise Exception('Duplicate dialogue names given!')
 
-    data_slots = []
+    form_slots = [] # Collect slots stated in forms
     # Extract dialogues
     for dialogue in model.dialogues:
         name = dialogue.name
@@ -256,13 +260,23 @@ def parse_model(model) -> TransformationDataModel:
                             'msg': msg_message,
                             'system_properties': msg_system_properties+uri_system_properties
                         })
-                    elif action.__class__.__name__ == 'SetSlot':
+                    elif action.__class__.__name__ == 'SetFormSlot':
                         result, slots, user_properties, system_properties = process_parameter_value(action.value)
                         actions_slots.extend(slots)
                         actions_user_properties.extend(user_properties)
                         actions.append({
                             'type': action.__class__.__name__,
                             'slot': action.slotRef.param.name,
+                            'value': result,
+                            'system_properties': system_properties
+                        })
+                    elif action.__class__.__name__ == 'SetGlobalSlot':
+                        result, slots, user_properties, system_properties = process_parameter_value(action.value)
+                        actions_slots.extend(slots)
+                        actions_user_properties.extend(user_properties)
+                        actions.append({
+                            'type': action.__class__.__name__,
+                            'slot': action.slotRef.slot.name,
                             'value': result,
                             'system_properties': system_properties
                         })
@@ -424,7 +438,7 @@ def parse_model(model) -> TransformationDataModel:
                                 'system_properties': system_properties
                             }]
                         })
-                    data_slots.append({'name': slot.name, 'type': slot.type, 'extract_methods': extract_slot})
+                    form_slots.append({'name': slot.name, 'type': slot.type, 'extract_methods': extract_slot})
                 data.forms.append({'name': form, 'slots': form_data})
                 if validation_data != []:
                     data.actions.append({'name': f'validate_{form}', 'validation_method': True, 'info': validation_data})
@@ -436,8 +450,8 @@ def parse_model(model) -> TransformationDataModel:
             })
 
     # Validate and merge slots with similar name for the domain file
-    data_slots = sorted(data_slots, key = itemgetter('name'))
-    for k, v in groupby(data_slots, key = itemgetter('name')):
+    form_slots = sorted(form_slots, key = itemgetter('name'))
+    for k, v in groupby(form_slots, key = itemgetter('name')):
         slots = list(v)
         types = [slot['type'] for slot in slots]
         type = types[0]
@@ -450,7 +464,7 @@ def parse_model(model) -> TransformationDataModel:
             for method in slot['extract_methods']:
                 if method not in extract_methods:
                     extract_methods.append(method)
-        data.slots.append({'name': k, 'type': type, 'extract_methods': extract_methods})
+        data.slots.append({'name': k, 'type': type, 'extract_methods': extract_methods, 'default': None})
 
     return data
 
@@ -471,6 +485,9 @@ def process_text(text):
         elif phrase.__class__.__name__ == 'FormParamRef':
             slots.append(phrase.param.name)
             message.extend(["{", f"{phrase.param.name}", "}"])
+        elif phrase.__class__.__name__ == 'GlobalSlotRef':
+            slots.append(phrase.slot.name)
+            message.extend(["{", f"{phrase.slot.name}", "}"])
         elif phrase.__class__.__name__ == 'UserPropertyDef':
             message.extend(["{", f"{phrase.property}", "}"])
             user_properties.append(phrase.property)
@@ -522,6 +539,10 @@ def process_parameter_value(param):
         new_slot = ['f"{', f"{param.param.name}", '}"']
         result = ''.join(new_slot)
         slots.append(f"{param.param.name}")
+    elif param.__class__.__name__ == 'GlobalSlotRef':
+        new_slot = ['f"{', f"{param.slot.name}", '}"']
+        result = ''.join(new_slot)
+        slots.append(f"{param.slot.name}")
     elif param.__class__.__name__ == 'UserPropertyDef':
         new_slot = ['f"{', f"{param.property}", '}"']
         result = ''.join(new_slot)
@@ -602,6 +623,10 @@ def process_eservice_params_as_dict(params):
         new_slot = ["{", f"{params.param.name}", "}"]
         slots.append(f"{params.param.name}")
         return ' '.join(new_slot), slots, user_properties, system_properties
+    elif params.__class__.__name__ == 'GlobalSlotRef':
+        new_slot = ["{", f"{params.slot.name}", "}"]
+        slots.append(f"{params.slot.name}")
+        return ' '.join(new_slot), slots, user_properties, system_properties
     elif params.__class__.__name__ == 'UserPropertyDef':
         new_slot = ["{", f"{params.name}", "}"]
         user_properties.append(params.name)
@@ -635,6 +660,10 @@ def process_eservice_params_as_dict(params):
             new_slot = ["{", f"{param.value.param.name}", "}"]
             results[param.name] = ' '.join(new_slot)
             slots.append(f"{param.value.param.name}")
+        elif param.value.__class__.__name__ == 'GlobalSlotRef':
+            new_slot = ["{", f"{param.value.slot.name}", "}"]
+            results[param.name] = ' '.join(new_slot)
+            slots.append(f"{param.value.slot.name}")
         elif param.value.__class__.__name__ == 'UserPropertyDef':
             new_slot = ["{", f"{param.name}", "}"]
             user_properties.append(param.name)
