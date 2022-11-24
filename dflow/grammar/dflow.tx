@@ -29,6 +29,10 @@ dFlow:
         synonyms*=Synonym
     'end')?
 
+    ('gslots'
+        gslots*=GlobalSlot[',']
+    'end')?
+
     ('triggers'
         triggers+=Trigger
     'end')?
@@ -189,6 +193,7 @@ ParameterValue:
     Dict                |
     EnvPropertyDef		|
     FormParamIndex      |
+    GlobalSlotIndex     |
 	Text
 ;
 
@@ -203,6 +208,17 @@ ParameterTypeDef:
 
 EServiceResponseFilter: ID('.'ID)*;
 // ----------------------------------------------------------------------
+
+// Global Slots ---------------------------------------------------------
+// ----------------------------------------------------------------------
+GlobalSlotValue: ParameterValue;
+GlobalSlotType: ParameterTypeDef;
+GlobalSlotRef: slot=[GlobalSlot|FQN|^gslots];
+GlobalSlotIndex: FormParamRef('['ID('.'ID)*']')?;
+
+GlobalSlot:
+    name=ID ':' type=GlobalSlotType ('=' default=GlobalSlotValue)?
+;
 // ----------------------------------------------------------------------
 
 // ACTIONS --------------------------------------------------------------
@@ -213,14 +229,24 @@ ActionGroup:
     'end'
 ;
 
-Action: SpeakAction | FireEventAction | RESTCallAction | SetSlot;
+Action:
+    SpeakAction     |
+    FireEventAction |
+    RESTCallAction  |
+    SetFormSlot     |
+    SetGlobalSlot
+;
 
 SpeakAction:
     'Speak' '(' text+=Text ')'
 ;
 
-SetSlot:
-    'SetSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')'
+SetFormSlot:
+    'SetFSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')'
+;
+
+SetGlobalSlot:
+    'SetGSlot' '(' slotRef=GlobalSlotRef ',' value=ParameterValue ')'
 ;
 
 FireEventAction:
@@ -228,7 +254,6 @@ FireEventAction:
 ;
 
 RESTCallAction: EServiceCallHTTP;
-// ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 
 // GENERAL --------------------------------------------------------------
@@ -244,7 +269,7 @@ DictItem:
 ;
 
 DictTypes:
-    NUMBER | STRING | BOOL | Dict | List | FormParamIndex
+    NUMBER | STRING | BOOL | Dict | List | FormParamIndex | GlobalSlotIndex
 ;
 
 Dict:
@@ -256,14 +281,14 @@ List:
 ;
 
 ListElements:
-    NUMBER | STRING | BOOL | List | Dict | FormParamIndex
+    NUMBER | STRING | BOOL | List | Dict | FormParamIndex | GlobalSlotIndex
 ;
 
 Words:
     /[-\w ]*\b/
 ;
 
-Text: TextStr | EnvPropertyDef | FormParamIndex;
+Text: TextStr | EnvPropertyDef | FormParamIndex | GlobalSlotIndex;
 
 TextStr: STRING;
 

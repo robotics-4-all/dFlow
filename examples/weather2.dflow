@@ -9,6 +9,11 @@ end
 synonyms
 end
 
+gslots
+    slotA: int = 10,
+    slotB: str = "asdas"
+end
+
 triggers
   Intent ask_weather
     "I want to tell me the weather",
@@ -48,6 +53,8 @@ dialogues
             FireEvent('/test', {a: 1, b: '2'})
             FireEvent('/test', '/llalll')
             FireEvent('/test', ['a', 1, 'b','2'])
+            SetFSlot(form1.city_slot, "Thessaloniki")
+            SetGSlot(slotA, 10)
           end
   end
 end
