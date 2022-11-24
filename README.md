@@ -62,6 +62,7 @@ The grammar of the language has the following five attributes:
 - Entities
 - Synonyms
 - Services
+- Global Slots
 - Triggers
 - Dialogues
 
@@ -178,6 +179,30 @@ eservices
         port: 8080
         path: '/weather'
     end
+end
+```
+
+
+### Global Slots
+
+Global slots are variables that can be accessed and modified in a global scope. 
+
+```
+GlobalSlotValue: ParameterValue;
+GlobalSlotType: ParameterTypeDef;
+GlobalSlotRef: slot=[GlobalSlot|FQN|^gslots];
+GlobalSlotIndex: FormParamRef('['ID('.'ID)*']')?;
+
+GlobalSlot:
+    name=ID ':' type=GlobalSlotType ('=' default=GlobalSlotValue)?
+;
+```
+
+##### Example
+```
+gslots
+    slotA: int = 10,
+    slotB: str = "asdas"
 end
 ```
 
@@ -310,7 +335,7 @@ An action is an assistant response that can either:
 - Speak a specific text (*SpeakAction*)
 - Fire an Event (*FireEventAction*)
 - Call an HTTP endpoint (*RESTCallAction*)
-- Set a slot with a specific value (*SetSlot*) (more on slots in the [forms](#forms) section.)
+- Set a global or form slot with a specific value (*SetFSlot* and *SetGSlot*) (more on form slots in the [forms](#forms) section.)
 
 An ActionGroup is a collection of actions that are executed sequentially.
 
@@ -323,14 +348,24 @@ ActionGroup:
     'end'
 ;
 
-Action: SpeakAction | FireEventAction | RESTCallAction | SetSlot;
+Action:
+    SpeakAction     |
+    FireEventAction |
+    RESTCallAction  |
+    SetFormSlot     |
+    SetGlobalSlot
+;
 
 SpeakAction:
     'Speak' '(' text+=Text ')'
 ;
 
-SetSlot:
-    'SetSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')'
+SetFormSlot:
+    'SetFSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')'
+;
+
+SetGlobalSlot:
+    'SetGSlot' '(' slotRef=GlobalSlotRef ',' value=ParameterValue ')'
 ;
 
 FireEventAction:
@@ -362,6 +397,7 @@ ParameterValue:
     Dict                |
     EnvPropertyDef		  |
     FormParamIndex      |
+    GlobalSlotIndex     |
 	Text
 ;
 
@@ -381,7 +417,7 @@ DictItem:
 ;
 
 DictTypes:
-    NUMBER | STRING | BOOL | Dict | List | FormParamIndex
+  NUMBER | STRING | BOOL | Dict | List | FormParamIndex | GlobalSlotIndex
 ;
 
 Dict:
@@ -393,10 +429,10 @@ List:
 ;
 
 ListElements:
-    NUMBER | STRING | BOOL | List | Dict | FormParamIndex
+    NUMBER | STRING | BOOL | List | Dict | FormParamIndex | GlobalSlotIndex
 ;
 
-Text: TextStr | EnvPropertyDef | FormParamIndex;
+Text: TextStr | EnvPropertyDef | FormParamIndex | GlobalSlotIndex;
 
 TextStr: STRING;
 
