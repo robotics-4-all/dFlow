@@ -10,7 +10,7 @@ from rich import print
 from pydantic import BaseModel
 from typing import Any, List, Dict
 
-from dflow.utils import get_mm
+from dflow.utils import get_mm, build_model
 
 
 _THIS_DIR = path.abspath(path.dirname(__file__))
@@ -51,10 +51,15 @@ class TransformationDataModel(BaseModel):
     responses: List[Dict[str, Any]] = []
 
 
-def codegen(model_fillepath, output_path=None, overwrite=False, debug=True,
+def codegen(model_fillepath,
+            output_path=None,
+            overwrite=False,
+            debug=True,
              **custom_args):
     metamodel = get_mm()
-    return generate(metamodel, model_fillepath, output_path,
+    model, _ = build_model(model_fillepath)
+    print(model)
+    return generate(metamodel, model, output_path,
                     overwrite, debug, **custom_args)
 
 @generator('dflow', 'rasa')
