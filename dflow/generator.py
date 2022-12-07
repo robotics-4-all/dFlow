@@ -1,4 +1,4 @@
-from os import path, mkdir, getcwd, chmod
+from os import path, mkdir, chmod, getcwd
 from textx import generator, metamodel_from_file
 import jinja2, argparse, itertools, shutil, re
 from itertools import groupby
@@ -13,7 +13,7 @@ from typing import Any, List, Dict
 from dflow.utils import get_mm
 
 
-_THIS_DIR = path.realpath(getcwd())
+_THIS_DIR = path.abspath(path.dirname(__file__))
 
 # Initialize template engine.
 jinja_env = jinja2.Environment(
