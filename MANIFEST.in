@@ -1,2 +1,1 @@
-recursive-include dflow/grammar *
-recursive-include dflow/templates *
+recursive-include dflow *.jinja *.yml *.html *.md
