@@ -1,4 +1,2 @@
-include *.jinja
-include *.tx
-include *.yml
-include *.yaml
+recursive-include dflow/grammar *
+recursive-include dflow/templates *
