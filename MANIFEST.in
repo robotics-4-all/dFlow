@@ -1,1 +1,1 @@
-recursive-include dflow *.jinja *.yml *.html *.md
+recursive-include dflow *.jinja *.yml *.html *.md *.tx
