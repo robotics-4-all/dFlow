@@ -1,0 +1,4 @@
+include *.jinja
+include *.tx
+include *.yml
+include *.yaml

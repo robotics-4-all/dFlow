@@ -34,4 +34,8 @@ if sys.argv[-1].startswith('publish'):
     sys.exit()
 
 
-setup(version=VERSION)
+setup(
+    version=VERSION,
+    include_package_data=True,
+    package_data={'': ['*.tx', '*.jinja', '*.yml']},
+)
