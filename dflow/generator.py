@@ -470,7 +470,6 @@ def parse_model(model) -> TransformationDataModel:
                 if method not in extract_methods:
                     extract_methods.append(method)
         data.slots.append({'name': k, 'type': type, 'extract_methods': extract_methods, 'default': None})
-
     return data
 
 
@@ -606,7 +605,9 @@ def process_eservice_params(params):
             system_properties.extend(param_system_properties)
             results = results + param_result + ', '
     # Omit last comma and space
-    results = results[:-2] + '}'
+    if len(results) > 2:
+        results = results[:-2]
+    results = results + '}'
     return results, list(set(slots)), list(set(user_properties)), list(set(system_properties))
 
 
