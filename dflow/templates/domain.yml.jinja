@@ -20,19 +20,19 @@ entities:
 slots:
 {% for slot in slots %}
   {{slot.name}}:
-    {% if slot.type in ['int', 'list', 'dict', 'float'] %}
-    type: any
-    {% elif slot.type in ['bool'] %}
+    {% if slot.type in ['bool'] %}
     type: {{slot.type}}
     {% elif slot.type == 'str' %}
     type: text
+    {% else %}
+    type: any
     {% endif %}
     influence_conversation: false
     {% if slot.default %}
     initial_value: {{slot.default}}
     {% endif %}
-    {% if slot.extract_methods %}
     mappings:
+    {% if slot.extract_methods %}
     {% for extraction in slot.extract_methods %}
     - type: {{extraction.type}}
     {% if extraction.type == 'from_intent' %}
@@ -45,6 +45,8 @@ slots:
       - active_loop: {{extraction.form}}
         requested_slot: {{slot.name}}
     {% endfor %}
+    {% else %}
+    - type: custom
     {% endif %}
 {% endfor %}
 {% endif %}
