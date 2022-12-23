@@ -156,8 +156,8 @@ def parse_model(model) -> TransformationDataModel:
         if trigger.__class__.__name__ == 'Intent':
             for complex_phrase in trigger.phrases:
                 for phrase in complex_phrase.phrases:
-                    if phrase.__class__.__name__ == "IntentPhrasePE":
-                        name = phrase.pretrained
+                    if phrase.__class__.__name__ == "PretrainedEntityRef":
+                        name = phrase.entity
                         if name not in data.pretrained_entities:
                             data.pretrained_entities.append(name)
                         if name not in pretrained_entities_examples:
@@ -204,8 +204,8 @@ def parse_model(model) -> TransformationDataModel:
                         words = synonyms_dictionary[name]
                         synonym = words[0][0]
                         text.append([synonym])
-                    elif phrase.__class__.__name__ == "IntentPhrasePE":
-                        name = phrase.pretrained
+                    elif phrase.__class__.__name__ == "PretrainedEntityRef":
+                        name = phrase.entity
                         if pretrained_entities_examples[name] != []:
                             text.append(pretrained_entities_examples[name])
                 example = [' '.join(sentence) for sentence in itertools.product(*text)]

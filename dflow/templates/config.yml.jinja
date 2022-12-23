@@ -12,7 +12,6 @@ pipeline:
     dimensions: {{pretrained_entities}}
   {% endif %}
   - name: RegexFeaturizer
-  - name: CRFEntityExtractor
   - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
   - name: CountVectorsFeaturizer

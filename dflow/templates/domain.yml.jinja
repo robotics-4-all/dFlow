@@ -6,7 +6,7 @@ intents:
   - {{event.name}}
 {% endfor %}
 
-{% if entities %}
+{% if entities or pretrained_entities %}
 entities:
 {% for entity in entities %}
   - {{entity.name}}
