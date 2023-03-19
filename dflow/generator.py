@@ -692,7 +692,7 @@ def process_response_filter(text):
 
 def validate_path_params(url, path_params):
     ''' Check whether all path_params keys and params in url match. '''
-    return True
     url_params = re.findall("{[a-z|A-Z]+}", url)
     url_params = [url[1:-1] for url in url_params]  # Discard brackets
-    return url_params == list(path_params.keys())
+    return set(url_params) == set(path_params.keys())
+
