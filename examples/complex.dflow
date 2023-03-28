@@ -63,7 +63,7 @@ dialogues
           end,
           ActionGroup answers_2
             Speak('perfect thanks!')
-            FireEvent('external/complete' AF1.Param2, 'bye bye' AF1.Param1)
+            FireEvent('external/complete' AF1.Param2, ['bye bye', AF1.Param1])
           end
     end
 
