@@ -12,6 +12,9 @@ from typing import Any, List, Dict
 
 from dflow.utils import get_mm, build_model
 
+import logging
+import sys
+import builtins
 
 _THIS_DIR = path.abspath(path.dirname(__file__))
 
@@ -23,14 +26,14 @@ jinja_env = jinja2.Environment(
 
 SRC_GEN_DIR = path.join(path.realpath(getcwd()), 'gen')
 
-
+# Load dynamic templates
 TEMPLATES = [
     'actions/actions.py.jinja', 'data/nlu.yml.jinja',
     'data/stories.yml.jinja', 'data/rules.yml.jinja',
     'config.yml.jinja', 'domain.yml.jinja'
 ]
 
-
+# Load static templates
 STATIC_TEMPLATES = [
     'credentials.yml', 'endpoints.yml'
 ]
@@ -49,6 +52,10 @@ class TransformationDataModel(BaseModel):
     slots: List[Dict[str, Any]] = []
     forms: List[Dict[str, Any]] = []
     responses: List[Dict[str, Any]] = []
+    roles: List[str] = []
+    policies: Dict[str, set] = {}
+    policy_path: str = ''
+    # TODO: fill this
 
 
 def codegen(model_fillepath,
@@ -116,9 +123,14 @@ def generate(metamodel,
                                     rules=data.rules,
                                     slots=data.slots,
                                     forms=data.forms,
-                                    responses=data.responses)
+                                    responses=data.responses,
+                                    roles=data.roles,
+                                    policies=data.policies,
+                                    policy_path=data.policy_path
+                                    # TODO: fill this
+                                    )
             )
-        chmod(out_file, 509)
+        chmod(out_file, 509) # 509? MAYBE 507
 
     for file in STATIC_TEMPLATES:
         out_file = path.join(out_dir, file)
@@ -131,6 +143,44 @@ def generate(metamodel,
 
 def parse_model(model) -> TransformationDataModel:
     data = TransformationDataModel()
+
+    if model.access_control:
+
+        # Extract Roles
+        data.roles = model.access_control.roles.words
+        logging.critical(f"Roles in DATA: {data.roles}")
+        # logging.critical(model.access_control.roles.words) # A python List of strings of the roles
+        # logging.critical(builtins.type(model.access_control.roles.words))
+        # logging.critical(f'Default: {model.access_control.roles.default}')
+
+        # Extract Policies
+        for policy in model.access_control.policies:
+            logging.critical(policy.name) # Name of the policy
+            logging.critical(policy.actions) # Python List of actions that the roles below have access
+            logging.critical(policy.roles) # Python List of roles that have access to the above actions
+            
+            for action in policy.actions:
+                if action in data.policies.keys():
+                    for element in policy.roles:
+                        data.policies[action].add(element) # No duplicate values
+                else:
+                    data.policies[action] = set(policy.roles)
+
+        # Give all roles under all_actions keyword permission to all actions
+        if 'all_actions' in data.policies.keys():
+            admins = data.policies.pop('all_actions')
+            for action in data.policies.keys():
+                for admin in admins:
+                    data.policies[action].add(admin)
+            logging.critical(f'Admins: {admins}')
+
+        logging.critical(f'Policies in DATA:{data.policies}')
+
+        # Extract Path
+        data.policy_path = model.access_control.path.path
+        logging.critical(f'Given Path: {data.policy_path}')
+
+
     # Extract synonyms
     synonyms_dictionary = {}
     for synonym in model.synonyms:

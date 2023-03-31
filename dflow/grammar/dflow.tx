@@ -44,8 +44,49 @@ dFlow:
     ('eservices'
         eservices*=EServiceDef
     'end')?
+
+    ('access_controls'
+        access_control=AccessControlDef
+    'end')?
     )#
 ;
+
+// ACCESS_CONTROL -------------------------------------------------------
+// ----------------------------------------------------------------------
+
+AccessControlDef:
+    (
+    roles=Roles
+    policies+=Policy
+    path=Path
+    )#
+;
+
+Roles:
+    'Roles'
+        words+=Words[',']
+        'default:'
+            default=Words
+    'end'
+;
+
+Policy:
+    'Policy' name=ID
+        'on:' actions+=Words[',']
+        'roles:' roles+=Words[',']
+    'end'
+;
+
+Path:
+    'Path'
+        path=STRING
+    'end'
+;
+
+//    roles: [user, user_paid] -> Isws theli brackets an prepei na grapsoume polla
+
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
 EServiceDef: EServiceDefHTTP;
 
