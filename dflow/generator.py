@@ -8,13 +8,15 @@ from textxjinja import textx_jinja_generator
 import textx.scoping.providers as scoping_providers
 from rich import print
 from pydantic import BaseModel
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Set
 
 from dflow.utils import get_mm, build_model
 
 import logging
 import sys
 import builtins
+
+ALL_ACTIONS = 'all_actions'
 
 _THIS_DIR = path.abspath(path.dirname(__file__))
 
@@ -38,6 +40,9 @@ STATIC_TEMPLATES = [
     'credentials.yml', 'endpoints.yml'
 ]
 
+class AccessControlMisc():
+    policy_path: str = ''
+    default_role: str = ''
 
 class TransformationDataModel(BaseModel):
     synonyms: List[Dict[str, Any]] = []
@@ -54,7 +59,7 @@ class TransformationDataModel(BaseModel):
     responses: List[Dict[str, Any]] = []
     roles: List[str] = []
     policies: Dict[str, set] = {}
-    policy_path: str = ''
+    ac_misc = AccessControlMisc
     # TODO: fill this
 
 
@@ -126,7 +131,7 @@ def generate(metamodel,
                                     responses=data.responses,
                                     roles=data.roles,
                                     policies=data.policies,
-                                    policy_path=data.policy_path
+                                    ac_misc=data.ac_misc
                                     # TODO: fill this
                                     )
             )
@@ -148,38 +153,34 @@ def parse_model(model) -> TransformationDataModel:
 
         # Extract Roles
         data.roles = model.access_control.roles.words
-        logging.critical(f"Roles in DATA: {data.roles}")
-        # logging.critical(model.access_control.roles.words) # A python List of strings of the roles
-        # logging.critical(builtins.type(model.access_control.roles.words))
-        # logging.critical(f'Default: {model.access_control.roles.default}')
-
+        data.ac_misc.default_role = model.access_control.roles.default
+        
         # Extract Policies
-        for policy in model.access_control.policies:
-            logging.critical(policy.name) # Name of the policy
-            logging.critical(policy.actions) # Python List of actions that the roles below have access
-            logging.critical(policy.roles) # Python List of roles that have access to the above actions
-            
+        for policy in model.access_control.policies:           
             for action in policy.actions:
                 if action in data.policies.keys():
-                    for element in policy.roles:
-                        data.policies[action].add(element) # No duplicate values
+                    data.policies[action].update(set(policy.roles))
                 else:
                     data.policies[action] = set(policy.roles)
-
+        
         # Give all roles under all_actions keyword permission to all actions
-        if 'all_actions' in data.policies.keys():
-            admins = data.policies.pop('all_actions')
+        if ALL_ACTIONS in data.policies.keys():
+            admins = data.policies.pop(ALL_ACTIONS)
             for action in data.policies.keys():
-                for admin in admins:
-                    data.policies[action].add(admin)
+                data.policies[action].update(set(admins))
             logging.critical(f'Admins: {admins}')
 
-        logging.critical(f'Policies in DATA:{data.policies}')
+        data.policies = process_policies_dict(data.policies)
 
         # Extract Path
-        data.policy_path = model.access_control.path.path
-        logging.critical(f'Given Path: {data.policy_path}')
+        data.ac_misc.policy_path = model.access_control.path.path
 
+        data = validate_access_control(data)
+
+        logging.critical(f'Policies in DATA:{data.policies}')
+        logging.critical(f"Roles in DATA: {data.roles}")
+        logging.critical(f"Default role in DATA: {data.ac_misc.default_role}")
+        logging.critical(f'Given Path: {data.ac_misc.policy_path}')
 
     # Extract synonyms
     synonyms_dictionary = {}
@@ -739,6 +740,15 @@ def process_response_filter(text):
         return ''
     return ''.join([f"[{word}]" if word.isnumeric() else f"[\'{word}\']" for word in text.split('.')])
 
+def process_policies_dict(policies: Dict) -> Dict:
+    ''' Process policy names '''
+
+    # Format the name of the actions to avoid KeyErrors
+    policies_new = {}
+    for policy_name in policies.keys():
+        policies_new[f'action_{policy_name}'] = policies.get(policy_name)
+
+    return policies_new
 
 def validate_path_params(url, path_params):
     ''' Check whether all path_params keys and params in url match. '''
@@ -746,3 +756,34 @@ def validate_path_params(url, path_params):
     url_params = [url[1:-1] for url in url_params]  # Discard brackets
     return set(url_params) == set(path_params.keys())
 
+def validate_access_control(data: TransformationDataModel) -> TransformationDataModel:
+    ''' Validate access control parameters. '''
+
+    # Check if default role is declared
+    if data.ac_misc.default_role not in data.roles:
+        data.roles.append(data.ac_misc.default_role)
+        print(f"WARNING: Default role '{data.ac_misc.default_role}' is not declared")
+
+    policy_roles = unpack_nested_dict(data.policies)
+    
+    # Check if roles assinged to actions are declared
+    for role in policy_roles:
+        if role not in data.roles:
+            print(f"Role '{role}' not declared")
+            raise Exception(f"Role '{role}' not declared")
+    
+    # Check if all declared roles are assigned to at least one action
+    for role in data.roles:
+        if role not in policy_roles and role != data.ac_misc.default_role:
+            print(f"WARNING: Role '{role}' is not assigned to any action")
+
+    return data
+
+def unpack_nested_dict(dic: Dict[Any, Dict]) -> Set:
+    ''' Unpack the values of a nested dictionary. Duplicate values are discarded. '''
+
+    values = set()
+    for v in dic.values():
+        for val in v:
+            values.add(val)
+    return values
