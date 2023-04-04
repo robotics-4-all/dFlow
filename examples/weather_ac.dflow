@@ -1,0 +1,189 @@
+gslots
+    name: str = "unknown_name"
+end
+
+triggers
+
+  Intent greet
+    "hey",
+    "hello",
+    "hi",
+    "hello there",
+    "good morning",
+    "good evening",
+    "moin",
+    "hey there",
+    "let's go",
+    "hey dude",
+    "goodmorning",
+    "goodevening",
+    "good afternoon"
+  end
+
+  Intent goodbye
+    "cu",
+    "good by",
+    "cee you later",
+    "good night",
+    "bye",
+    "goodbye",
+    "have a nice day",
+    "see you around",
+    "bye bye",
+    "see you later"
+  end
+
+  Intent inform_name
+    "Hello I am" PE:PERSON['John', 'Nick'],
+    "Hi my name is" PE:PERSON['Alex'],
+    "I'm" PE:PERSON,
+    PE:PERSON,
+    "I am" PE:PERSON
+  end
+
+  Intent bot_challenge
+    "are you a bot?",
+    "are you a human?",
+    "am I talking to a bot?",
+    "am I talking to a human?"
+  end
+
+    Intent ask_weather
+      "Weather",
+      "Tell me the weather",
+      "Tell me about the weather",
+      "What is the weather like?",
+      "I want to know about the weather",
+      "Bot, what is the weather?"
+    end
+
+    Intent ask_weather_details
+      "Tell me more about the weather",
+      "I want more weather details",
+      "Tell me the weather details",
+      "Weather details",
+      "What about the humidity?"
+    end
+
+    Intent ask_rain
+      "What about the rain?",
+      "Rain",
+      "Any rain?",
+      "Is it going to rain?",
+      "Should I get an umbrella?",
+      "Will I need an umbrella?",
+      "Any chance of raining"
+    end
+end
+
+dialogues
+
+  Dialogue get_name_dialogue
+      on: greet, inform_name
+      responses:
+        Form form1
+          name_slot: str = HRI('What is you name?', [PE:PERSON])
+        end,
+        ActionGroup answer_back
+          Speak('Thanks ' form1.name_slot '! I will remember that')
+        end
+  end
+
+
+//  Dialogue inform_name_dialogue
+//      on: inform_name
+//      responses:
+//        ActionGroup confirm_name_change
+//          Speak('Thanks ' get_name_dialogue.form1.name_slot '! I will remember that')
+//          Speak('Thanks' name)
+//        end
+//  end
+
+      
+  Dialogue ask_weather_dialogue
+      on: ask_weather
+      responses:
+        ActionGroup inform_weather
+          Speak("The weather today will be sunny!")
+        end
+  end
+
+  Dialogue ask_weather_details_dialogue
+      on: ask_weather_details
+      responses:
+        ActionGroup inform_weather_details
+          Speak('The average humidity will be 60%')
+        end
+  end
+
+  Dialogue ask_rain_dialogue
+      on: ask_rain
+      responses:
+        ActionGroup inform_rain
+          Speak("There is 78.5 percent chance of raining today, you might wonna grab an umbrella!!")
+        end
+  end
+
+  Dialogue goodbye_dialogue
+      on: goodbye
+      responses:
+        ActionGroup say_goodbye
+          Speak("Bye")
+        end
+  end
+
+  Dialogue bot_challenge_dialogue
+      on: bot_challenge
+      responses:
+        ActionGroup respond_iambot
+          Speak('I am a bot, powered by dFlow and Rasa.')
+        end
+  end
+end
+
+access_controls
+  Roles
+    user_admin,
+    user_paid,
+    user,
+    user_unregistered
+
+    default: 
+      user_unregistered
+  end
+
+  Policy inform_weather_policy
+    on:
+      inform_weather
+    roles:
+      user_paid,
+      user,
+      user_unregistered
+  end
+
+  Policy inform_weather_details_policy
+    on:
+      inform_weather_details
+    roles:
+      user_paid,
+      user
+  end
+
+  Policy inform_rain_policy
+    on:
+      inform_rain
+    roles:
+      user_paid
+  end
+
+  Policy all_actions_policy
+    on: 
+      all_actions
+    roles: 
+      user_admin
+  end
+
+  Path
+    "/home/dcnatsos/Workspace/dFlow/gen/mock_user_roles.txt"
+  end
+end

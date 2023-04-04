@@ -74,6 +74,7 @@ class PolicyDecisionPoint():
         with open('{{ac_misc.policy_path}}', 'r') as f:
             s = f.read()
             PolicyDecisionPoint._user_role_policies = ast.literal_eval(s)
+      return
 {% endif %}
 
 {% for action in actions %}
@@ -172,7 +173,7 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% if action.name in policies %}
 
         # Get user's details
-        user_name = tracker.get_slot('name')
+        user_name = tracker.get_slot('name_slot')
         
         # Implement a policy decision point
         PDP = PolicyDecisionPoint()
