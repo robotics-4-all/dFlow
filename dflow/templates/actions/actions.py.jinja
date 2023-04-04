@@ -2,10 +2,12 @@ from typing import Any, Text, Dict, List
 
 from rasa_sdk import Action, Tracker, FormValidationAction
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted
+from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted, FollowupAction
 
 import requests, re, json, random
 from datetime import datetime
+import ast
+
 
 def compute_system_properties(property):
     if property.lower() == 'time':
@@ -32,6 +34,47 @@ def compute_user_properties(property):
       return ''
     if property.lower() == 'address':
       return ''
+
+{% if policies|length > 0 %}
+class PolicyDecisionPoint():
+
+    _role_action_policies = {
+    {% for key, value in policies.items() %}
+      "{{key}}" : {{value}},
+    {% endfor %}
+    }
+    
+    _user_role_policies = {}
+
+
+    def __init__(self) -> None:
+        self.role = '{{ac_misc.default_role}}'
+        self.user_authorized = False
+        PolicyDecisionPoint.read_user_role_policies_db()
+
+    def check_users_permissions(self, action_ID, user_details) -> None:
+        
+        # Find the user's role in user-roles database
+        for role_db in self._user_role_policies.keys():
+            for user_db in self._user_role_policies[role_db]:
+                if user_db == user_details:
+                    self.role = role_db
+
+        # Check if the user's role is authorized to access this action, in actions-roles/policies database
+        if self.role in self._role_action_policies[action_ID]:
+            self.user_authorized = True
+
+        return
+
+    @staticmethod
+    def read_user_role_policies_db() -> None:
+      """ Loads the user-role policies from database """
+    
+      if not PolicyDecisionPoint._user_role_policies:
+        with open('{{ac_misc.policy_path}}', 'r') as f:
+            s = f.read()
+            PolicyDecisionPoint._user_role_policies = ast.literal_eval(s)
+{% endif %}
 
 {% for action in actions %}
 {% if action.validation_method is defined %}
@@ -66,15 +109,15 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
                 params = {{slot.data.query_params}}
             )
             {% else %}
-            response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
-                headers = {{slot.data.header_params}},
-                data = {{slot.data.body_params}},
-                params = {{slot.data.query_params}}
-              )
+              response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
+                  headers = {{slot.data.header_params}},
+                  data = {{slot.data.body_params}},
+                  params = {{slot.data.query_params}}
+                )
             {% endif %}
-            try:
-                {{slot.name}} = response.json(){{slot.data.response_filter}}
-                output["{{slot.name}}"] = {{slot.name}}
+            try:  
+              {{slot.name}} = response.json(){{slot.data.response_filter}}
+              output["{{slot.name}}"] = {{slot.name}}
             except:
                 print(f'Error retrieving response from {{slot.data.url}} with code {response.status_code}.')
             {% elif slot.source_type == 'HRIParamSource' %}
@@ -117,11 +160,31 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
 {% endfor %}
 {% else %}
 class {{action.name|replace("_","")|capitalize}}(Action):
+    {# ID = "{{action.name}}" #}
+    {# followup_action = "" #}
 
     def name(self) -> Text:
         return "{{action.name}}"
 
     def run(self, dispatcher, tracker, domain):
+
+        output = []
+        {% if action.name in policies %}
+
+        # Get user's details
+        user_name = tracker.get_slot('name')
+        
+        # Implement a policy decision point
+        PDP = PolicyDecisionPoint()
+
+        # Check if he is authorized
+        PDP.check_users_permissions(self.name(), user_name)
+        
+        if not PDP.user_authorized:
+          dispatcher.utter_message(text = "You are unauthorized for this action")
+          return output
+        {% endif %}
+
         {% for entity in action.entities %}
         {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
         {% endfor %}
@@ -131,7 +194,6 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% for property in action.user_properties %}
         {{property}} = compute_user_properties("{{property}}")
         {% endfor %}
-        output = []
 
         {% for act in action.actions %}
         {% if act.type in ['SpeakAction', 'AskSlot'] %}
