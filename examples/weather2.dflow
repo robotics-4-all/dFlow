@@ -22,9 +22,9 @@ triggers
   end
 
   Intent ask_weather_2
-    "I want to tell me the weather for" PE:LOC['Thessaloniki', 'Athens'],
-    "Tell me the weather please for" PE:TIME['tomorrow', 'today'],
-    "Tell me the weather" PE:TIME['tomorrow', 'today'] "for"  PE:LOC['Thessaloniki', 'Athens']
+    "I want to tell me the weather for" PE:GPE['Thessaloniki', 'Athens'],
+    "Tell me the weather please for" PE:DATE['tomorrow', 'today'],
+    "Tell me the weather" PE:DATE['tomorrow', 'today'] "for"  PE:GPE['Thessaloniki', 'Athens']
   end
 end
 
@@ -42,7 +42,7 @@ dialogues
         on: ask_weather, ask_weather_2
         responses:
           Form form1
-            city_slot: str = HRI("For which city" USER:NAME "?", [PE:LOC])
+            city_slot: str = HRI("For which city" USER:NAME "?", [PE:GPE])
             time_slot: str = HRI('For when?', [TE:Doctor])
             answer: str = weather_svc(
                 query=[city=[form1.city_slot[city]], time=form1.time_slot, user=USER:NAME],
