@@ -12,6 +12,7 @@ from typing import Any, List, Dict, Set
 
 from dflow.utils import get_mm, build_model
 
+import json, os
 # Remove the below
 import logging
 import sys
@@ -44,6 +45,7 @@ STATIC_TEMPLATES = [
 class AccessControlMisc():
     policy_path: str = ''
     default_role: str = ''
+    role_users: Dict[str, List] = {}
 
 class TransformationDataModel(BaseModel):
     synonyms: List[Dict[str, Any]] = []
@@ -517,13 +519,27 @@ def parse_model(model) -> TransformationDataModel:
         # Extract Path
         data.ac_misc.policy_path = model.access_control.path.path
 
+        # Extract Role-Users Policies        
+        if model.access_control.users:
+            for role in model.access_control.users.roles:
+                if role.role in data.ac_misc.role_users.keys():
+                    raise Exception(f"Duplicate role '{role.role}' in 'Users:'")
+                data.ac_misc.role_users[role.role] = role.users
+
+            # Write Role-User Policies in the file. The file is created if not found.
+            with open(data.ac_misc.policy_path, 'w') as f:
+                json.dump(data.ac_misc.role_users, f)
+        else:
+            if not os.path.isfile(data.ac_misc.policy_path):
+                raise Exception(f'File not found: {data.ac_misc.policy_path}')
+
         data = validate_access_control(data, model)
 
         logging.critical(f'Policies in DATA:{data.policies}')
         logging.critical(f"Roles in DATA: {data.roles}")
         logging.critical(f"Default role in DATA: {data.ac_misc.default_role}")
         logging.critical(f'Given Path: {data.ac_misc.policy_path}')
-
+        logging.critical(f"User-Roles: {data.ac_misc.role_users}")
 
     return data
 

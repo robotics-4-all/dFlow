@@ -59,6 +59,7 @@ AccessControlDef:
     roles=Roles
     policies+=Policy
     path=Path
+    (users=Users)?
     )#
 ;
 
@@ -83,7 +84,13 @@ Path:
     'end'
 ;
 
-//    roles: [user, user_paid] -> Isws theli brackets an prepei na grapsoume polla
+Users:
+    'Users'
+        roles+=UserRoles
+    'end'
+;
+
+UserRoles: role=Words ':' users+=Words_ext[','];
 
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
@@ -327,6 +334,10 @@ ListElements:
 
 Words:
     /[-\w ]*\b/
+;
+
+Words_ext:
+    /[-\.\@\w ]*\b/
 ;
 
 Text: TextStr | EnvPropertyDef | FormParamIndex | GlobalSlotIndex;

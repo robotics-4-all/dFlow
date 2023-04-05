@@ -1,7 +1,3 @@
-gslots
-    name: str = "unknown_name"
-end
-
 triggers
 
   Intent greet
@@ -85,7 +81,7 @@ dialogues
           name_slot: str = HRI('What is you name?', [PE:PERSON])
         end,
         ActionGroup answer_back
-          Speak('Thanks ' form1.name_slot '! I will remember that')
+          Speak('Thanks' form1.name_slot '! I will remember that')
         end
   end
 
@@ -150,6 +146,20 @@ access_controls
 
     default: 
       user_unregistered
+  end
+
+  Users
+    user_admin:
+      Dimos
+
+    user_paid: 
+      Alexia,
+      Alexandros
+
+    user:
+      Eratosthenis,
+      Tamara,
+      Anestis
   end
 
   Policy inform_weather_policy
