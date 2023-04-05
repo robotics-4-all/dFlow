@@ -12,6 +12,7 @@ from typing import Any, List, Dict, Set
 
 from dflow.utils import get_mm, build_model
 
+# Remove the below
 import logging
 import sys
 import builtins
@@ -148,39 +149,6 @@ def generate(metamodel,
 
 def parse_model(model) -> TransformationDataModel:
     data = TransformationDataModel()
-
-    if model.access_control:
-
-        # Extract Roles
-        data.roles = model.access_control.roles.words
-        data.ac_misc.default_role = model.access_control.roles.default
-        
-        # Extract Policies
-        for policy in model.access_control.policies:           
-            for action in policy.actions:
-                if action in data.policies.keys():
-                    data.policies[action].update(set(policy.roles))
-                else:
-                    data.policies[action] = set(policy.roles)
-        
-        # Give all roles under all_actions keyword permission to all actions
-        if ALL_ACTIONS in data.policies.keys():
-            admins = data.policies.pop(ALL_ACTIONS)
-            for action in data.policies.keys():
-                data.policies[action].update(set(admins))
-            logging.critical(f'Admins: {admins}')
-
-        data.policies = process_policies_dict(data.policies)
-
-        # Extract Path
-        data.ac_misc.policy_path = model.access_control.path.path
-
-        data = validate_access_control(data)
-
-        logging.critical(f'Policies in DATA:{data.policies}')
-        logging.critical(f"Roles in DATA: {data.roles}")
-        logging.critical(f"Default role in DATA: {data.ac_misc.default_role}")
-        logging.critical(f'Given Path: {data.ac_misc.policy_path}')
 
     # Extract synonyms
     synonyms_dictionary = {}
@@ -521,6 +489,42 @@ def parse_model(model) -> TransformationDataModel:
                 if method not in extract_methods:
                     extract_methods.append(method)
         data.slots.append({'name': k, 'type': type, 'extract_methods': extract_methods, 'default': None})
+    
+    # Extract access control
+    if model.access_control:
+
+        # Extract Roles
+        data.roles = model.access_control.roles.words
+        data.ac_misc.default_role = model.access_control.roles.default
+        
+        # Extract Policies
+        for policy in model.access_control.policies:           
+            for action in policy.actions:
+                if action in data.policies.keys():
+                    data.policies[action].update(set(policy.roles))
+                else:
+                    data.policies[action] = set(policy.roles)
+        
+        # Give all roles under "all_actions" keyword permission to all actions
+        if ALL_ACTIONS in data.policies.keys():
+            admins = data.policies.pop(ALL_ACTIONS)
+            for action in data.policies.keys():
+                data.policies[action].update(set(admins))
+            logging.critical(f'Admins: {admins}')
+
+        data.policies = process_policies_dict(data.policies)
+
+        # Extract Path
+        data.ac_misc.policy_path = model.access_control.path.path
+
+        data = validate_access_control(data, model)
+
+        logging.critical(f'Policies in DATA:{data.policies}')
+        logging.critical(f"Roles in DATA: {data.roles}")
+        logging.critical(f"Default role in DATA: {data.ac_misc.default_role}")
+        logging.critical(f'Given Path: {data.ac_misc.policy_path}')
+
+
     return data
 
 
@@ -756,7 +760,7 @@ def validate_path_params(url, path_params):
     url_params = [url[1:-1] for url in url_params]  # Discard brackets
     return set(url_params) == set(path_params.keys())
 
-def validate_access_control(data: TransformationDataModel) -> TransformationDataModel:
+def validate_access_control(data: TransformationDataModel, model) -> TransformationDataModel:
     ''' Validate access control parameters. '''
 
     # Check if default role is declared
@@ -769,13 +773,24 @@ def validate_access_control(data: TransformationDataModel) -> TransformationData
     # Check if roles assinged to actions are declared
     for role in policy_roles:
         if role not in data.roles:
-            print(f"Role '{role}' not declared")
-            raise Exception(f"Role '{role}' not declared")
+            raise Exception(f"Role '{role}' is not declared under 'Roles:'")
     
     # Check if all declared roles are assigned to at least one action
     for role in data.roles:
         if role not in policy_roles and role != data.ac_misc.default_role:
             print(f"WARNING: Role '{role}' is not assigned to any action")
+
+    # Check if action names are the same in data.actions and policies
+    data_actions = [action["name"] for action in data.actions]
+
+    for action in data.policies.keys():
+        if action not in data_actions:
+            policy_name = ""
+            for policy in model.access_control.policies:
+                for action_p in policy.actions:
+                    if action == f"action_{action_p}":
+                        policy_name = policy.name
+            raise Exception(f"Action: {action} in Policy: {policy_name} is not an existing ActionGroup")
 
     return data
 
