@@ -51,67 +51,6 @@ dFlow:
     )#
 ;
 
-// ACCESS_CONTROL -------------------------------------------------------
-// ----------------------------------------------------------------------
-
-AccessControlDef:
-    (
-    roles=Roles
-    policies+=Policy
-    path=Path
-    (users=Users)?
-    authentication=Authentication
-    )#
-;
-
-Roles:
-    'Roles'
-        words+=Words[',']
-        'default:'
-            default=Words
-    'end'
-;
-
-Policy:
-    'Policy' name=ID
-        'on:' actions+=Words[',']
-        'roles:' roles+=Words[',']
-    'end'
-;
-
-Path:
-    'Path'
-        path=STRING
-    'end'
-;
-
-Users:
-    'Users'
-        roles+=UserRoles
-    'end'
-;
-
-Authentication:
-    'Authentication'
-        'method:' method=AuthMethods
-        (
-        'slot_name:' slot_name=Words |
-        (
-        'token:' token=Words
-        'channel:' channel=Words
-        'signing_secret:' signing_secret = Words
-        )
-        )
-    'end'
-;
-
-UserRoles: role=Words ':' users+=Words_ext[','];
-
-AuthMethods: 'slot' | 'slack';
-
-// ----------------------------------------------------------------------
-// ----------------------------------------------------------------------
-
 EServiceDef: EServiceDefHTTP;
 
 EServiceDefHTTP:
@@ -319,6 +258,66 @@ FireEventAction:
 ;
 
 RESTCallAction: EServiceCallHTTP;
+// ----------------------------------------------------------------------
+
+// ACCESS_CONTROL -------------------------------------------------------
+// ----------------------------------------------------------------------
+
+AccessControlDef:
+    (
+    roles=Roles
+    policies+=Policy
+    path=Path
+    (users=Users)?
+    authentication=Authentication
+    )#
+;
+
+Roles:
+    'Roles'
+        words+=Words[',']
+        'default:'
+            default=Words
+    'end'
+;
+
+Policy:
+    'Policy' name=ID
+        'on:' actions+=Words[',']
+        'roles:' roles+=Words[',']
+    'end'
+;
+
+Path:
+    'Path'
+        path=STRING
+    'end'
+;
+
+Users:
+    'Users'
+        roles+=UserRoles
+    'end'
+;
+
+Authentication:
+    'Authentication'
+        'method:' method=AuthMethods
+        (
+        'slot_name:' slot_name=Words |
+        (
+        'token:' token=Words
+        'channel:' channel=Words
+        'signing_secret:' signing_secret = Words
+        )
+        )
+    'end'
+;
+
+UserRoles: role=Words ':' users+=Words_ext[','];
+
+AuthMethods: 'slot' | 'slack';
+
 // ----------------------------------------------------------------------
 
 // GENERAL --------------------------------------------------------------
