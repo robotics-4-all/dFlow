@@ -4,9 +4,14 @@ from rasa_sdk import Action, Tracker, FormValidationAction
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted, FollowupAction
 
-import requests, re, json, random
+import requests, re, json, random, socket
 from datetime import datetime
+{% if policies|length > 0 %}
 import ast
+{% endif %}
+{# TODO: Add an if statement to import only if slack channel communication is defined #}
+from slack_sdk import WebClient
+
 
 
 def compute_system_properties(property):
@@ -18,6 +23,14 @@ def compute_system_properties(property):
       return random.randint(0,100)
     if property.lower() == 'random_float':
       return random.random()
+    if property.lower() == 'hostname':
+      return socket.gethostname()
+    if property.lower() == 'public_ip':
+      try:
+        return requests.get('https://api.ipify.org').content.decode('utf8')
+      except:
+        return "Could not resolve IP address"
+
 
 def compute_user_properties(property):
     if property.lower() == 'name':
@@ -52,8 +65,18 @@ class PolicyDecisionPoint():
         self.user_authorized = False
         PolicyDecisionPoint.read_user_role_policies_db()
 
-    def check_users_permissions(self, action_ID, user_details) -> None:
+    def check_users_permissions(self, action_ID, tracker) -> None:
         
+        {% if ac_misc.authentication.method == 'slot' %}
+        # Get user's details via slot
+        user_details = tracker.get_slot('{{ac_misc.authentication.slot_name}}')
+        {% else %}
+        # Get user's details via slack API
+        client = WebClient(token="{{ac_misc.authentication.token}}")
+        sender_id = tracker.sender_id
+        user_details = dict(client.users_info(user=sender_id)['user'])['profile']['email']
+        {% endif %}
+
         # Find the user's role in user-roles database
         for role_db in self._user_role_policies.keys():
             for user_db in self._user_role_policies[role_db]:
@@ -172,14 +195,11 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         output = []
         {% if action.name in policies %}
 
-        # Get user's details
-        user_name = tracker.get_slot('name_slot')
-        
         # Implement a policy decision point
         PDP = PolicyDecisionPoint()
 
         # Check if he is authorized
-        PDP.check_users_permissions(self.name(), user_name)
+        PDP.check_users_permissions(self.name(), tracker)
         
         if not PDP.user_authorized:
           dispatcher.utter_message(text = "You are unauthorized for this action")

@@ -60,6 +60,7 @@ AccessControlDef:
     policies+=Policy
     path=Path
     (users=Users)?
+    authentication=Authentication
     )#
 ;
 
@@ -90,7 +91,23 @@ Users:
     'end'
 ;
 
+Authentication:
+    'Authentication'
+        'method:' method=AuthMethods
+        (
+        'slot_name:' slot_name=Words |
+        (
+        'token:' token=Words
+        'channel:' channel=Words
+        'signing_secret:' signing_secret = Words
+        )
+        )
+    'end'
+;
+
 UserRoles: role=Words ':' users+=Words_ext[','];
+
+AuthMethods: 'slot' | 'slack';
 
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
@@ -362,7 +379,9 @@ SystemProperty:
 	'TIME'			|
 	'LOCATION'		|
 	'RANDOM_INT'	|
-	'RANDOM_FLOAT'
+	'RANDOM_FLOAT'  |
+    'HOSTNAME'      |
+    'PUBLIC_IP'
 ;
 
 // ----------------------------------------------------------------------
