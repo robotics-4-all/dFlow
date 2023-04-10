@@ -48,6 +48,10 @@ dFlow:
     ('access_controls'
         access_control=AccessControlDef
     'end')?
+
+    ('connectors'
+        connectors+=Connector
+    'end')?
     )#
 ;
 
@@ -260,6 +264,30 @@ FireEventAction:
 RESTCallAction: EServiceCallHTTP;
 // ----------------------------------------------------------------------
 
+// CONNECTORS -----------------------------------------------
+// ----------------------------------------------------------------------
+
+Connector: Slack | Telegram;
+
+Slack:
+    ('Connector' name='slack'
+        'token:' token=STRING
+        'channel:' channel=STRING
+        'signing_secret:' signing_secret=STRING
+    'end')?
+;
+
+Telegram:
+    ('Connector' name='telegram'
+        'token:' token=STRING
+        'verify:' verify=STRING
+        'webhook_url:' webhook_url=STRING
+    'end')?
+;
+
+
+// ----------------------------------------------------------------------
+
 // ACCESS_CONTROL -------------------------------------------------------
 // ----------------------------------------------------------------------
 
@@ -304,13 +332,8 @@ Authentication:
     'Authentication'
         'method:' method=AuthMethods
         (
-        'slot_name:' slot_name=Words |
-        (
-        'token:' token=Words
-        'channel:' channel=Words
-        'signing_secret:' signing_secret = Words
-        )
-        )
+        'slot_name:' slot_name=Words
+        )?
     'end'
 ;
 

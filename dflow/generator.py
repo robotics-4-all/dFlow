@@ -34,26 +34,20 @@ SRC_GEN_DIR = path.join(path.realpath(getcwd()), 'gen')
 TEMPLATES = [
     'actions/actions.py.jinja', 'data/nlu.yml.jinja',
     'data/stories.yml.jinja', 'data/rules.yml.jinja',
-    'config.yml.jinja', 'domain.yml.jinja'
+    'config.yml.jinja', 'domain.yml.jinja',
+    'credentials.yml.jinja'
 ]
 
 # Load static templates
 STATIC_TEMPLATES = [
-    'credentials.yml', 'endpoints.yml'
+    'endpoints.yml'
 ]
-
-class AccessControlAuthentication():
-    method: str = ''
-    slot_name: str = ''
-    token: str = ''
-    channel = ''
-    signing_secret = ''
 
 class AccessControlMisc():
     policy_path: str = ''
     default_role: str = ''
     role_users: Dict[str, List] = {}
-    authentication = AccessControlAuthentication
+    authentication: Dict[str, Any] = {}
 
 class TransformationDataModel(BaseModel):
     synonyms: List[Dict[str, Any]] = []
@@ -67,6 +61,7 @@ class TransformationDataModel(BaseModel):
     rules: List[Dict[str, Any]] = []
     slots: List[Dict[str, Any]] = []
     forms: List[Dict[str, Any]] = []
+    connectors: List[Dict[str, Any]] = []
     responses: List[Dict[str, Any]] = []
     roles: List[str] = []
     policies: Dict[str, set] = {}
@@ -140,6 +135,7 @@ def generate(metamodel,
                                     slots=data.slots,
                                     forms=data.forms,
                                     responses=data.responses,
+                                    connectors=data.connectors,
                                     roles=data.roles,
                                     policies=data.policies,
                                     ac_misc=data.ac_misc
@@ -500,6 +496,26 @@ def parse_model(model) -> TransformationDataModel:
                     extract_methods.append(method)
         data.slots.append({'name': k, 'type': type, 'extract_methods': extract_methods, 'default': None})
     
+    # Extract Connectors
+    if model.connectors:
+        for connector in model.connectors:
+            if connector.name == 'slack':
+                data.connectors.append({
+                    'name': connector.name,
+                    'token': connector.token,
+                    'channel': connector.channel,
+                    'signing_secret': connector.signing_secret
+                })
+            elif connector.name == 'telegram':
+                data.connectors.append({
+                    'name': connector.name,
+                    'token': connector.token,
+                    'verify': connector.verify,
+                    'webhook_url': connector.webhook_url
+                })
+            else:
+                raise Exception(f"Connector {connector.name} is not supported")
+                    
     # Extract access control
     if model.access_control:
 
@@ -543,23 +559,18 @@ def parse_model(model) -> TransformationDataModel:
 
         # Extract Authentication method
         if model.access_control.authentication.method == 'slot':
-            if model.access_control.authentication.token:
+            if not model.access_control.authentication.slot_name:
                 raise Exception("You need to provide a 'slot_name' for this authentication method")
 
-            data.ac_misc.authentication.method = model.access_control.authentication.method
-            data.ac_misc.authentication.slot_name = model.access_control.authentication.slot_name
-            logging.critical(f"Method: {data.ac_misc.authentication.method}, slot_name: {data.ac_misc.authentication.slot_name}")
+            data.ac_misc.authentication['method'] = model.access_control.authentication.method
+            data.ac_misc.authentication['slot_name'] = model.access_control.authentication.slot_name
+            logging.critical(f"Method: {data.ac_misc.authentication['method']}, slot_name: {data.ac_misc.authentication['slot_name']}")
         else:
             if model.access_control.authentication.slot_name:
-                raise Exception("'slot_name' is not applicable to this authentication method")
+                raise Warning("'slot_name' is not applicable to this authentication method")
 
-            data.ac_misc.authentication.method = model.access_control.authentication.method
-            data.ac_misc.authentication.token = model.access_control.authentication.token
-            data.ac_misc.authentication.channel = model.access_control.authentication.channel
-            data.ac_misc.authentication.signing_secret = model.access_control.authentication.signing_secret
-            logging.critical(f"Method: {data.ac_misc.authentication.method}, token: {data.ac_misc.authentication.token}"
-                             + f" channel: {data.ac_misc.authentication.channel}, signing_secret: {data.ac_misc.authentication.signing_secret}")
-
+            data.ac_misc.authentication['method'] = model.access_control.authentication.method
+            logging.critical(f"Method: {data.ac_misc.authentication['method']}")
 
         # Validate access control
         data = validate_access_control(data, model)
@@ -838,11 +849,17 @@ def validate_access_control(data: TransformationDataModel, model) -> Transformat
             raise Exception(f"Action: {action} in Policy: {policy_name} is not an existing ActionGroup")
 
     # Check if the authentication slot exists in the bots slots
-    if data.ac_misc.authentication.method == 'slot':
+    if data.ac_misc.authentication['method'] == 'slot':
         slot_names = [slot['name'] for slot in data.slots]
         logging.critical(f"Available slot_names: {slot_names}")
         if data.ac_misc.authentication.slot_name not in slot_names:
             raise Exception(f'Authentication slot {data.ac_misc.authentication.slot_name} not defined in Dialogues')
+
+    # Check if third-party authentication is required, but no third-party connector is defined
+    if data.ac_misc.authentication['method'] != 'slot':
+        connector_names = [connector['name'] for connector in data.connectors]
+        if data.ac_misc.authentication['method'] not in connector_names:
+            raise Exception(f"You need to define a '{data.ac_misc.authentication['method']}' connector to use this authentication method")
 
     return data
 

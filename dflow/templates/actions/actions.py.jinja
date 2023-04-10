@@ -13,6 +13,7 @@ import ast
 from slack_sdk import WebClient
 
 
+import logging
 
 def compute_system_properties(property):
     if property.lower() == 'time':
@@ -69,23 +70,30 @@ class PolicyDecisionPoint():
         
         {% if ac_misc.authentication.method == 'slot' %}
         # Get user's details via slot
-        user_details = tracker.get_slot('{{ac_misc.authentication.slot_name}}')
+        user_identifier = tracker.get_slot('{{ac_misc.authentication.slot_name}}')
         {% else %}
         # Get user's details via slack API
-        client = WebClient(token="{{ac_misc.authentication.token}}")
+          {% for connector in connectors %}
+            {% if connector['name'] == 'slack' %}
+        client = WebClient(token="{{connector['token']}}")
+            {% endif %}
+          {% endfor %}
         sender_id = tracker.sender_id
-        user_details = dict(client.users_info(user=sender_id)['user'])['profile']['email']
+        user_identifier = dict(client.users_info(user=sender_id)['user'])['profile']['email']
         {% endif %}
 
         # Find the user's role in user-roles database
         for role_db in self._user_role_policies.keys():
             for user_db in self._user_role_policies[role_db]:
-                if user_db == user_details:
+                if user_db == user_identifier:
                     self.role = role_db
 
         # Check if the user's role is authorized to access this action, in actions-roles/policies database
         if self.role in self._role_action_policies[action_ID]:
             self.user_authorized = True
+
+        logging.critical(f"You are user: {self.role}, and your authorization for this action is: {self.user_authorized}")
+        logging.critical(f"Your unique identifier is: {user_identifier}")
 
         return
 
