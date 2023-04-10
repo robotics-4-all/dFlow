@@ -70,6 +70,14 @@ triggers
       "Will I need an umbrella?",
       "Any chance of raining"
     end
+
+  Intent system_parameters
+    "Parameters",
+    "Params",
+    "System params",
+    "System parameters"
+
+  end
 end
 
 dialogues
@@ -78,7 +86,8 @@ dialogues
       on: greet, inform_name
       responses:
         Form form1
-          name_slot: str = HRI('What is you name?', [PE:PERSON])
+          name_slot: str = HRI('What is you name KIND SIR?', [PE:PERSON]) //[user_admin]
+          //name_slot: str = HRI('What is you name?', [PE:PERSON]) //[user, user_unregistered]
         end,
         ActionGroup answer_back
           Speak('Thanks' form1.name_slot '! I will remember that')
@@ -135,6 +144,15 @@ dialogues
           Speak('I am a bot, powered by dFlow and Rasa.')
         end
   end
+
+  Dialogue system_time_dialogue
+      on: system_parameters
+      responses:
+        ActionGroup say_system_parameters
+          Speak("System's HostName:" SYSTEM: HOSTNAME "\nSystem's public IP" SYSTEM: PUBLIC_IP) //[user_admin]
+          //Speak("You don't have access to this information") //[user_paid, user, user_unregistered]
+        end
+  end
 end
 
 access_controls
@@ -150,16 +168,13 @@ access_controls
 
   Users
     user_admin:
-      Dimos
+      dcnatsos@ece.auth.gr
 
     user_paid: 
-      Alexia,
-      Alexandros
+      natdimos@hotmail.com
 
     user:
-      Eratosthenis,
-      Tamara,
-      Anestis
+      natsos@aristurtle.gr
   end
 
   Policy inform_weather_policy
@@ -186,6 +201,13 @@ access_controls
       user_paid
   end
 
+  Policy system_parameters_policy
+    on: 
+      say_system_parameters
+    roles: 
+      user_admin
+  end
+
   Policy all_actions_policy
     on: 
       all_actions
@@ -196,4 +218,26 @@ access_controls
   Path
     "/home/dcnatsos/Workspace/dFlow/gen/mock_user_roles.txt"
   end
+
+  Authentication
+    //method: slot
+    //slot_name: name_slot
+    
+    method: slack
+    //attribute: email -> Argotera
+  end
+end
+
+connectors
+  Connector slack
+    token: "xoxb-4883692765252-4884029447172-8g57sc9cnZQs6RkA73LdsJ56"
+    channel: "bot"
+    signing_secret: "65140e237b845fe11c576e31e99564b6"
+  end
+
+//  Connector telegram
+//    token: "490161424:AAGlRxinBRtKGb21_rlOEMtDFZMXBl6EC0o"
+//    verify: "your_bot"
+//    webhook_url: "https://your_url.com/webhooks/telegram/webhook"
+//  end
 end
