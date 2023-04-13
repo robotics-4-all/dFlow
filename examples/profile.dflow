@@ -1,9 +1,16 @@
 triggers
   Intent fill_information
     "Hello I am" PE:PERSON['John', 'Nick'],
-    "Hi my name is" PE:PERSON
-    "I am 30 years old"
+    "Hi my name is" PE:PERSON,
+    "I am 30 years old",
     "I'm" PE:PERSON "and I am 20 years old"
+  end
+
+  Intent bot_challenge
+    "are you a bot?",
+    "are you a human?",
+    "am I talking to a bot?",
+    "am I talking to a human?"
   end
 end
 
@@ -13,11 +20,19 @@ dialogues
         on: fill_information
         responses:
           Form form1
-            name: str = HRI('What\'s your name?', [PERSON])
+            name: str = HRI('What\'s your name?', [PE:PERSON])
             age: int = HRI('How old are you?')
           end,
           ActionGroup answer_back
             Speak('Glad to meet you ' form1.name)
+          end
+  end
+
+  Dialogue bot_challenge_dialogue
+        on: bot_challenge
+        responses:
+          ActionGroup respond_iambot
+            Speak('I am a bot, powered by dFlow and Rasa.')
           end
   end
 end

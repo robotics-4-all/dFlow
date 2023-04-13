@@ -2,9 +2,32 @@ triggers
   Intent ask_weather
     "I want to tell me the weather",
     "Tell me the weather please",
-    "I want to tell me the weather for" PE:LOC['Thessaloniki', 'Athens'],
-    "Tell me the weather please for" PE:TIME['tomorrow', 'today'],
-    "Tell me the weather" PE:TIME['tomorrow', 'today'] "for"  PE:LOC['Thessaloniki', 'Athens']
+    "I want to tell me the weather for" PE:GPE['Thessaloniki', 'Athens'],
+    "Tell me the weather please for" PE:DATE['tomorrow', 'today'],
+    "Tell me the weather" PE:DATE['tomorrow', 'today'] "for"  PE:GPE['Thessaloniki', 'Athens']
+  end
+
+  Intent greet
+    "hey",
+    "hello",
+    "hi",
+    "hello there",
+    "good morning",
+    "good evening",
+    "moin",
+    "hey there",
+    "let's go",
+    "hey dude",
+    "goodmorning",
+    "goodevening",
+    "good afternoon"
+  end
+
+  Intent bot_challenge
+    "are you a bot?",
+    "are you a human?",
+    "am I talking to a bot?",
+    "am I talking to a human?"
   end
 end
 
@@ -19,15 +42,31 @@ end
 
 dialogues
   Dialogue weather_dialogue
-        on: ask_weather
-        responses:
-          Form form1
-            city_slot: str = HRI('For which city?', [PE:LOC])
-            time_slot: str = HRI('For when?', [PE:TIME])
-            answer: str = weather_svc(query=[city=form1.city_slot, time=form1.time_slot],)[weather.forecast]
-          end,
-          ActionGroup answer_back
-            Speak('The weather is ' form1.answer)
-          end
+      on: ask_weather
+      responses:
+        Form form1
+          city_slot: str = HRI('For which city?', [PE:GPE])
+          time_slot: str = HRI('For when?', [PE:DATE])
+          answer: str = weather_svc(query=[city=form1.city_slot, time=form1.time_slot],)[weather.forecast]
+        end,
+        ActionGroup answer_back
+          Speak('The weather is ' form1.answer)
+        end
+  end
+
+  Dialogue greet_dialogue
+      on: greet
+      responses:
+        ActionGroup greet_back
+          Speak('Hello there!!!')
+        end
+  end
+  
+  Dialogue bot_challenge_dialogue
+      on: bot_challenge
+      responses:
+        ActionGroup respond_iambot
+          Speak('I am a bot, powered by dFlow and Rasa.')
+        end
   end
 end
