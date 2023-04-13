@@ -191,11 +191,11 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
                 params = {{slot.data.query_params}}
             )
             {% else %}
-              response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
-                  headers = {{slot.data.header_params}},
-                  data = {{slot.data.body_params}},
-                  params = {{slot.data.query_params}}
-                )
+            response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
+                headers = {{slot.data.header_params}},
+                data = {{slot.data.body_params}},
+                params = {{slot.data.query_params}}
+              )
             {% endif %}
             try:  
               {{slot.name}} = response.json(){{slot.data.response_filter}}
