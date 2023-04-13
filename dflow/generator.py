@@ -547,7 +547,7 @@ def parse_model(model) -> TransformationDataModel:
                     else:
                         data.policies[action] = set(policy.roles)
 
-        # Give all roles under "all_actions" keyword permission to all actions
+        # Give all roles under "all_actions" keyword permission to all actions (if any)
         if ALL_ACTIONS in data.policies.keys():
             admins = data.policies.pop(ALL_ACTIONS)
             for action in data.policies.keys():
@@ -583,7 +583,7 @@ def parse_model(model) -> TransformationDataModel:
             logging.critical(f"Method: {data.ac_misc.authentication['method']}, slot_name: {data.ac_misc.authentication['slot_name']}")
         else:
             if model.access_control.authentication.slot_name:
-                raise Warning("'slot_name' is not applicable to this authentication method")
+                print("WARNING: 'slot_name' is not applicable to this authentication method")
 
             data.ac_misc.authentication['method'] = model.access_control.authentication.method
             logging.critical(f"Method: {data.ac_misc.authentication['method']}")
@@ -840,18 +840,16 @@ def validate_access_control(data: TransformationDataModel, model) -> Transformat
             data.roles.append(data.ac_misc.default_role)
             print(f"WARNING: Default role '{data.ac_misc.default_role}' is not defined under 'Roles:'")
 
+        actionGroup_roles = []
+        action_roles = []
+
         if data.ac_misc.global_ac:
-            policy_roles = unpack_nested_dict(data.policies)
-            
+            actionGroup_roles = unpack_nested_dict(data.policies)
+
             # Check if roles assinged to actionGroups are defined
-            for role in policy_roles:
+            for role in actionGroup_roles:
                 if role not in data.roles:
                     raise Exception(f"Role '{role}' is not defined under 'Roles:'")
-            
-            # Check if all defined roles are assigned to at least one actionGroup
-            for role in data.roles:
-                if role not in policy_roles and role != data.ac_misc.default_role:
-                    print(f"WARNING: Role '{role}' is not assigned to any actionGroup")
 
             # Check if action names are the same in data.actions and policies
             data_actions = [action["name"] for action in data.actions]
@@ -867,16 +865,20 @@ def validate_access_control(data: TransformationDataModel, model) -> Transformat
 
         if data.ac_misc.local_ac:
             # Check if roles assigned to actions are defined
-            unvalidated_roles = []
             for actionGroup in data.actions:
                 if 'actions' in actionGroup.keys():
                     for action in actionGroup['actions']:
                         if 'roles' in action.keys():
-                            unvalidated_roles.extend(action['roles'])
-            for role in unvalidated_roles:
+                            action_roles.extend(action['roles'])
+            for role in action_roles:
                 if role not in data.roles:
                     raise Exception(f"Role '{role}' is not defined under 'Roles:'")
                 
+        # Check if all defined roles are assigned to at least one actionGroup or action
+        for role in data.roles:
+            if role not in action_roles and role not in actionGroup_roles and role != data.ac_misc.default_role:
+                print(f"WARNING: Role '{role}' is defined but not used")
+
         # Check if the authentication slot exists in the bot's slots, if slot auth is selected
         if data.ac_misc.authentication['method'] == 'slot':
             slot_names = [slot['name'] for slot in data.slots]
