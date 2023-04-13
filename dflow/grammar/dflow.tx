@@ -187,7 +187,7 @@ EServiceCallHTTP:
         ('path=' '[' path_params*=EServiceParam[','] ']' ',')?
         ('body=' '[' body_params*=EServiceParam[','] ']' ',')?
         )#
-    ')' ('[' response_filter=EServiceResponseFilter ']')?
+    ')' ('[' response_filter=EServiceResponseFilter ']')? ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 EServiceParam: name=ID '=' value=ParameterValue;
@@ -246,19 +246,19 @@ Action:
 ;
 
 SpeakAction:
-    'Speak' '(' text+=Text ')'
+    'Speak' '(' text+=Text ')' ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 SetFormSlot:
-    'SetFSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')'
+    'SetFSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')' ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 SetGlobalSlot:
-    'SetGSlot' '(' slotRef=GlobalSlotRef ',' value=ParameterValue ')'
+    'SetGSlot' '(' slotRef=GlobalSlotRef ',' value=ParameterValue ')' ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 FireEventAction:
-    'FireEvent' '(' uri+=Text ',' msg=ParameterValue ')'
+    'FireEvent' '(' uri+=Text ',' msg=ParameterValue ')' ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 RESTCallAction: EServiceCallHTTP;
@@ -294,7 +294,7 @@ Telegram:
 AccessControlDef:
     (
     roles=Roles
-    policies+=Policy
+    policies*=Policy
     path=Path
     (users=Users)?
     authentication=Authentication

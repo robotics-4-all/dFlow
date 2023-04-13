@@ -48,6 +48,8 @@ class AccessControlMisc():
     default_role: str = ''
     role_users: Dict[str, List] = {}
     authentication: Dict[str, Any] = {}
+    global_ac: bool = False # True if global(actionGroup) access control is defined
+    local_ac: bool = False # True if local(action) access control is defined
 
 class TransformationDataModel(BaseModel):
     synonyms: List[Dict[str, Any]] = []
@@ -267,7 +269,13 @@ def parse_model(model) -> TransformationDataModel:
                 actions_slots = []
                 actions_user_properties = []
                 actions_entities = []
+                action_local_ac = False
                 for action in response.actions:
+                    roles = []
+                    if action.roles:
+                        roles = list(set(action.roles))
+                        action_local_ac = True
+                        data.ac_misc.local_ac = True # Local access control is defined
                     if action.__class__.__name__ == 'SpeakAction':
                         message, entities, slots, user_properties, system_properties = process_text(action.text)
                         actions_slots.extend(slots)
@@ -276,7 +284,8 @@ def parse_model(model) -> TransformationDataModel:
                         actions.append({
                             'type': action.__class__.__name__,
                             'text': message,
-                            'system_properties': system_properties
+                            'system_properties': system_properties,
+                            'roles': roles
                         })
                     elif action.__class__.__name__ == 'FireEventAction':
                         msg_message, msg_slots, msg_user_properties, msg_system_properties = process_parameter_value(action.msg)
@@ -288,7 +297,8 @@ def parse_model(model) -> TransformationDataModel:
                             'type': action.__class__.__name__,
                             'uri': uri_message.replace(' ', ''),
                             'msg': msg_message,
-                            'system_properties': msg_system_properties+uri_system_properties
+                            'system_properties': msg_system_properties+uri_system_properties,
+                            'roles': roles
                         })
                     elif action.__class__.__name__ == 'SetFormSlot':
                         result, slots, user_properties, system_properties = process_parameter_value(action.value)
@@ -298,7 +308,8 @@ def parse_model(model) -> TransformationDataModel:
                             'type': action.__class__.__name__,
                             'slot': action.slotRef.param.name,
                             'value': result,
-                            'system_properties': system_properties
+                            'system_properties': system_properties,
+                            'roles': roles
                         })
                     elif action.__class__.__name__ == 'SetGlobalSlot':
                         result, slots, user_properties, system_properties = process_parameter_value(action.value)
@@ -308,7 +319,8 @@ def parse_model(model) -> TransformationDataModel:
                             'type': action.__class__.__name__,
                             'slot': action.slotRef.slot.name,
                             'value': result,
-                            'system_properties': system_properties
+                            'system_properties': system_properties,
+                            'roles': roles
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
                         path_params, path_slots, path_user_properties, path_system_properties = process_eservice_params_as_dict(action.path_params)
@@ -330,7 +342,8 @@ def parse_model(model) -> TransformationDataModel:
                             'header_params': header_params,
                             'body_params': body_params,
                             'response_filter': action.response_filter,
-                            'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties))
+                            'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties)),
+                            'roles': roles
                         })
                 # Validate action before appending it to data object
                 validation = True
@@ -351,7 +364,8 @@ def parse_model(model) -> TransformationDataModel:
                         "actions": actions,
                         "slots": actions_slots,
                         "user_properties": actions_user_properties,
-                        "entities": actions_entities
+                        "entities": actions_entities,
+                        "local_ac": action_local_ac
                     })
             elif response.__class__.__name__ == 'Form':
                 form = f"{response.name}_form"
@@ -524,13 +538,15 @@ def parse_model(model) -> TransformationDataModel:
         data.ac_misc.default_role = model.access_control.roles.default
         
         # Extract Policies
-        for policy in model.access_control.policies:           
-            for action in policy.actions:
-                if action in data.policies.keys():
-                    data.policies[action].update(set(policy.roles))
-                else:
-                    data.policies[action] = set(policy.roles)
-        
+        if model.access_control.policies:
+            data.ac_misc.global_ac = True # Global access control is defined 
+            for policy in model.access_control.policies:           
+                for action in policy.actions:
+                    if action in data.policies.keys():
+                        data.policies[action].update(set(policy.roles))
+                    else:
+                        data.policies[action] = set(policy.roles)
+
         # Give all roles under "all_actions" keyword permission to all actions
         if ALL_ACTIONS in data.policies.keys():
             admins = data.policies.pop(ALL_ACTIONS)
@@ -572,14 +588,14 @@ def parse_model(model) -> TransformationDataModel:
             data.ac_misc.authentication['method'] = model.access_control.authentication.method
             logging.critical(f"Method: {data.ac_misc.authentication['method']}")
 
-        # Validate access control
-        data = validate_access_control(data, model)
-
-        logging.critical(f'Policies in DATA:{data.policies}')
+        logging.critical(f'\n\nPolicies in DATA:{data.policies}')
         logging.critical(f"Roles in DATA: {data.roles}")
         logging.critical(f"Default role in DATA: {data.ac_misc.default_role}")
         logging.critical(f'Given Path: {data.ac_misc.policy_path}')
-        logging.critical(f"User-Roles: {data.ac_misc.role_users}")
+        logging.critical(f"User-Roles: {data.ac_misc.role_users}\n\n")
+
+    # Validate access control
+    data = validate_access_control(data, model)
 
     return data
 
@@ -818,48 +834,65 @@ def validate_path_params(url, path_params):
 
 def validate_access_control(data: TransformationDataModel, model) -> TransformationDataModel:
     ''' Validate access control parameters. '''
+    if model.access_control:
+        # Check if default role is defined
+        if data.ac_misc.default_role not in data.roles:
+            data.roles.append(data.ac_misc.default_role)
+            print(f"WARNING: Default role '{data.ac_misc.default_role}' is not defined under 'Roles:'")
 
-    # Check if default role is declared
-    if data.ac_misc.default_role not in data.roles:
-        data.roles.append(data.ac_misc.default_role)
-        print(f"WARNING: Default role '{data.ac_misc.default_role}' is not declared")
+        if data.ac_misc.global_ac:
+            policy_roles = unpack_nested_dict(data.policies)
+            
+            # Check if roles assinged to actionGroups are defined
+            for role in policy_roles:
+                if role not in data.roles:
+                    raise Exception(f"Role '{role}' is not defined under 'Roles:'")
+            
+            # Check if all defined roles are assigned to at least one actionGroup
+            for role in data.roles:
+                if role not in policy_roles and role != data.ac_misc.default_role:
+                    print(f"WARNING: Role '{role}' is not assigned to any actionGroup")
 
-    policy_roles = unpack_nested_dict(data.policies)
-    
-    # Check if roles assinged to actions are declared
-    for role in policy_roles:
-        if role not in data.roles:
-            raise Exception(f"Role '{role}' is not declared under 'Roles:'")
-    
-    # Check if all declared roles are assigned to at least one action
-    for role in data.roles:
-        if role not in policy_roles and role != data.ac_misc.default_role:
-            print(f"WARNING: Role '{role}' is not assigned to any action")
+            # Check if action names are the same in data.actions and policies
+            data_actions = [action["name"] for action in data.actions]
 
-    # Check if action names are the same in data.actions and policies
-    data_actions = [action["name"] for action in data.actions]
+            for action in data.policies.keys():
+                if action not in data_actions:
+                    policy_name = ""
+                    for policy in model.access_control.policies:
+                        for action_p in policy.actions:
+                            if action == f"action_{action_p}":
+                                policy_name = policy.name
+                    raise Exception(f"Action: {action} in Policy: {policy_name} is not a defined ActionGroup")
 
-    for action in data.policies.keys():
-        if action not in data_actions:
-            policy_name = ""
-            for policy in model.access_control.policies:
-                for action_p in policy.actions:
-                    if action == f"action_{action_p}":
-                        policy_name = policy.name
-            raise Exception(f"Action: {action} in Policy: {policy_name} is not an existing ActionGroup")
+        if data.ac_misc.local_ac:
+            # Check if roles assigned to actions are defined
+            unvalidated_roles = []
+            for actionGroup in data.actions:
+                if 'actions' in actionGroup.keys():
+                    for action in actionGroup['actions']:
+                        if 'roles' in action.keys():
+                            unvalidated_roles.extend(action['roles'])
+            for role in unvalidated_roles:
+                if role not in data.roles:
+                    raise Exception(f"Role '{role}' is not defined under 'Roles:'")
+                
+        # Check if the authentication slot exists in the bot's slots, if slot auth is selected
+        if data.ac_misc.authentication['method'] == 'slot':
+            slot_names = [slot['name'] for slot in data.slots]
+            logging.critical(f"Available slot_names: {slot_names}")
+            if data.ac_misc.authentication['slot_name'] not in slot_names:
+                raise Exception(f"Authentication slot {data.ac_misc.authentication['slot_name']} not defined in Dialogues")
 
-    # Check if the authentication slot exists in the bots slots
-    if data.ac_misc.authentication['method'] == 'slot':
-        slot_names = [slot['name'] for slot in data.slots]
-        logging.critical(f"Available slot_names: {slot_names}")
-        if data.ac_misc.authentication.slot_name not in slot_names:
-            raise Exception(f'Authentication slot {data.ac_misc.authentication.slot_name} not defined in Dialogues')
+        # Check if third-party authentication is required, but no third-party connector is defined
+        if data.ac_misc.authentication['method'] != 'slot':
+            connector_names = [connector['name'] for connector in data.connectors]
+            if data.ac_misc.authentication['method'] not in connector_names:
+                raise Exception(f"You need to define a '{data.ac_misc.authentication['method']}' connector to use this authentication method")
 
-    # Check if third-party authentication is required, but no third-party connector is defined
-    if data.ac_misc.authentication['method'] != 'slot':
-        connector_names = [connector['name'] for connector in data.connectors]
-        if data.ac_misc.authentication['method'] not in connector_names:
-            raise Exception(f"You need to define a '{data.ac_misc.authentication['method']}' connector to use this authentication method")
+    elif data.ac_misc.local_ac:
+        # Check if local_ac is defined, but no access control is defined
+        raise Exception("You need to define 'access controls' rule first, to use local access control")
 
     return data
 

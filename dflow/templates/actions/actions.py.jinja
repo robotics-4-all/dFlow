@@ -1,3 +1,52 @@
+{# --------------------------- MACROS --------------------------- #}
+{# 
+  TODO: Jinja bug: Always leave a whitspace in the end of each
+  command-line that is followed by a string to be printed
+#}
+{% macro actions_macro(act) -%}
+{% if act.type in ['SpeakAction', 'AskSlot'] %}
+{% for property in act.system_properties %}
+{{property}} = compute_system_properties("{{property}}")
+{% endfor %} 
+dispatcher.utter_message(text = f"{{act.text}}")
+{% elif act.type == 'FireEventAction' %} 
+ts = datetime.timestamp(datetime.now())
+event_data = {
+    "id": "id",
+    "type": "event",
+    "timestamp": int(datetime.timestamp(datetime.now())),
+    "payload": {"message": {{act.msg}}, "uri": f"{{act.uri}}" }
+}
+dispatcher.utter_message(json_message = event_data)
+{% elif act.type == 'SetSlot' %}
+{% for property in act.system_properties %} 
+{{property}} = compute_system_properties("{{property}}")
+{% endfor %} 
+output.append(SlotSet("{{act.slot}}", {{act.value}}))
+{% elif act.type == 'EServiceCallHTTP' %}
+{% for property in act.system_properties %} 
+{{property}} = compute_system_properties("{{property}}")
+{% endfor %}
+{% for key, value in act.path_params.items() %} 
+{{key}} = "{{value}}"
+{% endfor %}
+{% if act.verb == 'get' %} 
+response = requests.{{act.verb}}(f"{{act.url}}",
+    headers = {{act.header_params}},
+    params = {{act.query_params}}
+)
+{% else %} 
+response = requests.{{act.verb}}(f"{{act.url}}",
+    headers = {{act.header_params}},
+    data = {{act.body_params}},
+    params = {{act.query_params}}
+)
+{% endif %}
+{% endif %}
+{% endmacro -%}
+{# --------------------------- MACROS --------------------------- #}
+
+{# --------------------------- FILE START --------------------------- #}
 from typing import Any, Text, Dict, List
 
 from rasa_sdk import Action, Tracker, FormValidationAction
@@ -6,14 +55,12 @@ from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted, FollowupA
 
 import requests, re, json, random, socket
 from datetime import datetime
-{% if policies|length > 0 %}
+{% if ac_misc.global_ac or ac_misc.local_ac%}
 import ast
-{% endif %}
-{# TODO: Add an if statement to import only if slack channel communication is defined #}
+{% if ac_misc.authentication.method == 'slack' %}
 from slack_sdk import WebClient
-
-
-import logging
+{% endif %}
+{% endif %}
 
 def compute_system_properties(property):
     if property.lower() == 'time':
@@ -49,7 +96,7 @@ def compute_user_properties(property):
     if property.lower() == 'address':
       return ''
 
-{% if policies|length > 0 %}
+{% if ac_misc.global_ac or ac_misc.local_ac%}
 class PolicyDecisionPoint():
 
     _role_action_policies = {
@@ -61,16 +108,18 @@ class PolicyDecisionPoint():
     _user_role_policies = {}
 
 
-    def __init__(self) -> None:
-        self.role = '{{ac_misc.default_role}}'
+    def __init__(self, tracker) -> None:
+        self.tracker = tracker
         self.user_authorized = False
+        self.role = '{{ac_misc.default_role}}'
         PolicyDecisionPoint.read_user_role_policies_db()
+        self._find_user_role()
 
-    def check_users_permissions(self, action_ID, tracker) -> None:
-        
+    def _find_user_role(self) -> None:
+
         {% if ac_misc.authentication.method == 'slot' %}
         # Get user's details via slot
-        user_identifier = tracker.get_slot('{{ac_misc.authentication.slot_name}}')
+        user_identifier = self.tracker.get_slot('{{ac_misc.authentication.slot_name}}')
         {% else %}
         # Get user's details via slack API
           {% for connector in connectors %}
@@ -78,7 +127,7 @@ class PolicyDecisionPoint():
         client = WebClient(token="{{connector['token']}}")
             {% endif %}
           {% endfor %}
-        sender_id = tracker.sender_id
+        sender_id = self.tracker.sender_id
         user_identifier = dict(client.users_info(user=sender_id)['user'])['profile']['email']
         {% endif %}
 
@@ -88,12 +137,13 @@ class PolicyDecisionPoint():
                 if user_db == user_identifier:
                     self.role = role_db
 
+        return
+
+    def check_users_permissions(self, action_ID) -> None:
+        
         # Check if the user's role is authorized to access this action, in actions-roles/policies database
         if self.role in self._role_action_policies[action_ID]:
             self.user_authorized = True
-
-        logging.critical(f"You are user: {self.role}, and your authorization for this action is: {self.user_authorized}")
-        logging.critical(f"Your unique identifier is: {user_identifier}")
 
         return
 
@@ -203,15 +253,15 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         output = []
         {% if action.name in policies %}
 
-        # Implement a policy decision point
-        PDP = PolicyDecisionPoint()
-
-        # Check if he is authorized
-        PDP.check_users_permissions(self.name(), tracker)
+        # Check if the user is authorized
+        PDP = PolicyDecisionPoint(tracker)
+        PDP.check_users_permissions(self.name())
         
         if not PDP.user_authorized:
           dispatcher.utter_message(text = "You are unauthorized for this action")
           return output
+        {% elif action.local_ac %}
+        PDP = PolicyDecisionPoint(tracker)
         {% endif %}
 
         {% for entity in action.entities %}
@@ -225,48 +275,17 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% endfor %}
 
         {% for act in action.actions %}
-        {% if act.type in ['SpeakAction', 'AskSlot'] %}
-        {% for property in act.system_properties %}
-        {{property}} = compute_system_properties("{{property}}")
-        {% endfor %}
-        dispatcher.utter_message(text = f"{{act.text}}")
-        {% elif act.type == 'FireEventAction' %}
-        ts = datetime.timestamp(datetime.now())
-        event_data = {
-            "id": "id",
-            "type": "event",
-            "timestamp": int(datetime.timestamp(datetime.now())),
-            "payload": {"message": {{act.msg}}, "uri": f"{{act.uri}}" }
-        }
-        dispatcher.utter_message(json_message = event_data)
-        {% elif act.type == 'SetSlot' %}
-        {% for property in act.system_properties %}
-        {{property}} = compute_system_properties("{{property}}")
-        {% endfor %}
-        output.append(SlotSet("{{act.slot}}", {{act.value}}))
-        {% elif act.type == 'EServiceCallHTTP' %}
-        {% for property in act.system_properties %}
-        {{property}} = compute_system_properties("{{property}}")
-        {% endfor %}
-        {% for key, value in act.path_params.items() %}
-        {{key}} = "{{value}}"
-        {% endfor %}
-        {% if act.verb == 'get' %}
-        response = requests.{{act.verb}}(f"{{act.url}}",
-            headers = {{act.header_params}},
-            params = {{act.query_params}}
-        )
+        {% if act.type in ['SpeakAction', 'AskSlot', 'FireEventAction','SetSlot', 'EServiceCallHTTP']%}
+        {% if act.roles %}
+        if PDP.role in {{act.roles}}:
+        {{ actions_macro(act)|indent(10) }}
         {% else %}
-        response = requests.{{act.verb}}(f"{{act.url}}",
-            headers = {{act.header_params}},
-            data = {{act.body_params}},
-            params = {{act.query_params}}
-        )
+        {{ actions_macro(act)|indent(8) }}
         {% endif %}
         {% endif %}
-
         {% endfor %}
         return output
 
 {% endif %}
 {% endfor %}
+{# --------------------------- FILE END --------------------------- #}
