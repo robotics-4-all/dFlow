@@ -5,7 +5,7 @@
 #}
 {% macro actions_macro(act) -%}
 {% if act.type in ['SpeakAction', 'AskSlot'] %}
-{% for property in act.system_properties %}
+{% for property in act.system_properties %} 
 {{property}} = compute_system_properties("{{property}}")
 {% endfor %} 
 dispatcher.utter_message(text = f"{{act.text}}")
