@@ -83,10 +83,10 @@ end
 dialogues
 
   Dialogue get_name_dialogue
-      on: greet, inform_name
+      on: greet
       responses:
         Form form1
-          name_slot: str = HRI('What is you name KIND SIR?', [PE:PERSON]) //[user_admin]
+          name_slot: str = HRI('What is your name?', [PE:PERSON]) //[user_admin]
           //name_slot: str = HRI('What is you name?', [PE:PERSON]) //[user, user_unregistered]
         end,
         ActionGroup answer_back
@@ -109,7 +109,7 @@ dialogues
       on: ask_weather
       responses:
         ActionGroup inform_weather
-          Speak("The weather today will be sunny!")
+          Speak("The weather today will be cloudy!")
         end
   end
 
@@ -117,7 +117,8 @@ dialogues
       on: ask_weather_details
       responses:
         ActionGroup inform_weather_details
-          Speak('The average humidity will be 60%')
+          Speak('The average humidity will be 80%')[roles=user_paid, user_admin]
+          Speak('Weather details is a paid-only feature')[roles=user]
         end
   end
 
@@ -125,7 +126,8 @@ dialogues
       on: ask_rain
       responses:
         ActionGroup inform_rain
-          Speak("There is 78.5 percent chance of raining today, you might wonna grab an umbrella!!")
+          Speak("There is 78.5 percent chance of raining today, you might wonna grab an umbrella!!")[roles= user_admin, user_paid]
+          Speak("It might rain today")[roles= user]
         end
   end
 
@@ -142,6 +144,7 @@ dialogues
       responses:
         ActionGroup respond_iambot
           Speak('I am a bot, powered by dFlow and Rasa.')
+          Speak('You have limited access to this sytem. Please register to access more functionalities.')[roles=user_unregistered]
         end
   end
 
@@ -149,10 +152,21 @@ dialogues
       on: system_parameters
       responses:
         ActionGroup say_system_parameters
-          Speak("System's HostName:" SYSTEM: HOSTNAME "\nSystem's public IP" SYSTEM: PUBLIC_IP) //[user_admin]
-          //Speak("You don't have access to this information") //[user_paid, user, user_unregistered]
+          Speak("System's HostName:" SYSTEM: HOSTNAME "\nSystem's public IP" SYSTEM: PUBLIC_IP) //[user_admin, user_unregistered]
+          //Speak("You don't have access to this information") //[user_paid, user, user_unregistered] // -> Local AC, vs policy(universal) AC, universal>policy
         end
   end
+
+//  Dialogue template_dialogue
+//      on: Intent
+//      responses:
+//        ActionGroup test_action
+//          Speak(...)[roles= user, user_paid]
+//          weather_svc(...)[roles=user_paid]
+//          SetFSlot(...)[roles= ...]
+//          SetGSlot(...)[roles= ...]
+//          FireEvent(...)[roles= ...] 
+//  end
 end
 
 access_controls
@@ -182,8 +196,7 @@ access_controls
       inform_weather
     roles:
       user_paid,
-      user,
-      user_unregistered
+      user
   end
 
   Policy inform_weather_details_policy
@@ -198,7 +211,8 @@ access_controls
     on:
       inform_rain
     roles:
-      user_paid
+      user_paid,
+      user
   end
 
   Policy system_parameters_policy
@@ -216,7 +230,7 @@ access_controls
   end
 
   Path
-    "/home/dcnatsos/Workspace/dFlow/gen/mock_user_roles.txt"
+    "/home/dcnatsos/Workspace/dFlow/gen/user_roles_policies.txt"
   end
 
   Authentication
@@ -230,7 +244,7 @@ end
 
 connectors
   Connector slack
-    token: "xoxb-4883692765252-4884029447172-8g57sc9cnZQs6RkA73LdsJ56"
+    token: "xoxb-4883692765252-4884029447172-rH1b8v6PMj22OaTsaIQrtpfH"
     channel: "bot"
     signing_secret: "65140e237b845fe11c576e31e99564b6"
   end
