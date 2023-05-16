@@ -64,7 +64,6 @@ class TransformationDataModel(BaseModel):
     roles: List[str] = []
     policies: Dict[str, set] = {}
     ac_misc = AccessControlMisc
-    # TODO: fill this
 
 
 def codegen(model_fillepath,
@@ -137,10 +136,9 @@ def generate(metamodel,
                                     roles=data.roles,
                                     policies=data.policies,
                                     ac_misc=data.ac_misc
-                                    # TODO: fill this
                                     )
             )
-        chmod(out_file, 509) # 509? MAYBE 507
+        chmod(out_file, 509)
 
     for file in STATIC_TEMPLATES:
         out_file = path.join(out_dir, file)

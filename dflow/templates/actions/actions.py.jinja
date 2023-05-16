@@ -1,7 +1,7 @@
 {# --------------------------- MACROS --------------------------- #}
 {# 
   TODO: Jinja bug: Always leave a whitspace in the end of each
-  command-line that is followed by a string to be printed
+  command-line that is followed by a text-string to be generated
 #}
 {% macro actions_macro(act) -%}
 {% if act.type in ['SpeakAction', 'AskSlot'] %}
@@ -242,8 +242,6 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
 {% endfor %}
 {% else %}
 class {{action.name|replace("_","")|capitalize}}(Action):
-    {# ID = "{{action.name}}" #}
-    {# followup_action = "" #}
 
     def name(self) -> Text:
         return "{{action.name}}"
