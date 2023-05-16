@@ -13,10 +13,6 @@ from typing import Any, List, Dict, Set
 from dflow.utils import get_mm, build_model
 
 import json, os
-# Remove the below
-import logging
-import sys
-import builtins
 
 ALL_ACTIONS = 'all_actions'
 
@@ -552,7 +548,6 @@ def parse_model(model) -> TransformationDataModel:
             admins = data.policies.pop(ALL_ACTIONS)
             for action in data.policies.keys():
                 data.policies[action].update(set(admins))
-            logging.critical(f'Admins: {admins}')
 
         data.policies = process_policies_dict(data.policies)
 
@@ -580,19 +575,12 @@ def parse_model(model) -> TransformationDataModel:
 
             data.ac_misc.authentication['method'] = model.access_control.authentication.method
             data.ac_misc.authentication['slot_name'] = model.access_control.authentication.slot_name
-            logging.critical(f"Method: {data.ac_misc.authentication['method']}, slot_name: {data.ac_misc.authentication['slot_name']}")
         else:
             if model.access_control.authentication.slot_name:
                 print("WARNING: 'slot_name' is not applicable to this authentication method")
 
             data.ac_misc.authentication['method'] = model.access_control.authentication.method
-            logging.critical(f"Method: {data.ac_misc.authentication['method']}")
 
-        logging.critical(f'\n\nPolicies in DATA:{data.policies}')
-        logging.critical(f"Roles in DATA: {data.roles}")
-        logging.critical(f"Default role in DATA: {data.ac_misc.default_role}")
-        logging.critical(f'Given Path: {data.ac_misc.policy_path}')
-        logging.critical(f"User-Roles: {data.ac_misc.role_users}\n\n")
 
     # Validate access control
     data = validate_access_control(data, model)
@@ -882,7 +870,6 @@ def validate_access_control(data: TransformationDataModel, model) -> Transformat
         # Check if the authentication slot exists in the bot's slots, if slot auth is selected
         if data.ac_misc.authentication['method'] == 'slot':
             slot_names = [slot['name'] for slot in data.slots]
-            logging.critical(f"Available slot_names: {slot_names}")
             if data.ac_misc.authentication['slot_name'] not in slot_names:
                 raise Exception(f"Authentication slot {data.ac_misc.authentication['slot_name']} not defined in Dialogues")
 

@@ -339,7 +339,7 @@ Authentication:
 
 UserRoles: role=Words ':' users+=Words_ext[','];
 
-AuthMethods: 'slot' | 'slack';
+AuthMethods: 'slot' | 'slack' | 'telegram';
 
 // ----------------------------------------------------------------------
 

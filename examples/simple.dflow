@@ -25,7 +25,7 @@ triggers
         "I want to call" TE:Doctor "test" S:date_period "test",
         "I want to call" PE:PERSON "test",
         "I want to call" TE:Doctor "test" S:date_period "test" PE:PERSON["Test","Test"]
-        "I want to call" PE:PERSON["Test","Test"] "test",
+        "I want to call" PE:PERSON["Test","Test"] "test"
     end
 
     Event external_1
