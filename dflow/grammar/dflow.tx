@@ -44,6 +44,14 @@ dFlow:
     ('eservices'
         eservices*=EServiceDef
     'end')?
+
+    ('access_controls'
+        access_control=AccessControlDef
+    'end')?
+
+    ('connectors'
+        connectors+=Connector
+    'end')?
     )#
 ;
 
@@ -179,7 +187,7 @@ EServiceCallHTTP:
         ('path=' '[' path_params*=EServiceParam[','] ']' ',')?
         ('body=' '[' body_params*=EServiceParam[','] ']' ',')?
         )#
-    ')' ('[' response_filter=EServiceResponseFilter ']')?
+    ')' ('[' response_filter=EServiceResponseFilter ']')? ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 EServiceParam: name=ID '=' value=ParameterValue;
@@ -238,22 +246,101 @@ Action:
 ;
 
 SpeakAction:
-    'Speak' '(' text+=Text ')'
+    'Speak' '(' text+=Text ')' ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 SetFormSlot:
-    'SetFSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')'
+    'SetFSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')' ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 SetGlobalSlot:
-    'SetGSlot' '(' slotRef=GlobalSlotRef ',' value=ParameterValue ')'
+    'SetGSlot' '(' slotRef=GlobalSlotRef ',' value=ParameterValue ')' ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 FireEventAction:
-    'FireEvent' '(' uri+=Text ',' msg=ParameterValue ')'
+    'FireEvent' '(' uri+=Text ',' msg=ParameterValue ')' ('[' 'roles' '=' roles+=Words[','] ']')?
 ;
 
 RESTCallAction: EServiceCallHTTP;
+// ----------------------------------------------------------------------
+
+// CONNECTORS -----------------------------------------------
+// ----------------------------------------------------------------------
+
+Connector: Slack | Telegram;
+
+Slack:
+    ('Connector' name='slack'
+        'token:' token=STRING
+        'channel:' channel=STRING
+        'signing_secret:' signing_secret=STRING
+    'end')?
+;
+
+Telegram:
+    ('Connector' name='telegram'
+        'token:' token=STRING
+        'verify:' verify=STRING
+        'webhook_url:' webhook_url=STRING
+    'end')?
+;
+
+
+// ----------------------------------------------------------------------
+
+// ACCESS_CONTROL -------------------------------------------------------
+// ----------------------------------------------------------------------
+
+AccessControlDef:
+    (
+    roles=Roles
+    policies*=Policy
+    path=Path
+    (users=Users)?
+    authentication=Authentication
+    )#
+;
+
+Roles:
+    'Roles'
+        words+=Words[',']
+        'default:'
+            default=Words
+    'end'
+;
+
+Policy:
+    'Policy' name=ID
+        'on:' actions+=Words[',']
+        'roles:' roles+=Words[',']
+    'end'
+;
+
+Path:
+    'Path'
+        path=STRING
+    'end'
+;
+
+Users:
+    'Users'
+        roles+=UserRoles
+    'end'
+;
+
+Authentication:
+    'Authentication'
+        'method:' method=AuthMethods
+        (
+        'slot_name:' slot_name=Words
+        )?
+    'end'
+;
+
+UserRoles: role=Words ':' users+=Words_ext[','];
+
+AuthMethods: 'slot' | 'slack' | 'telegram';
+
 // ----------------------------------------------------------------------
 
 // GENERAL --------------------------------------------------------------
@@ -288,6 +375,10 @@ Words:
     /[-\w ]*\b/
 ;
 
+Words_ext:
+    /[-\.\@\w ]*\b/
+;
+
 Text: TextStr | EnvPropertyDef | FormParamIndex | GlobalSlotIndex;
 
 TextStr: STRING;
@@ -310,7 +401,9 @@ SystemProperty:
 	'TIME'			|
 	'LOCATION'		|
 	'RANDOM_INT'	|
-	'RANDOM_FLOAT'
+	'RANDOM_FLOAT'  |
+    'HOSTNAME'      |
+    'PUBLIC_IP'
 ;
 
 // ----------------------------------------------------------------------
