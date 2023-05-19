@@ -1,15 +1,15 @@
 {# --------------------------- MACROS --------------------------- #}
-{# 
+{#
   TODO: Jinja bug: Always leave a whitspace in the end of each
   command-line that is followed by a text-string to be generated
 #}
 {% macro actions_macro(act) -%}
 {% if act.type in ['SpeakAction', 'AskSlot'] %}
-{% for property in act.system_properties %} 
+{% for property in act.system_properties %}
 {{property}} = compute_system_properties("{{property}}")
-{% endfor %} 
+{% endfor %}
 dispatcher.utter_message(text = f"{{act.text}}")
-{% elif act.type == 'FireEventAction' %} 
+{% elif act.type == 'FireEventAction' %}
 ts = datetime.timestamp(datetime.now())
 event_data = {
     "id": "id",
@@ -19,23 +19,23 @@ event_data = {
 }
 dispatcher.utter_message(json_message = event_data)
 {% elif act.type == 'SetSlot' %}
-{% for property in act.system_properties %} 
+{% for property in act.system_properties %}
 {{property}} = compute_system_properties("{{property}}")
-{% endfor %} 
+{% endfor %}
 output.append(SlotSet("{{act.slot}}", {{act.value}}))
 {% elif act.type == 'EServiceCallHTTP' %}
-{% for property in act.system_properties %} 
+{% for property in act.system_properties %}
 {{property}} = compute_system_properties("{{property}}")
 {% endfor %}
-{% for key, value in act.path_params.items() %} 
+{% for key, value in act.path_params.items() %}
 {{key}} = "{{value}}"
 {% endfor %}
-{% if act.verb == 'get' %} 
+{% if act.verb == 'get' %}
 response = requests.{{act.verb}}(f"{{act.url}}",
     headers = {{act.header_params}},
     params = {{act.query_params}}
 )
-{% else %} 
+{% else %}
 response = requests.{{act.verb}}(f"{{act.url}}",
     headers = {{act.header_params}},
     data = {{act.body_params}},
@@ -64,37 +64,37 @@ from slack_sdk import WebClient
 
 def compute_system_properties(property):
     if property.lower() == 'time':
-      return datetime.now().strftime("%I:%M")
+        return datetime.now().strftime("%I:%M")
     if property.lower() == 'location':
-      return ''
+        return ''
     if property.lower() == 'random_int':
-      return random.randint(0,100)
+        return random.randint(0,100)
     if property.lower() == 'random_float':
-      return random.random()
+        return random.random()
     if property.lower() == 'hostname':
-      return socket.gethostname()
+        return socket.gethostname()
     if property.lower() == 'public_ip':
-      try:
-        return requests.get('https://api.ipify.org').content.decode('utf8')
-      except:
-        return "Could not resolve IP address"
+        try:
+            return requests.get('https://api.ipify.org').content.decode('utf8')
+        except:
+            return "Could not resolve IP address"
 
 
 def compute_user_properties(property):
     if property.lower() == 'name':
-      return ''
+        return ''
     if property.lower() == 'surname':
-      return ''
+        return ''
     if property.lower() == 'age':
-      return ''
+        return ''
     if property.lower() == 'email':
-      return ''
+        return ''
     if property.lower() == 'phone':
-      return ''
+        return ''
     if property.lower() == 'city':
-      return ''
+        return ''
     if property.lower() == 'address':
-      return ''
+        return ''
 
 {% if ac_misc.global_ac or ac_misc.local_ac%}
 class PolicyDecisionPoint():
@@ -104,7 +104,7 @@ class PolicyDecisionPoint():
       "{{key}}" : {{value}},
     {% endfor %}
     }
-    
+
     _user_role_policies = {}
 
 
@@ -140,7 +140,7 @@ class PolicyDecisionPoint():
         return
 
     def check_users_permissions(self, action_ID) -> None:
-        
+
         # Check if the user's role is authorized to access this action, in actions-roles/policies database
         if self.role in self._role_action_policies[action_ID]:
             self.user_authorized = True
@@ -150,12 +150,12 @@ class PolicyDecisionPoint():
     @staticmethod
     def read_user_role_policies_db() -> None:
       """ Loads the user-role policies from database """
-    
-      if not PolicyDecisionPoint._user_role_policies:
-        with open('{{ac_misc.policy_path}}', 'r') as f:
-            s = f.read()
-            PolicyDecisionPoint._user_role_policies = ast.literal_eval(s)
-      return
+
+        if not PolicyDecisionPoint._user_role_policies:
+            with open('{{ac_misc.policy_path}}', 'r') as f:
+                s = f.read()
+                PolicyDecisionPoint._user_role_policies = ast.literal_eval(s)
+        return
 {% endif %}
 
 {% for action in actions %}
@@ -197,9 +197,9 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
                 params = {{slot.data.query_params}}
               )
             {% endif %}
-            try:  
-              {{slot.name}} = response.json(){{slot.data.response_filter}}
-              output["{{slot.name}}"] = {{slot.name}}
+            try:
+                {{slot.name}} = response.json(){{slot.data.response_filter}}
+                output["{{slot.name}}"] = {{slot.name}}
             except:
                 print(f'Error retrieving response from {{slot.data.url}} with code {response.status_code}.')
             {% elif slot.source_type == 'HRIParamSource' %}
@@ -254,10 +254,10 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         # Check if the user is authorized
         PDP = PolicyDecisionPoint(tracker)
         PDP.check_users_permissions(self.name())
-        
+
         if not PDP.user_authorized:
-          dispatcher.utter_message(text = "You are unauthorized for this action")
-          return output
+            dispatcher.utter_message(text = "You are unauthorized for this action")
+            return output
         {% elif action.local_ac %}
         PDP = PolicyDecisionPoint(tracker)
         {% endif %}
