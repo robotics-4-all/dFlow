@@ -34,9 +34,8 @@ end
 eservices
     EServiceHTTP weather_svc
         verb: GET
-        host: 'r4a.issel.ee.auth.gr'
-        port: 8080
-        path: '/weather'
+        host: 'http://services.issel.ee.auth.gr'
+        path: '/general_information/weather_openweather'
     end
 end
 
@@ -46,8 +45,7 @@ dialogues
       responses:
         Form form1
           city_slot: str = HRI('For which city?', [PE:GPE])
-          time_slot: str = HRI('For when?', [PE:DATE])
-          answer: str = weather_svc(query=[city=form1.city_slot, time=form1.time_slot],)[weather.forecast]
+          answer: str = weather_svc(query=[city=form1.city_slot, language="English"],)
         end,
         ActionGroup answer_back
           Speak('The weather is ' form1.answer)
@@ -61,7 +59,7 @@ dialogues
           Speak('Hello there!!!')
         end
   end
-  
+
   Dialogue bot_challenge_dialogue
       on: bot_challenge
       responses:
