@@ -45,7 +45,7 @@ dialogues
       responses:
         Form form1
           city_slot: str = HRI('For which city?', [PE:GPE])
-          answer: str = weather_svc(query=[city=form1.city_slot, language="English"],)
+          answer: str = weather_svc(query=[city=form1.city_slot, language="English"], header=[access_token="Q5eJZ8sSLEX6XNmOHyMlWagI"],)
         end,
         ActionGroup answer_back
           Speak('The weather is ' form1.answer)
