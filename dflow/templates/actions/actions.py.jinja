@@ -276,7 +276,7 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% if act.type in ['SpeakAction', 'AskSlot', 'FireEventAction','SetGlobalSlot', 'SetFormSlot', 'EServiceCallHTTP']%}
         {% if act.roles %}
         if PDP.role in {{act.roles}}:
-        {{ actions_macro(act)|indent(10) }}
+        {{ actions_macro(act)|indent(12) }}
         {% else %}
         {{ actions_macro(act)|indent(8) }}
         {% endif %}
