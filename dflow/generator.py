@@ -255,7 +255,8 @@ def parse_model(model) -> TransformationDataModel:
         name = dialogue.name
         intents = dialogue.onTrigger
         dialogue_responses = []
-        for i in range(len(dialogue.responses)) :
+        dialogue_form_slots = [] # Contains all dialogue's form slots
+        for i in range(len(dialogue.responses)):
             response = dialogue.responses[i]
             if response.__class__.__name__ == 'ActionGroup':
                 dialogue_responses.append({"name": f"action_{response.name}", "form": False})
@@ -384,7 +385,7 @@ def parse_model(model) -> TransformationDataModel:
                     'type': 'Submit'
                 })
 
-                form_data = []
+                form_data = [] # Contains only this form's slots
                 validation_data = []
                 for slot in response.params:
                     extract_slot = []
@@ -480,12 +481,19 @@ def parse_model(model) -> TransformationDataModel:
                 data.forms.append({'name': form, 'slots': form_data})
                 if validation_data != []:
                     data.actions.append({'name': f'validate_{form}', 'validation_method': True, 'info': validation_data})
+
+                # Collect all form slots of this dialogue
+                dialogue_form_slots.extend(form_data)
         for intent in intents:
             data.stories.append({
                 'name': f"{name} - {intent.name}",
                 'intent': intent.name,
                 'responses': dialogue_responses
             })
+
+        if dialogue_form_slots != []:
+            # Find last action and add field for reseting all dialogue form slots
+            data.actions[-1]["reset_slots"] = dialogue_form_slots
 
     # Validate and merge slots with similar name for the domain file
     form_slots = sorted(form_slots, key = itemgetter('name'))
@@ -503,7 +511,7 @@ def parse_model(model) -> TransformationDataModel:
                 if method not in extract_methods:
                     extract_methods.append(method)
         data.slots.append({'name': k, 'type': type, 'extract_methods': extract_methods, 'default': None})
-    
+
     # Extract Connectors
     if model.connectors:
         for connector in model.connectors:
@@ -523,18 +531,18 @@ def parse_model(model) -> TransformationDataModel:
                 })
             else:
                 raise Exception(f"Connector {connector.name} is not supported")
-                    
+
     # Extract access control
     if model.access_control:
 
         # Extract Roles
         data.roles = model.access_control.roles.words
         data.ac_misc.default_role = model.access_control.roles.default
-        
+
         # Extract Policies
         if model.access_control.policies:
-            data.ac_misc.global_ac = True # Global access control is defined 
-            for policy in model.access_control.policies:           
+            data.ac_misc.global_ac = True # Global access control is defined
+            for policy in model.access_control.policies:
                 for action in policy.actions:
                     if action in data.policies.keys():
                         data.policies[action].update(set(policy.roles))
@@ -552,7 +560,7 @@ def parse_model(model) -> TransformationDataModel:
         # Extract Path
         data.ac_misc.policy_path = model.access_control.path.path
 
-        # Extract Role-Users Policies        
+        # Extract Role-Users Policies
         if model.access_control.users:
             for role in model.access_control.users.roles:
                 if role.role in data.ac_misc.role_users.keys():
@@ -859,7 +867,7 @@ def validate_access_control(data: TransformationDataModel, model) -> Transformat
             for role in action_roles:
                 if role not in data.roles:
                     raise Exception(f"Role '{role}' is not defined under 'Roles:'")
-                
+
         # Check if all defined roles are assigned to at least one actionGroup or action
         for role in data.roles:
             if role not in action_roles and role not in actionGroup_roles and role != data.ac_misc.default_role:

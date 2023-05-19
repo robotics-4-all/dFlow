@@ -230,13 +230,23 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {% elif slot.type == 'float' %}
             numbers = re.findall("\d+\.\d+", text)
             {% else %}
-            return
+            {% if action.reset_slots is defined %}
+            {% for _slot in action.reset_slots %}
+            output["{{_slot}}"] = None
+            {% endfor %}
+            {% endif %}
+            return output
             {% endif %}
             if len(numbers):
                 {{slot.name}} = {{slot.type}}(numbers[0])
             output["{{slot.name}}"] = {{slot.name}}
             {% endif %}
             {% endif %}
+        {% if action.reset_slots is defined %}
+        {% for _slot in action.reset_slots %}
+        output["{{_slot}}"] = None
+        {% endfor %}
+        {% endif %}
         return output
 
 {% endfor %}
@@ -282,6 +292,11 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% endif %}
         {% endif %}
         {% endfor %}
+        {% if action.reset_slots is defined %}
+        {% for _slot in action.reset_slots %}
+        output.append(SlotSet('{{_slot}}', None))
+        {% endfor %}
+        {% endif %}
         return output
 
 {% endif %}
