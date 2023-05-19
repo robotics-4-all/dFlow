@@ -18,7 +18,7 @@ event_data = {
     "payload": {"message": {{act.msg}}, "uri": f"{{act.uri}}" }
 }
 dispatcher.utter_message(json_message = event_data)
-{% elif act.type == 'SetSlot' %}
+{% elif act.type in ['SetGlobalSlot', 'SetFormSlot'] %}
 {% for property in act.system_properties %}
 {{property}} = compute_system_properties("{{property}}")
 {% endfor %}
@@ -273,7 +273,7 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% endfor %}
 
         {% for act in action.actions %}
-        {% if act.type in ['SpeakAction', 'AskSlot', 'FireEventAction','SetSlot', 'EServiceCallHTTP']%}
+        {% if act.type in ['SpeakAction', 'AskSlot', 'FireEventAction','SetGlobalSlot', 'SetFormSlot', 'EServiceCallHTTP']%}
         {% if act.roles %}
         if PDP.role in {{act.roles}}:
         {{ actions_macro(act)|indent(10) }}
