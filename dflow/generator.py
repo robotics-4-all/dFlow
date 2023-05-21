@@ -363,6 +363,56 @@ def parse_model(model) -> TransformationDataModel:
                         "local_ac": action_local_ac
                     })
             elif response.__class__.__name__ == 'Form':
+                # When form contains only slots from EService calls use an ActionGroup instead of a Rasa form
+                only_eservice_calls = True
+                for slot in response.params:
+                    if slot.source.__class__.__name__ != 'EServiceCallHTTP':
+                        only_eservice_calls = False
+                        break
+
+                if only_eservice_calls:
+                    dialogue_responses.append({"name": f"action_{response.name}", "form": False})
+                    actions = []
+                    actions_slots = []
+                    actions_user_properties = []
+                    actions_entities = []
+                    action_local_ac = False
+                    for slot in response.params:
+                        path_params, path_slots, path_user_properties, path_system_properties = process_eservice_params_as_dict(slot.source.path_params)
+                        query_params, query_slots, query_user_properties, query_system_properties = process_eservice_params(slot.source.query_params)
+                        header_params, header_slots, header_user_properties, header_system_properties = process_eservice_params(slot.source.header_params)
+                        body_params, body_slots, body_user_properties, body_system_properties = process_eservice_params(slot.source.body_params)
+                        validation = validate_path_params(data.eservices[slot.source.eserviceRef.name]['url'], path_params)
+                        if not validation:
+                            raise Exception('Service path and path params do not match.')
+
+                        actions.append({
+                            'type': 'EServiceCallHTTP',
+                            'verb': slot.source.eserviceRef.verb.lower(),
+                            'url': data.eservices[slot.source.eserviceRef.name]['url'],
+                            'query_params': query_params,
+                            'path_params': path_params,
+                            'header_params': header_params,
+                            'body_params': body_params,
+                            'response_filter': process_response_filter(slot.source.response_filter),
+                            'response_slot': slot.name,
+                            'slots': list(set(path_slots + query_slots + header_slots + body_slots)),
+                            'user_properties': list(set(path_user_properties+query_user_properties+header_user_properties+body_user_properties)),
+                            'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties)),
+                        })
+                        data.slots.append({'name': slot.name, 'type': 'any', 'default': None})
+
+                    data.actions.append({
+                        "name": f"action_{response.name}",
+                        "actions": actions,
+                        "slots": actions_slots,
+                        "user_properties": actions_user_properties,
+                        "entities": actions_entities,
+                        "local_ac": action_local_ac
+                    })
+
+                    continue
+
                 form = f"{response.name}_form"
                 dialogue_responses.append({"name": form, "form": True})
                 for intent in intents:
