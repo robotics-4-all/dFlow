@@ -46,9 +46,10 @@ dialogues
         Form form1
           city_slot: str = HRI('For which city?', [PE:GPE])
           answer: str = weather_svc(query=[city=form1.city_slot, language="English"], header=[access_token="Q5eJZ8sSLEX6XNmOHyMlWagI"],)[description]
+          answer2: int = weather_svc(query=[city=form1.city_slot, language="English"], header=[access_token="Q5eJZ8sSLEX6XNmOHyMlWagI"],)[temp]
         end,
         ActionGroup answer_back
-          Speak('The weather for' form1.city_slot ' is ' form1.answer)
+          Speak('The weather for' form1.city_slot ' is ' form1.answer ' with ' form1.answer2 ' degrees')
         end
   end
 
@@ -67,6 +68,4 @@ dialogues
           Speak('I am a bot, powered by dFlow and Rasa.')
         end
   end
-
-
 end

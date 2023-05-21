@@ -1,0 +1,68 @@
+triggers
+
+  Intent greet
+    "hey",
+    "hello",
+    "hi",
+    "hello there",
+    "good morning",
+    "good evening",
+    "moin",
+    "hey there",
+    "let's go",
+    "hey dude",
+    "goodmorning",
+    "goodevening",
+    "good afternoon"
+  end
+
+  Intent bot_challenge
+    "are you a bot?",
+    "are you a human?",
+    "am I talking to a bot?",
+    "am I talking to a human?"
+  end
+
+  Intent fill_information
+    "I want to fill my profile",
+    "Profile",
+    "fill data",
+    "fill my data",
+    "lets get to know us",
+    "Hello I am" PE:PERSON['John', 'Nick'],
+    "Hi my name is" PE:PERSON,
+    "I am 30 years old",
+    "I'm" PE:PERSON "and I am 20 years old"
+  end
+
+end
+
+dialogues
+  Dialogue greet_dialogue
+      on: greet
+      responses:
+        ActionGroup greet_back
+          Speak('Hello there!!!')
+        end
+  end
+
+  Dialogue bot_challenge_dialogue
+      on: bot_challenge
+      responses:
+        ActionGroup respond_iambot
+          Speak('I am a bot, powered by dFlow and Rasa.')
+        end
+  end
+
+  Dialogue dialogue1
+        on: fill_information
+        responses:
+          Form form1
+            name: str = HRI('What\'s your name?', [PE:PERSON])
+            age: int = HRI('How old are you?')
+          end,
+          ActionGroup answer_back
+            Speak('Glad to meet you ' form1.name)
+          end
+  end
+end

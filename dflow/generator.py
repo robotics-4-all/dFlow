@@ -8,10 +8,13 @@ from textxjinja import textx_jinja_generator
 import textx.scoping.providers as scoping_providers
 from rich import print
 from pydantic import BaseModel
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Set
 
 from dflow.utils import get_mm, build_model
 
+import json, os
+
+ALL_ACTIONS = 'all_actions'
 
 _THIS_DIR = path.abspath(path.dirname(__file__))
 
@@ -23,18 +26,26 @@ jinja_env = jinja2.Environment(
 
 SRC_GEN_DIR = path.join(path.realpath(getcwd()), 'gen')
 
-
+# Load dynamic templates
 TEMPLATES = [
     'actions/actions.py.jinja', 'data/nlu.yml.jinja',
     'data/stories.yml.jinja', 'data/rules.yml.jinja',
-    'config.yml.jinja', 'domain.yml.jinja'
+    'config.yml.jinja', 'domain.yml.jinja',
+    'credentials.yml.jinja'
 ]
 
-
+# Load static templates
 STATIC_TEMPLATES = [
-    'credentials.yml', 'endpoints.yml'
+    'endpoints.yml'
 ]
 
+class AccessControlMisc():
+    policy_path: str = ''
+    default_role: str = ''
+    role_users: Dict[str, List] = {}
+    authentication: Dict[str, Any] = {}
+    global_ac: bool = False # True if global(actionGroup) access control is defined
+    local_ac: bool = False # True if local(action) access control is defined
 
 class TransformationDataModel(BaseModel):
     synonyms: List[Dict[str, Any]] = []
@@ -48,7 +59,11 @@ class TransformationDataModel(BaseModel):
     rules: List[Dict[str, Any]] = []
     slots: List[Dict[str, Any]] = []
     forms: List[Dict[str, Any]] = []
+    connectors: List[Dict[str, Any]] = []
     responses: List[Dict[str, Any]] = []
+    roles: List[str] = []
+    policies: Dict[str, set] = {}
+    ac_misc = AccessControlMisc
 
 
 def codegen(model_fillepath,
@@ -116,7 +131,12 @@ def generate(metamodel,
                                     rules=data.rules,
                                     slots=data.slots,
                                     forms=data.forms,
-                                    responses=data.responses)
+                                    responses=data.responses,
+                                    connectors=data.connectors,
+                                    roles=data.roles,
+                                    policies=data.policies,
+                                    ac_misc=data.ac_misc
+                                    )
             )
         chmod(out_file, 509)
 
@@ -131,6 +151,7 @@ def generate(metamodel,
 
 def parse_model(model) -> TransformationDataModel:
     data = TransformationDataModel()
+
     # Extract synonyms
     synonyms_dictionary = {}
     for synonym in model.synonyms:
@@ -234,7 +255,8 @@ def parse_model(model) -> TransformationDataModel:
         name = dialogue.name
         intents = dialogue.onTrigger
         dialogue_responses = []
-        for i in range(len(dialogue.responses)) :
+        dialogue_form_slots = [] # Contains all dialogue's form slots
+        for i in range(len(dialogue.responses)):
             response = dialogue.responses[i]
             if response.__class__.__name__ == 'ActionGroup':
                 dialogue_responses.append({"name": f"action_{response.name}", "form": False})
@@ -242,7 +264,13 @@ def parse_model(model) -> TransformationDataModel:
                 actions_slots = []
                 actions_user_properties = []
                 actions_entities = []
+                action_local_ac = False
                 for action in response.actions:
+                    roles = []
+                    if action.roles:
+                        roles = list(set(action.roles))
+                        action_local_ac = True
+                        data.ac_misc.local_ac = True # Local access control is defined
                     if action.__class__.__name__ == 'SpeakAction':
                         message, entities, slots, user_properties, system_properties = process_text(action.text)
                         actions_slots.extend(slots)
@@ -251,7 +279,8 @@ def parse_model(model) -> TransformationDataModel:
                         actions.append({
                             'type': action.__class__.__name__,
                             'text': message,
-                            'system_properties': system_properties
+                            'system_properties': system_properties,
+                            'roles': roles
                         })
                     elif action.__class__.__name__ == 'FireEventAction':
                         msg_message, msg_slots, msg_user_properties, msg_system_properties = process_parameter_value(action.msg)
@@ -263,7 +292,8 @@ def parse_model(model) -> TransformationDataModel:
                             'type': action.__class__.__name__,
                             'uri': uri_message.replace(' ', ''),
                             'msg': msg_message,
-                            'system_properties': msg_system_properties+uri_system_properties
+                            'system_properties': msg_system_properties+uri_system_properties,
+                            'roles': roles
                         })
                     elif action.__class__.__name__ == 'SetFormSlot':
                         result, slots, user_properties, system_properties = process_parameter_value(action.value)
@@ -273,7 +303,8 @@ def parse_model(model) -> TransformationDataModel:
                             'type': action.__class__.__name__,
                             'slot': action.slotRef.param.name,
                             'value': result,
-                            'system_properties': system_properties
+                            'system_properties': system_properties,
+                            'roles': roles
                         })
                     elif action.__class__.__name__ == 'SetGlobalSlot':
                         result, slots, user_properties, system_properties = process_parameter_value(action.value)
@@ -283,7 +314,8 @@ def parse_model(model) -> TransformationDataModel:
                             'type': action.__class__.__name__,
                             'slot': action.slotRef.slot.name,
                             'value': result,
-                            'system_properties': system_properties
+                            'system_properties': system_properties,
+                            'roles': roles
                         })
                     elif action.__class__.__name__ == 'EServiceCallHTTP':
                         path_params, path_slots, path_user_properties, path_system_properties = process_eservice_params_as_dict(action.path_params)
@@ -305,7 +337,8 @@ def parse_model(model) -> TransformationDataModel:
                             'header_params': header_params,
                             'body_params': body_params,
                             'response_filter': action.response_filter,
-                            'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties))
+                            'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties)),
+                            'roles': roles
                         })
                 # Validate action before appending it to data object
                 validation = True
@@ -326,7 +359,8 @@ def parse_model(model) -> TransformationDataModel:
                         "actions": actions,
                         "slots": actions_slots,
                         "user_properties": actions_user_properties,
-                        "entities": actions_entities
+                        "entities": actions_entities,
+                        "local_ac": action_local_ac
                     })
             elif response.__class__.__name__ == 'Form':
                 form = f"{response.name}_form"
@@ -351,9 +385,10 @@ def parse_model(model) -> TransformationDataModel:
                     'type': 'Submit'
                 })
 
-                form_data = []
+                form_data = [] # Contains only this form's slots
                 validation_data = []
-                for slot in response.params:
+                for i in range(len(response.params)):
+                    slot = response.params[i]
                     extract_slot = []
                     extract_from_text = False
                     form_data.append(slot.name)
@@ -365,6 +400,12 @@ def parse_model(model) -> TransformationDataModel:
                         validation = validate_path_params(data.eservices[slot.source.eserviceRef.name]['url'], path_params)
                         if not validation:
                             raise Exception('Service path and path params do not match.')
+                        previous_slot_list = []
+                        if i > 0:
+                            previous_slot = response.params[i-1].name
+                            previous_slot_list.append(previous_slot)
+                        else:
+                            previous_slot = None
                         slot_service_info = {
                             'type': slot.source.__class__.__name__,
                             'verb': slot.source.eserviceRef.verb.lower(),
@@ -374,7 +415,8 @@ def parse_model(model) -> TransformationDataModel:
                             'header_params': header_params,
                             'body_params': body_params,
                             'response_filter': process_response_filter(slot.source.response_filter),
-                            'slots': list(set(path_slots + query_slots + header_slots + body_slots)),
+                            'slots': list(set(path_slots + query_slots + header_slots + body_slots + previous_slot_list)),
+                            'previous_slot': previous_slot,
                             'user_properties': list(set(path_user_properties+query_user_properties+header_user_properties+body_user_properties)),
                             'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties))
                         }
@@ -390,7 +432,7 @@ def parse_model(model) -> TransformationDataModel:
                     elif slot.source.__class__.__name__ == 'HRIParamSource':
                         # No method given, extract from text
                         if slot.source.extract == []:
-                            extract_slot.append({'type': 'from_text', 'form': form})
+                            extract_slot.append({'type': 'custom', 'form': form})
                             extract_from_text = True
                         else:
                             slot_from_intent_info = []
@@ -447,12 +489,19 @@ def parse_model(model) -> TransformationDataModel:
                 data.forms.append({'name': form, 'slots': form_data})
                 if validation_data != []:
                     data.actions.append({'name': f'validate_{form}', 'validation_method': True, 'info': validation_data})
+
+                # Collect all form slots of this dialogue
+                dialogue_form_slots.extend(form_data)
         for intent in intents:
             data.stories.append({
                 'name': f"{name} - {intent.name}",
                 'intent': intent.name,
                 'responses': dialogue_responses
             })
+
+        if dialogue_form_slots != []:
+            # Find last action and add field for reseting all dialogue form slots
+            data.actions[-1]["reset_slots"] = dialogue_form_slots
 
     # Validate and merge slots with similar name for the domain file
     form_slots = sorted(form_slots, key = itemgetter('name'))
@@ -470,6 +519,86 @@ def parse_model(model) -> TransformationDataModel:
                 if method not in extract_methods:
                     extract_methods.append(method)
         data.slots.append({'name': k, 'type': type, 'extract_methods': extract_methods, 'default': None})
+
+    # Extract Connectors
+    if model.connectors:
+        for connector in model.connectors:
+            if connector.name == 'slack':
+                data.connectors.append({
+                    'name': connector.name,
+                    'token': connector.token,
+                    'channel': connector.channel,
+                    'signing_secret': connector.signing_secret
+                })
+            elif connector.name == 'telegram':
+                data.connectors.append({
+                    'name': connector.name,
+                    'token': connector.token,
+                    'verify': connector.verify,
+                    'webhook_url': connector.webhook_url
+                })
+            else:
+                raise Exception(f"Connector {connector.name} is not supported")
+
+    # Extract access control
+    if model.access_control:
+
+        # Extract Roles
+        data.roles = model.access_control.roles.words
+        data.ac_misc.default_role = model.access_control.roles.default
+
+        # Extract Policies
+        if model.access_control.policies:
+            data.ac_misc.global_ac = True # Global access control is defined
+            for policy in model.access_control.policies:
+                for action in policy.actions:
+                    if action in data.policies.keys():
+                        data.policies[action].update(set(policy.roles))
+                    else:
+                        data.policies[action] = set(policy.roles)
+
+        # Give all roles under "all_actions" keyword permission to all actions (if any)
+        if ALL_ACTIONS in data.policies.keys():
+            admins = data.policies.pop(ALL_ACTIONS)
+            for action in data.policies.keys():
+                data.policies[action].update(set(admins))
+
+        data.policies = process_policies_dict(data.policies)
+
+        # Extract Path
+        data.ac_misc.policy_path = model.access_control.path.path
+
+        # Extract Role-Users Policies
+        if model.access_control.users:
+            for role in model.access_control.users.roles:
+                if role.role in data.ac_misc.role_users.keys():
+                    raise Exception(f"Duplicate role '{role.role}' in 'Users:'")
+                data.ac_misc.role_users[role.role] = role.users
+
+            # Write Role-User Policies in the file. The file is created if not found.
+            with open(data.ac_misc.policy_path, 'w') as f:
+                json.dump(data.ac_misc.role_users, f)
+        else:
+            if not os.path.isfile(data.ac_misc.policy_path):
+                raise Exception(f'File not found: {data.ac_misc.policy_path}')
+
+        # Extract Authentication method
+        if model.access_control.authentication.method == 'slot':
+            if not model.access_control.authentication.slot_name:
+                raise Exception("You need to provide a 'slot_name' for this authentication method")
+
+            data.ac_misc.authentication['method'] = model.access_control.authentication.method
+            data.ac_misc.authentication['slot_name'] = model.access_control.authentication.slot_name
+        else:
+            if model.access_control.authentication.slot_name:
+                print("WARNING: 'slot_name' is not applicable to this authentication method")
+
+            data.ac_misc.authentication['method'] = model.access_control.authentication.method
+
+
+    # Validate access control
+    data = validate_access_control(data, model)
+
     return data
 
 
@@ -689,6 +818,15 @@ def process_response_filter(text):
         return ''
     return ''.join([f"[{word}]" if word.isnumeric() else f"[\'{word}\']" for word in text.split('.')])
 
+def process_policies_dict(policies: Dict) -> Dict:
+    ''' Process policy names '''
+
+    # Format the name of the actions to avoid KeyErrors
+    policies_new = {}
+    for policy_name in policies.keys():
+        policies_new[f'action_{policy_name}'] = policies.get(policy_name)
+
+    return policies_new
 
 def validate_path_params(url, path_params):
     ''' Check whether all path_params keys and params in url match. '''
@@ -696,3 +834,76 @@ def validate_path_params(url, path_params):
     url_params = [url[1:-1] for url in url_params]  # Discard brackets
     return set(url_params) == set(path_params.keys())
 
+def validate_access_control(data: TransformationDataModel, model) -> TransformationDataModel:
+    ''' Validate access control parameters. '''
+    if model.access_control:
+        # Check if default role is defined
+        if data.ac_misc.default_role not in data.roles:
+            data.roles.append(data.ac_misc.default_role)
+            print(f"WARNING: Default role '{data.ac_misc.default_role}' is not defined under 'Roles:'")
+
+        actionGroup_roles = []
+        action_roles = []
+
+        if data.ac_misc.global_ac:
+            actionGroup_roles = unpack_nested_dict(data.policies)
+
+            # Check if roles assinged to actionGroups are defined
+            for role in actionGroup_roles:
+                if role not in data.roles:
+                    raise Exception(f"Role '{role}' is not defined under 'Roles:'")
+
+            # Check if action names are the same in data.actions and policies
+            data_actions = [action["name"] for action in data.actions]
+
+            for action in data.policies.keys():
+                if action not in data_actions:
+                    policy_name = ""
+                    for policy in model.access_control.policies:
+                        for action_p in policy.actions:
+                            if action == f"action_{action_p}":
+                                policy_name = policy.name
+                    raise Exception(f"Action: {action} in Policy: {policy_name} is not a defined ActionGroup")
+
+        if data.ac_misc.local_ac:
+            # Check if roles assigned to actions are defined
+            for actionGroup in data.actions:
+                if 'actions' in actionGroup.keys():
+                    for action in actionGroup['actions']:
+                        if 'roles' in action.keys():
+                            action_roles.extend(action['roles'])
+            for role in action_roles:
+                if role not in data.roles:
+                    raise Exception(f"Role '{role}' is not defined under 'Roles:'")
+
+        # Check if all defined roles are assigned to at least one actionGroup or action
+        for role in data.roles:
+            if role not in action_roles and role not in actionGroup_roles and role != data.ac_misc.default_role:
+                print(f"WARNING: Role '{role}' is defined but not used")
+
+        # Check if the authentication slot exists in the bot's slots, if slot auth is selected
+        if data.ac_misc.authentication['method'] == 'slot':
+            slot_names = [slot['name'] for slot in data.slots]
+            if data.ac_misc.authentication['slot_name'] not in slot_names:
+                raise Exception(f"Authentication slot {data.ac_misc.authentication['slot_name']} not defined in Dialogues")
+
+        # Check if third-party authentication is required, but no third-party connector is defined
+        if data.ac_misc.authentication['method'] != 'slot':
+            connector_names = [connector['name'] for connector in data.connectors]
+            if data.ac_misc.authentication['method'] not in connector_names:
+                raise Exception(f"You need to define a '{data.ac_misc.authentication['method']}' connector to use this authentication method")
+
+    elif data.ac_misc.local_ac:
+        # Check if local_ac is defined, but no access control is defined
+        raise Exception("You need to define 'access controls' rule first, to use local access control")
+
+    return data
+
+def unpack_nested_dict(dic: Dict[Any, Dict]) -> Set:
+    ''' Unpack the values of a nested dictionary. Duplicate values are discarded. '''
+
+    values = set()
+    for v in dic.values():
+        for val in v:
+            values.add(val)
+    return values

@@ -1,37 +1,165 @@
+{# --------------------------- MACROS --------------------------- #}
+{#
+  TODO: Jinja bug: Always leave a whitspace in the end of each
+  command-line that is followed by a text-string to be generated
+#}
+{% macro actions_macro(act) -%}
+{% if act.type in ['SpeakAction', 'AskSlot'] %}
+{% for property in act.system_properties %}
+{{property}} = compute_system_properties("{{property}}")
+{% endfor %}
+dispatcher.utter_message(text = f"{{act.text}}")
+{% elif act.type == 'FireEventAction' %}
+ts = datetime.timestamp(datetime.now())
+event_data = {
+    "id": "id",
+    "type": "event",
+    "timestamp": int(datetime.timestamp(datetime.now())),
+    "payload": {"message": {{act.msg}}, "uri": f"{{act.uri}}" }
+}
+dispatcher.utter_message(json_message = event_data)
+{% elif act.type in ['SetGlobalSlot', 'SetFormSlot'] %}
+{% for property in act.system_properties %}
+{{property}} = compute_system_properties("{{property}}")
+{% endfor %}
+output.append(SlotSet("{{act.slot}}", {{act.value}}))
+{% elif act.type == 'EServiceCallHTTP' %}
+{% for property in act.system_properties %}
+{{property}} = compute_system_properties("{{property}}")
+{% endfor %}
+{% for key, value in act.path_params.items() %}
+{{key}} = "{{value}}"
+{% endfor %}
+try:
+    response = requests.{{act.verb}}(f"{{act.url}}",
+        headers = {{act.header_params}},
+        params = {{act.query_params}}
+        {% if act.verb == 'get' %}
+        {% else %}
+        data = {{act.body_params}},
+        {% endif %}
+    )
+except:
+    print(f'Error retrieving response from {{act.url}} with code {response.status_code}.')
+{% if act.response_filter is defined %}
+{{act.response_slot}} = response.json(){{act.response_filter}}
+output.append(SlotSet('{{act.response_slot}}', {{act.response_slot}}))
+{% endif %}
+{% endif %}
+{% endmacro -%}
+{# --------------------------- MACROS --------------------------- #}
+
+{# --------------------------- FILE START --------------------------- #}
 from typing import Any, Text, Dict, List
 
 from rasa_sdk import Action, Tracker, FormValidationAction
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted
+from rasa_sdk.events import UserUtteranceReverted, SlotSet, Restarted, FollowupAction
 
-import requests, re, json, random
+import requests, re, json, random, socket
 from datetime import datetime
+{% if ac_misc.global_ac or ac_misc.local_ac%}
+import ast
+{% if ac_misc.authentication.method == 'slack' %}
+from slack_sdk import WebClient
+{% endif %}
+{% endif %}
 
 def compute_system_properties(property):
     if property.lower() == 'time':
-      return datetime.now().strftime("%I:%M")
+        return datetime.now().strftime("%I:%M")
     if property.lower() == 'location':
-      return ''
+        return ''
     if property.lower() == 'random_int':
-      return random.randint(0,100)
+        return random.randint(0,100)
     if property.lower() == 'random_float':
-      return random.random()
+        return random.random()
+    if property.lower() == 'hostname':
+        return socket.gethostname()
+    if property.lower() == 'public_ip':
+        try:
+            return requests.get('https://api.ipify.org').content.decode('utf8')
+        except:
+            return "Could not resolve IP address"
+
 
 def compute_user_properties(property):
     if property.lower() == 'name':
-      return ''
+        return ''
     if property.lower() == 'surname':
-      return ''
+        return ''
     if property.lower() == 'age':
-      return ''
+        return ''
     if property.lower() == 'email':
-      return ''
+        return ''
     if property.lower() == 'phone':
-      return ''
+        return ''
     if property.lower() == 'city':
-      return ''
+        return ''
     if property.lower() == 'address':
-      return ''
+        return ''
+
+{% if ac_misc.global_ac or ac_misc.local_ac%}
+class PolicyDecisionPoint():
+
+    _role_action_policies = {
+    {% for key, value in policies.items() %}
+      "{{key}}" : {{value}},
+    {% endfor %}
+    }
+
+    _user_role_policies = {}
+
+
+    def __init__(self, tracker) -> None:
+        self.tracker = tracker
+        self.user_authorized = False
+        self.role = '{{ac_misc.default_role}}'
+        PolicyDecisionPoint.read_user_role_policies_db()
+        self._find_user_role()
+
+    def _find_user_role(self) -> None:
+
+        {% if ac_misc.authentication.method == 'slot' %}
+        # Get user's details via slot
+        user_identifier = self.tracker.get_slot('{{ac_misc.authentication.slot_name}}')
+        {% else %}
+        # Get user's details via slack API
+          {% for connector in connectors %}
+            {% if connector['name'] == 'slack' %}
+        client = WebClient(token="{{connector['token']}}")
+            {% endif %}
+          {% endfor %}
+        sender_id = self.tracker.sender_id
+        user_identifier = dict(client.users_info(user=sender_id)['user'])['profile']['email']
+        {% endif %}
+
+        # Find the user's role in user-roles database
+        for role_db in self._user_role_policies.keys():
+            for user_db in self._user_role_policies[role_db]:
+                if user_db == user_identifier:
+                    self.role = role_db
+
+        return
+
+    def check_users_permissions(self, action_ID) -> None:
+
+        # Check if the user's role is authorized to access this action, in actions-roles/policies database
+        if self.role in self._role_action_policies[action_ID]:
+            self.user_authorized = True
+
+        return
+
+    @staticmethod
+    def read_user_role_policies_db() -> None:
+      """ Loads the user-role policies from database """
+
+        if not PolicyDecisionPoint._user_role_policies:
+            with open('{{ac_misc.policy_path}}', 'r') as f:
+                s = f.read()
+                PolicyDecisionPoint._user_role_policies = ast.literal_eval(s)
+        return
+{% endif %}
 
 {% for action in actions %}
 {% if action.validation_method is defined %}
@@ -45,8 +173,24 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
     def {{slot.method}}(self, dispatcher, tracker, domain):
         output = {}
         requested_slot = tracker.get_slot('requested_slot')
+        {% if slot.data is defined %}
+        {% if slot.data.previous_slot is defined %}
+        {% if slot.data.previous_slot != None %}
+        {{slot.data.previous_slot}} = tracker.get_slot('{{slot.data.previous_slot}}')
+        {{slot.name}} = tracker.get_slot('{{slot.name}}')
+        if {{slot.data.previous_slot}} != None and {{slot.name}} == None:
+        {% else %}
+        {{slot.name}} = tracker.get_slot('{{slot.name}}')
+        if {{slot.name}} == None:
+        {% endif %}
+        {% else %}
         if requested_slot == "{{slot.name}}":
             {{slot.name}} = None
+        {% endif %}
+        {% else %}
+        if requested_slot == "{{slot.name}}":
+            {{slot.name}} = None
+        {% endif %}
             {% if slot.source_type == 'EServiceCallHTTP' %}
             {% for slot in slot.data.slots %}
             {{slot}} = tracker.get_slot('{{slot}}')
@@ -60,19 +204,19 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {% for property in slot.data.user_properties %}
             {{property}} = compute_user_properties("{{property}}")
             {% endfor %}
-            {% if slot.data.verb == 'get' %}
-            response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
-                headers = {{slot.data.header_params}},
-                params = {{slot.data.query_params}}
-            )
-            {% else %}
-            response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
-                headers = {{slot.data.header_params}},
-                data = {{slot.data.body_params}},
-                params = {{slot.data.query_params}}
-              )
-            {% endif %}
             try:
+                {% if slot.data.verb == 'get' %}
+                response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
+                    headers = {{slot.data.header_params}},
+                    params = {{slot.data.query_params}}
+                )
+                {% else %}
+                response = requests.{{slot.data.verb}}(f"{{slot.data.url}}",
+                    headers = {{slot.data.header_params}},
+                    data = {{slot.data.body_params}},
+                    params = {{slot.data.query_params}}
+                )
+            {% endif %}
                 {{slot.name}} = response.json(){{slot.data.response_filter}}
                 output["{{slot.name}}"] = {{slot.name}}
             except:
@@ -105,13 +249,23 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {% elif slot.type == 'float' %}
             numbers = re.findall("\d+\.\d+", text)
             {% else %}
-            return
+            {% if action.reset_slots is defined %}
+            {% for _slot in action.reset_slots %}
+            output["{{_slot}}"] = None
+            {% endfor %}
+            {% endif %}
+            return output
             {% endif %}
             if len(numbers):
                 {{slot.name}} = {{slot.type}}(numbers[0])
             output["{{slot.name}}"] = {{slot.name}}
             {% endif %}
             {% endif %}
+        {% if action.reset_slots is defined %}
+        {% for _slot in action.reset_slots %}
+        output["{{_slot}}"] = None
+        {% endfor %}
+        {% endif %}
         return output
 
 {% endfor %}
@@ -122,6 +276,21 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         return "{{action.name}}"
 
     def run(self, dispatcher, tracker, domain):
+
+        output = []
+        {% if action.name in policies %}
+
+        # Check if the user is authorized
+        PDP = PolicyDecisionPoint(tracker)
+        PDP.check_users_permissions(self.name())
+
+        if not PDP.user_authorized:
+            dispatcher.utter_message(text = "You are unauthorized for this action")
+            return output
+        {% elif action.local_ac %}
+        PDP = PolicyDecisionPoint(tracker)
+        {% endif %}
+
         {% for entity in action.entities %}
         {{entity}} = next(tracker.get_latest_entity_values("{{entity}}"), '')
         {% endfor %}
@@ -131,51 +300,24 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% for property in action.user_properties %}
         {{property}} = compute_user_properties("{{property}}")
         {% endfor %}
-        output = []
 
         {% for act in action.actions %}
-        {% if act.type in ['SpeakAction', 'AskSlot'] %}
-        {% for property in act.system_properties %}
-        {{property}} = compute_system_properties("{{property}}")
-        {% endfor %}
-        dispatcher.utter_message(text = f"{{act.text}}")
-        {% elif act.type == 'FireEventAction' %}
-        ts = datetime.timestamp(datetime.now())
-        event_data = {
-            "id": "id",
-            "type": "event",
-            "timestamp": int(datetime.timestamp(datetime.now())),
-            "payload": {"message": {{act.msg}}, "uri": f"{{act.uri}}" }
-        }
-        dispatcher.utter_message(json_message = event_data)
-        {% elif act.type == 'SetSlot' %}
-        {% for property in act.system_properties %}
-        {{property}} = compute_system_properties("{{property}}")
-        {% endfor %}
-        output.append(SlotSet("{{act.slot}}", {{act.value}}))
-        {% elif act.type == 'EServiceCallHTTP' %}
-        {% for property in act.system_properties %}
-        {{property}} = compute_system_properties("{{property}}")
-        {% endfor %}
-        {% for key, value in act.path_params.items() %}
-        {{key}} = "{{value}}"
-        {% endfor %}
-        {% if act.verb == 'get' %}
-        response = requests.{{act.verb}}(f"{{act.url}}",
-            headers = {{act.header_params}},
-            params = {{act.query_params}}
-        )
+        {% if act.type in ['SpeakAction', 'AskSlot', 'FireEventAction','SetGlobalSlot', 'SetFormSlot', 'EServiceCallHTTP']%}
+        {% if act.roles %}
+        if PDP.role in {{act.roles}}:
+        {{ actions_macro(act)|indent(12) }}
         {% else %}
-        response = requests.{{act.verb}}(f"{{act.url}}",
-            headers = {{act.header_params}},
-            data = {{act.body_params}},
-            params = {{act.query_params}}
-        )
+        {{ actions_macro(act)|indent(8) }}
         {% endif %}
         {% endif %}
-
         {% endfor %}
+        {% if action.reset_slots is defined %}
+        {% for _slot in action.reset_slots %}
+        output.append(SlotSet('{{_slot}}', None))
+        {% endfor %}
+        {% endif %}
         return output
 
 {% endif %}
 {% endfor %}
+{# --------------------------- FILE END --------------------------- #}
