@@ -173,6 +173,7 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
     def {{slot.method}}(self, dispatcher, tracker, domain):
         output = {}
         requested_slot = tracker.get_slot('requested_slot')
+        {% if slot.data is defined %}
         {% if slot.data.previous_slot is defined %}
         {% if slot.data.previous_slot != None %}
         {{slot.data.previous_slot}} = tracker.get_slot('{{slot.data.previous_slot}}')
@@ -181,6 +182,10 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
         {% else %}
         {{slot.name}} = tracker.get_slot('{{slot.name}}')
         if {{slot.name}} == None:
+        {% endif %}
+        {% else %}
+        if requested_slot == "{{slot.name}}":
+            {{slot.name}} = None
         {% endif %}
         {% else %}
         if requested_slot == "{{slot.name}}":
