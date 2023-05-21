@@ -432,7 +432,7 @@ def parse_model(model) -> TransformationDataModel:
                     elif slot.source.__class__.__name__ == 'HRIParamSource':
                         # No method given, extract from text
                         if slot.source.extract == []:
-                            extract_slot.append({'type': 'from_text', 'form': form})
+                            extract_slot.append({'type': 'custom', 'form': form})
                             extract_from_text = True
                         else:
                             slot_from_intent_info = []
