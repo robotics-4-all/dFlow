@@ -387,7 +387,8 @@ def parse_model(model) -> TransformationDataModel:
 
                 form_data = [] # Contains only this form's slots
                 validation_data = []
-                for slot in response.params:
+                for i in range(len(response.params)):
+                    slot = response.params[i]
                     extract_slot = []
                     extract_from_text = False
                     form_data.append(slot.name)
@@ -399,6 +400,12 @@ def parse_model(model) -> TransformationDataModel:
                         validation = validate_path_params(data.eservices[slot.source.eserviceRef.name]['url'], path_params)
                         if not validation:
                             raise Exception('Service path and path params do not match.')
+                        previous_slot_list = []
+                        if i > 0:
+                            previous_slot = response.params[i-1].name
+                            previous_slot_list.append(previous_slot)
+                        else:
+                            previous_slot = None
                         slot_service_info = {
                             'type': slot.source.__class__.__name__,
                             'verb': slot.source.eserviceRef.verb.lower(),
@@ -408,7 +415,8 @@ def parse_model(model) -> TransformationDataModel:
                             'header_params': header_params,
                             'body_params': body_params,
                             'response_filter': process_response_filter(slot.source.response_filter),
-                            'slots': list(set(path_slots + query_slots + header_slots + body_slots)),
+                            'slots': list(set(path_slots + query_slots + header_slots + body_slots + previous_slot_list)),
+                            'previous_slot': previous_slot,
                             'user_properties': list(set(path_user_properties+query_user_properties+header_user_properties+body_user_properties)),
                             'system_properties': list(set(path_system_properties+query_system_properties+header_system_properties+body_system_properties))
                         }
