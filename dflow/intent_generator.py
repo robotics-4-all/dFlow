@@ -5,6 +5,41 @@ import yaml
 import json
 
 
+class Endpoint:
+    def __init__(self, path):
+        self.path = path
+        self.operations = []  # list of Operation objects
+
+
+class Operation:
+    def __init__(self, type, parameters=None, requestBody=None, responses=None):
+        self.type = type
+        self.parameters = parameters or []
+        self.requestBody = requestBody
+        self.responses = responses or []
+
+
+class Parameter:
+    def __init__(self, name, location, description=None):
+        self.name = name
+        self.location = location
+        self.description = description
+
+
+class RequestBody:
+    def __init__(self, description=None, content=None):
+        self.description = description
+        self.content = content  # dictionary of media types and schema
+
+
+class Response:
+    def __init__(self, status_code, description=None, content=None):
+        self.status_code = status_code
+        self.description = description
+        self.content = content  # dictionary of media types and schema
+
+
+
 def fetch_specification(source):
     if os.path.isfile(source):  # source is a file
         with open(source, 'r') as f:
@@ -23,14 +58,12 @@ def fetch_specification(source):
             return json.loads(response.text)
         else:
             raise ValueError("Invalid URL type. Only JSON and YAML are supported.")
+        
 
+# Parse the specification to create instances of Endpoint, Operation, Parameter, RequestBody, and Response.
+def extract_api_elements(api_specification):
+    pass
 
-
-def parse_api(api_specification):
-    # use spaCy to parse the API specification
-    # extract relevant details
-
-    return 0 #details
 
 
 def generate_intents(parsed_api):
@@ -38,6 +71,7 @@ def generate_intents(parsed_api):
     # this could involve filling in sentence templates with the extracted details
     # return the generated intents
 
-    return 0 #intents
+    pass
+
 
 
