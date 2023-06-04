@@ -64,9 +64,45 @@ def fetch_specification(source):
 
 # Parse the specification to create instances of Endpoint, Operation, Parameter, RequestBody, and Response.
 def extract_api_elements(api_specification):
-    pass
+    endpoints = []
 
+    for path, operations in api_specification['paths'].items():
+        endpoint = Endpoint(path)
 
+        for operation_type, operation_details in operations.items():
+            operationSummary = operation_details.get('summary')
+            operationdDescription = operation_details.get('description')
+
+            parameters = []
+            if 'parameters' in operation_details:
+                for parameter_details in operation_details['parameters']:
+                    name = parameter_details['name']
+                    location = parameter_details['in']
+                    description = parameter_details.get('description')
+                    parameter = Parameter(name, location, description)
+                    parameters.append(parameter)
+
+            requestBody = None
+            if 'requestBody' in operation_details:
+                requestBody_details = operation_details['requestBody']
+                description = requestBody_details.get('description')
+                content = requestBody_details.get('content')
+                requestBody = RequestBody(description, content)
+
+            responses = []
+            if 'responses' in operation_details:
+                for status_code, response_details in operation_details['responses'].items():
+                    description = response_details.get('description')
+                    content = response_details.get('content')
+                    response = Response(status_code, description, content)
+                    responses.append(response)
+
+            operation = Operation(operation_type, operationSummary, operationdDescription, parameters, requestBody, responses)
+            endpoint.operations.append(operation)
+
+        endpoints.append(endpoint)
+
+    return endpoints
 
 def generate_intents(parsed_api):
     # take the parsed OpenAPI description and use it to generate intent examples
