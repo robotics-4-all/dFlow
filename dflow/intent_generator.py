@@ -12,8 +12,10 @@ class Endpoint:
 
 
 class Operation:
-    def __init__(self, type, parameters=None, requestBody=None, responses=None):
+    def __init__(self, type, summary=None, description=None, parameters=None, requestBody=None, responses=None):
         self.type = type
+        self.summary = summary
+        self.description = description
         self.parameters = parameters or []
         self.requestBody = requestBody
         self.responses = responses or []
