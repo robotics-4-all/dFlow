@@ -1,8 +1,12 @@
 import os.path
-import spacy
 import requests
 import yaml
 import json
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_name = "tiiuae/falcon-7b-instruct"
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
 
 class Endpoint:
@@ -104,12 +108,77 @@ def extract_api_elements(api_specification):
 
     return endpoints
 
-def generate_intents(parsed_api):
-    # take the parsed OpenAPI description and use it to generate intent examples
-    # this could involve filling in sentence templates with the extracted details
-    # return the generated intents
+def generate_intent_examples(model, tokenizer, operation_summary):
+    
+    # Build the prompt text
+    prompt_text = f"""
+    I need diverse examples of how a user might express certain intents related to tasks they want to perform. The examples should be human-like, varied, and cover different ways the same intent might be expressed. Here are a few tasks:
 
-    pass
+    Task: Get user details
+    Example Intents:
+    1. Can you fetch the details for this user?
+    2. Show me the user's information.
+    3. I'd like to see this user's details.
+
+    Task: Create a new user
+    Example Intents:
+    1. I want to register a new user.
+    2. Can we set up a user profile?
+    3. Let's create a new user account.
+
+    Task: Find pet
+    Example Intents:
+    1. Where is my pet?
+    2. Find my pet!
+    3. I've lost my pet, could you locate it?
+
+    Task: Upload an image
+    Example Intents:
+    1. I want to upload this picture.
+    2. Can you assist me in uploading an image?
+    3. Post this image now!
+
+    Now, for the following task, please generate 10 diverse intent examples:
+
+    Task: {operation_summary.lower()}
+    Intents: 
+    """
+
+    # Encode the prompt text
+    inputs = tokenizer.encode(prompt_text, return_tensors="pt")
+
+    # Generate text
+    outputs = model.generate(
+        inputs,
+        max_length=500,
+        temperature=0.7,
+        do_sample=True,
+        num_return_sequences=1,  # Generate one sequence and extract examples from it
+        pad_token_id=tokenizer.eos_token_id
+    )
+
+    # Decode the output
+    decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    # Extract the intent examples
+    intent_examples_raw = decoded_output.split("Intents:")[-1].strip()
+    intent_examples = intent_examples_raw.split('\n')
+
+    # Clean up the extracted examples and remove any empty examples
+    clean_intent_examples = [example.split(')')[-1].strip() for example in intent_examples if example.strip()]
+
+    return clean_intent_examples
 
 
+# Sample usage
+parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
 
+for endpoint in parsed_api:
+    for operation in endpoint.operations:
+        print(f"Endpoint: {endpoint.path}   \nOperation: {operation.type}")
+        print(f"Summary: {operation.summary}")
+        print("Intent examples:")
+        examples = generate_intent_examples(model,tokenizer,operation.summary)
+        for i, example in enumerate(examples, 1):
+            print(f"{i}) {example}")
+        print("\n")
