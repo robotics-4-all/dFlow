@@ -1,22 +1,35 @@
-from intent_generator import Endpoint, Operation, Parameter, RequestBody, Response, generate_intent_examples
+from intent_generator import Endpoint, Operation, Parameter,RequestBody,Response,fetch_specification, extract_api_elements
+from jinja2 import Environment, FileSystemLoader
 
-def create_intent(operation):
-    pass
+def create_service_name(path, operation_type):
+    stripped_path = path.strip('/')
+    
+    stripped_path = stripped_path.replace('/', '_')
+    
+    service_name = f'{operation_type}_{stripped_path}_svc'
+    
+    return service_name
 
-def create_parameter(parameter):
-    pass
+def create_service(service_name, verb, host, port, path):
+    file_loader = FileSystemLoader('templates') 
+    env = Environment(loader=file_loader)
+    template = env.get_template('dflow.jinja')
 
-def create_request_body(request_body):
-    pass
+    output = template.render(service_name=service_name, verb=verb, host=host, port=port, path=path)
+    
+    return output
 
-def create_response(response):
-    pass
+fetchedApi = fetch_specification("https://petstore.swagger.io/v2/swagger.json")
+parsed_api = extract_api_elements(fetchedApi)  
 
-def transform_to_dflow(api_elements):
-    dflow_model = []
-    for endpoint in api_elements:
-        for operation in endpoint.operations:
-            intent = create_intent(operation)
-            dflow_model.append(intent)
+for endpoint in parsed_api:
+    for operation in endpoint.operations:
+        service_name = create_service_name(endpoint.path, operation.type)
+        verb = operation.type.upper() 
+        host = fetchedApi["host"]
+        port = fetchedApi.get("port", None)
+        path = endpoint.path
 
-    return dflow_model
+        eservice_definition = create_service(service_name, verb, host, port, path)
+
+        print(eservice_definition)
