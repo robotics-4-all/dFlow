@@ -1,13 +1,8 @@
 from intent_generator import Endpoint, Operation, Parameter,RequestBody,Response,fetch_specification, extract_api_elements
 from jinja2 import Environment, FileSystemLoader
 
-def create_service_name(path, operation_type):
-    stripped_path = path.strip('/')
-    
-    stripped_path = stripped_path.replace('/', '_')
-    
-    service_name = f'{operation_type}_{stripped_path}_svc'
-    
+def create_service_name(operationId):
+    service_name = f'{operationId}_svc'
     return service_name
 
 def create_service(service_name, verb, host, port, path):
@@ -24,7 +19,7 @@ parsed_api = extract_api_elements(fetchedApi)
 
 for endpoint in parsed_api:
     for operation in endpoint.operations:
-        service_name = create_service_name(endpoint.path, operation.type)
+        service_name = create_service_name(operation.operationId)
         verb = operation.type.upper() 
         host = fetchedApi["host"]
         port = fetchedApi.get("port", None)
@@ -33,3 +28,4 @@ for endpoint in parsed_api:
         eservice_definition = create_service(service_name, verb, host, port, path)
 
         print(eservice_definition)
+

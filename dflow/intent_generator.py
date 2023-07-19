@@ -4,10 +4,6 @@ import yaml
 import json
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-model_name = "tiiuae/falcon-7b-instruct"
-model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-
 
 class Endpoint:
     def __init__(self, path):
@@ -16,8 +12,9 @@ class Endpoint:
 
 
 class Operation:
-    def __init__(self, type, summary=None, description=None, parameters=None, requestBody=None, responses=None):
+    def __init__(self, type, operationId=None, summary=None, description=None, parameters=None, requestBody=None, responses=None):
         self.type = type
+        self.operationId = operationId  # new field
         self.summary = summary
         self.description = description
         self.parameters = parameters or []
@@ -75,6 +72,7 @@ def extract_api_elements(api_specification):
 
         for operation_type, operation_details in operations.items():
             operationSummary = operation_details.get('summary')
+            operationId = operation_details.get('operationId')
             operationdDescription = operation_details.get('description')
 
             parameters = []
@@ -101,7 +99,7 @@ def extract_api_elements(api_specification):
                     response = Response(status_code, description, content)
                     responses.append(response)
 
-            operation = Operation(operation_type, operationSummary, operationdDescription, parameters, requestBody, responses)
+            operation = Operation(operation_type, operationId, operationSummary, operationdDescription, parameters, requestBody, responses)
             endpoint.operations.append(operation)
 
         endpoints.append(endpoint)
@@ -170,15 +168,19 @@ def generate_intent_examples(model, tokenizer, operation_summary):
     return clean_intent_examples
 
 
-# Sample usage
+# model_name = "tiiuae/falcon-7b-instruct"
+# model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
+# tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+
+# # Sample usage
 parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
 
-for endpoint in parsed_api:
-    for operation in endpoint.operations:
-        print(f"Endpoint: {endpoint.path}   \nOperation: {operation.type}")
-        print(f"Summary: {operation.summary}")
-        print("Intent examples:")
-        examples = generate_intent_examples(model,tokenizer,operation.summary)
-        for i, example in enumerate(examples, 1):
-            print(f"{i}) {example}")
-        print("\n")
+# for endpoint in parsed_api:
+#     for operation in endpoint.operations:
+#         print(f"Endpoint: {endpoint.path}   \nOperation: {operation.type}")
+#         print(f"Summary: {operation.summary}")
+#         print("Intent examples:")
+#         examples = generate_intent_examples(model,tokenizer,operation.summary)
+#         for i, example in enumerate(examples, 1):
+#             print(f"{i}) {example}")
+#         print("\n")
