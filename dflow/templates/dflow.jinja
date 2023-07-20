@@ -1,4 +1,14 @@
 
+entities
+{%- for entity in entities %}
+    Entity {{ entity.name }}
+    {%- for sub_entity in entity.sub_entities %}
+        {{ sub_entity }}{{ "," if not loop.last else "" }}\n
+    {%- endfor %}
+    end
+{%- endfor %}
+end
+
 eservices
     EServiceHTTP {{ service_name }}
         verb: {{ verb }}
