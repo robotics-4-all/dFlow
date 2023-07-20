@@ -1,4 +1,4 @@
-from intent_generator import Endpoint, Operation, Parameter,RequestBody,Response,fetch_specification, extract_api_elements,generate_intent_examples
+from intent_generator import Endpoint, Operation, Parameter,RequestBody,Response,fetch_specification, extract_api_elements,generate_intent_examples2
 from jinja2 import Environment, FileSystemLoader
 
 def create_service_name(operationId):
@@ -13,21 +13,24 @@ def create_service(service_name, verb, host, port, path):
     output = template.render(service_name=service_name, verb=verb, host=host, port=port, path=path)
     return output
 
-# def create_intents(triggers):
-#     file_loader = FileSystemLoader('templates') 
-#     env = Environment(loader=file_loader)
-#     template = env.get_template('grammar-templates/triggers.jinja')
+def create_intent_name():
+    pass
 
-#     phrases = generate_intent_examples(model, tokenizer, operation_summary)
-#     trigger = {
-#         "type": "Intent",
-#         "name": "generated_intent_name", 
-#         "phrases": phrases
-#     }
-#     triggers = [trigger]  
+def create_intents(triggers):
+    file_loader = FileSystemLoader('templates') 
+    env = Environment(loader=file_loader)
+    template = env.get_template('grammar-templates/triggers.jinja')
 
-#     output = env.from_string('{% extends "dflow.jinja" %}{% block triggers %}' + template.blocks['triggers'][0]() + '{% endblock %}').render(triggers=triggers)
-#     return output
+    phrases = generate_intent_examples2()
+    trigger = {
+        "type": "Intent",
+        "name": "generated_intent_name",  
+        "phrases": phrases
+    }
+    triggers = [trigger] 
+
+    output = template.render(triggers=triggers)
+    return output
 
 
 fetchedApi = fetch_specification("https://petstore.swagger.io/v2/swagger.json")
@@ -45,3 +48,7 @@ for endpoint in parsed_api:
 
         print(eservice_definition)
 
+
+triggers = []  # Replace with the triggers you want to create
+intents = create_intents(triggers)
+print(intents)

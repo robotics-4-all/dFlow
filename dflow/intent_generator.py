@@ -167,6 +167,10 @@ def generate_intent_examples(model, tokenizer, operation_summary):
 
     return clean_intent_examples
 
+def generate_intent_examples2():
+
+    return ["Intent1","Intent2","Intent3"]
+
 
 # model_name = "tiiuae/falcon-7b-instruct"
 # model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    

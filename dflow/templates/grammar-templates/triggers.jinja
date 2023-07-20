@@ -2,7 +2,7 @@ triggers
 {%- for trigger in triggers %}
   {{ trigger.type }} {{ trigger.name }}
   {%- for phrase in trigger.phrases %}
-    {{ phrase }}{{ "," if not loop.last else "" }}\n
+    {{ phrase }}{{ "," if not loop.last else "" }}
   {%- endfor %}
   end
 {%- endfor %}
