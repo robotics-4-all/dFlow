@@ -1,0 +1,10 @@
+synonyms
+{%- for synonym in synonyms %}
+  Synonym {{ synonym.name }}
+  {%- for sub_synonym in synonym.sub_synonyms %}
+    {{ sub_synonym }}{{ "," if not loop.last else "" }}\n
+  {%- endfor %}
+  end
+{%- endfor %}
+end
+

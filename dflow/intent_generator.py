@@ -172,8 +172,7 @@ def generate_intent_examples(model, tokenizer, operation_summary):
 # model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
 # tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
-# # Sample usage
-parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
+# parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
 
 # for endpoint in parsed_api:
 #     for operation in endpoint.operations:
