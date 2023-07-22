@@ -4,12 +4,9 @@ import yaml
 import json
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# model_name = "tiiuae/falcon-7b-instruct"
-# model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
-# tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-
-tokenizer = AutoTokenizer.from_pretrained("gpt2")
-model = AutoModelForCausalLM.from_pretrained("gpt2")
+model_name = "tiiuae/falcon-7b-instruct"
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
 
 class Endpoint:
@@ -117,40 +114,34 @@ def generate_intent_examples(model, tokenizer, operation_summary):
     I need diverse examples of how a user might express certain intents related to tasks they want to perform. The examples should be human-like, varied, and cover different ways the same intent might be expressed. Here are a few tasks:
 
     Task: Get user details
-    Intent name: get_user_details
     Example Intents:
      Can you fetch the details for this user?
      Show me the user's information.
      I'd like to see this user's details.
 
     Task: Create a new user
-    Intent name: create_new_user
     Example Intents:
      I want to register a new user.
      Can we set up a user profile?
      Let's create a new user account.
 
     Task: Find pet by id
-    Intent name: find_pet
     Example Intents:
      Where is my pet?
      Find my pet!
      I've lost my pet, could you locate it?
 
     Task: Upload an image
-    Intent name: upload_image
     Example Intents:
      I want to upload this picture.
      Can you assist me in uploading an image?
      Post this image now!
 
-    Now, for the following task, please generate intent name and 5 diverse intent examples:
+    Now, for the following task, please generate intent name and 10 diverse intent examples:
 
     Task: {operation_summary.lower()}
-    Intent name:
     Example Intents:
     """
-
 
     inputs = tokenizer.encode(prompt_text, return_tensors="pt")
 
@@ -165,15 +156,12 @@ def generate_intent_examples(model, tokenizer, operation_summary):
 
     decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-    intent_name, intent_examples_raw = decoded_output.split("Intent name:")[-1].strip().split("Example Intents:")
-
-    intent_name = intent_name.strip()
-
+    intent_examples_raw = decoded_output.split("Intents:")[-1].strip()
     intent_examples = intent_examples_raw.split('\n')
 
     clean_intent_examples = [example.split(')')[-1].strip() for example in intent_examples if example.strip()]
 
-    return intent_name, clean_intent_examples
+    return clean_intent_examples
 
 
 # parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
