@@ -1,4 +1,4 @@
-from intent_generator import Endpoint, Operation, Parameter,RequestBody,Response,fetch_specification, extract_api_elements,generate_intent_examples2
+from intent_generator import *
 from jinja2 import Environment, FileSystemLoader
 
 def create_service_name(operationId):
@@ -13,18 +13,15 @@ def create_service(service_name, verb, host, port, path):
     output = template.render(service_name=service_name, verb=verb, host=host, port=port, path=path)
     return output
 
-def create_intent_name():
-    pass
-
 def create_intents(triggers):
     file_loader = FileSystemLoader('templates') 
     env = Environment(loader=file_loader)
     template = env.get_template('grammar-templates/triggers.jinja')
 
-    phrases = generate_intent_examples2()
+    intent_name, phrases = generate_intent_examples(model,tokenizer,operation.summary)
     trigger = {
         "type": "Intent",
-        "name": "generated_intent_name",  
+        "name": intent_name,  
         "phrases": phrases
     }
     triggers = [trigger] 

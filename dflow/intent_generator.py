@@ -4,17 +4,23 @@ import yaml
 import json
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+# model_name = "tiiuae/falcon-7b-instruct"
+# model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
+# tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+model = AutoModelForCausalLM.from_pretrained("gpt2")
+
 
 class Endpoint:
     def __init__(self, path):
         self.path = path
-        self.operations = []  # list of Operation objects
-
+        self.operations = [] 
 
 class Operation:
     def __init__(self, type, operationId=None, summary=None, description=None, parameters=None, requestBody=None, responses=None):
         self.type = type
-        self.operationId = operationId  # new field
+        self.operationId = operationId 
         self.summary = summary
         self.description = description
         self.parameters = parameters or []
@@ -32,19 +38,19 @@ class Parameter:
 class RequestBody:
     def __init__(self, description=None, content=None):
         self.description = description
-        self.content = content  # dictionary of media types and schema
+        self.content = content  
 
 
 class Response:
     def __init__(self, status_code, description=None, content=None):
         self.status_code = status_code
         self.description = description
-        self.content = content  # dictionary of media types and schema
+        self.content = content  
 
 
 
 def fetch_specification(source):
-    if os.path.isfile(source):  # source is a file
+    if os.path.isfile(source):  
         with open(source, 'r') as f:
             if source.endswith('.yaml'):
                 return yaml.safe_load(f)
@@ -52,9 +58,9 @@ def fetch_specification(source):
                 return json.load(f)
             else:
                 raise ValueError("Invalid file type. Only JSON and YAML are supported.")
-    else:  # source is a URL
+    else:  
         response = requests.get(source)
-        response.raise_for_status()  # raise an exception if the request failed
+        response.raise_for_status()  
         if source.endswith('.yaml'):
             return yaml.safe_load(response.text)
         elif source.endswith('.json'):
@@ -63,7 +69,6 @@ def fetch_specification(source):
             raise ValueError("Invalid URL type. Only JSON and YAML are supported.")
         
 
-# Parse the specification to create instances of Endpoint, Operation, Parameter, RequestBody, and Response.
 def extract_api_elements(api_specification):
     endpoints = []
 
@@ -108,73 +113,68 @@ def extract_api_elements(api_specification):
 
 def generate_intent_examples(model, tokenizer, operation_summary):
     
-    # Build the prompt text
     prompt_text = f"""
     I need diverse examples of how a user might express certain intents related to tasks they want to perform. The examples should be human-like, varied, and cover different ways the same intent might be expressed. Here are a few tasks:
 
     Task: Get user details
+    Intent name: get_user_details
     Example Intents:
-    1. Can you fetch the details for this user?
-    2. Show me the user's information.
-    3. I'd like to see this user's details.
+     Can you fetch the details for this user?
+     Show me the user's information.
+     I'd like to see this user's details.
 
     Task: Create a new user
+    Intent name: create_new_user
     Example Intents:
-    1. I want to register a new user.
-    2. Can we set up a user profile?
-    3. Let's create a new user account.
+     I want to register a new user.
+     Can we set up a user profile?
+     Let's create a new user account.
 
-    Task: Find pet
+    Task: Find pet by id
+    Intent name: find_pet
     Example Intents:
-    1. Where is my pet?
-    2. Find my pet!
-    3. I've lost my pet, could you locate it?
+     Where is my pet?
+     Find my pet!
+     I've lost my pet, could you locate it?
 
     Task: Upload an image
+    Intent name: upload_image
     Example Intents:
-    1. I want to upload this picture.
-    2. Can you assist me in uploading an image?
-    3. Post this image now!
+     I want to upload this picture.
+     Can you assist me in uploading an image?
+     Post this image now!
 
-    Now, for the following task, please generate 10 diverse intent examples:
+    Now, for the following task, please generate intent name and 5 diverse intent examples:
 
     Task: {operation_summary.lower()}
-    Intents: 
+    Intent name:
+    Example Intents:
     """
 
-    # Encode the prompt text
+
     inputs = tokenizer.encode(prompt_text, return_tensors="pt")
 
-    # Generate text
     outputs = model.generate(
         inputs,
         max_length=500,
         temperature=0.7,
         do_sample=True,
-        num_return_sequences=1,  # Generate one sequence and extract examples from it
+        num_return_sequences=1,  
         pad_token_id=tokenizer.eos_token_id
     )
 
-    # Decode the output
     decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-    # Extract the intent examples
-    intent_examples_raw = decoded_output.split("Intents:")[-1].strip()
+    intent_name, intent_examples_raw = decoded_output.split("Intent name:")[-1].strip().split("Example Intents:")
+
+    intent_name = intent_name.strip()
+
     intent_examples = intent_examples_raw.split('\n')
 
-    # Clean up the extracted examples and remove any empty examples
     clean_intent_examples = [example.split(')')[-1].strip() for example in intent_examples if example.strip()]
 
-    return clean_intent_examples
+    return intent_name, clean_intent_examples
 
-def generate_intent_examples2():
-
-    return ["Intent1","Intent2","Intent3"]
-
-
-# model_name = "tiiuae/falcon-7b-instruct"
-# model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
-# tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
 # parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
 
