@@ -1,10 +1,13 @@
 triggers
 {%- for trigger in triggers %}
   {{ trigger.type }} {{ trigger.name }}
-  {%- for phrase in trigger.phrases %}
-    '{{ phrase }}'{{ "," if not loop.last else "" }}
-  {%- endfor %}
+  {%- if trigger.type == 'Intent' %}
+    {%- for phrase in trigger.phrases %}
+      '{{ phrase }}'{{ "," if not loop.last else "" }}
+    {%- endfor %}
+  {%- elif trigger.type == 'Event' %}
+    '{{ trigger.uri }}'
+  {%- endif %}
   end
 {%- endfor %}
 end
-
