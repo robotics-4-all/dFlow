@@ -15,27 +15,32 @@ def create_service(service_name, verb, host, port, path):
     output = template.render(service_name=service_name, verb=verb, host=host, port=port, path=path)
     return output
 
-def create_triggers(intent_name, event_name, triggers):
+def create_trigger(trigger_name, triggers, trigger_type="Intent"):
     file_loader = FileSystemLoader('templates') 
     env = Environment(loader=file_loader)
     template = env.get_template('grammar-templates/triggers.jinja')
 
-    phrases = generate_intent_examples(model,tokenizer,operation.summary)
-    intent = {
-        "type": "Intent",
-        "name": intent_name,  
-        "phrases": phrases
-    }
+    if trigger_type == "Intent":
+        phrases = generate_intent_examples(model, tokenizer, operation.summary)
+        trigger = {
+            "type": trigger_type,
+            "name": trigger_name,  
+            "phrases": phrases
+        }
+    elif trigger_type == "Event":
+        trigger = {
+            "type": trigger_type,
+            "name": trigger_name,  
+            "uri": f"bot/event/{trigger_name}"
+        }
 
-    event = {
-        "type": "Event",
-        "name": event_name,  
-        "uri": f"bot/event/{event_name}"
-    }
-    triggers = [intent,event] 
+    triggers.append(trigger)
 
     output = template.render(triggers=triggers)
     return output
+
+def create_dialogue():
+    pass
 
 
 fetchedApi = fetch_specification("https://petstore.swagger.io/v2/swagger.json")
@@ -55,9 +60,7 @@ for endpoint in parsed_api:
         path = endpoint.path
 
         eservice_definition = create_service(service_name, verb, host, port, path)
-        triggers = create_triggers(intent_name,event_name,triggers)
+        triggers = create_trigger(intent_name,triggers)
 
         print(eservice_definition)
         print(triggers)
-
-

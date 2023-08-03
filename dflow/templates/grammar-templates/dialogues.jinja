@@ -1,0 +1,27 @@
+dialogues
+{% for dialogue in dialogues %}
+    Dialogue {{ dialogue.name }}
+        on: {% for trigger in dialogue.triggers %}{{ trigger }}{% if not loop.last %},{% endif %}{% endfor %}
+        responses: {% for response in dialogue.responses %}
+            {% if response.type == "ActionGroup" %}
+                ActionGroup {{ response.name }}
+                    {% for action in response.actions %}
+                        Speak('{{ action.text }}')
+                    {% endfor %}
+                end
+            {% elif response.type == "Form" %}
+                Form {{ response.name }}
+                    {% for slot in response.slots %}
+                        {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}', [{{ slot.context }}])
+                    {% endfor %}
+                end,
+                ActionGroup {{ response.action_group.name }}
+                    {% for action in response.action_group.actions %}
+                        Speak('{{ action.text }}')
+                    {% endfor %}
+                end
+            {% endif %}
+        {% endfor %}
+    end
+{% endfor %}
+end
