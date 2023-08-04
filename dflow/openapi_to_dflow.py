@@ -39,8 +39,25 @@ def create_trigger(trigger_name, triggers, trigger_type="Intent"):
     output = template.render(triggers=triggers)
     return output
 
-def create_dialogue():
-    pass
+def create_dialogue(dialogue_name, intent_name, service_name):
+    file_loader = FileSystemLoader('templates') 
+    env = Environment(loader=file_loader)
+    template = env.get_template('grammar-templates/dialogues.jinja')
+
+    dlg_type = "Form"
+
+    dialogue = {
+        "name": dialogue_name,
+        "triggers": [intent_name],
+        "responses": [{
+            "type": dlg_type,
+            "name": create_name(operation.operationId),
+            "actions": [service_name] 
+        }]
+    }
+
+    output = template.render(dialogues=[dialogue])
+    return output
 
 
 fetchedApi = fetch_specification("https://petstore.swagger.io/v2/swagger.json")
@@ -53,7 +70,7 @@ for endpoint in parsed_api:
 
         service_name = create_name(operation.operationId, "svc")
         intent_name = create_name(operation.operationId)
-        event_name = create_name(operation.operationId, "ev")
+        dialogue_name = create_name(operation.operationId, "dialogue")
         verb = operation.type.upper() 
         host = fetchedApi["host"]
         port = fetchedApi.get("port", None)
@@ -61,6 +78,8 @@ for endpoint in parsed_api:
 
         eservice_definition = create_service(service_name, verb, host, port, path)
         triggers = create_trigger(intent_name,triggers)
+        dialogues = create_dialogue(dialogue_name, intent_name, service_name)
 
         print(eservice_definition)
         print(triggers)
+        print(dialogues)
