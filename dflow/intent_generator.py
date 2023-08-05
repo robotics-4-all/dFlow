@@ -26,10 +26,13 @@ class Operation:
 
 
 class Parameter:
-    def __init__(self, name, location, description=None):
+    def __init__(self, name, location, required, ptype, description=None):
         self.name = name
         self.location = location
         self.description = description
+        self.required = required
+        self.ptype = ptype
+
 
 
 class RequestBody:
@@ -83,7 +86,9 @@ def extract_api_elements(api_specification):
                     name = parameter_details['name']
                     location = parameter_details['in']
                     description = parameter_details.get('description')
-                    parameter = Parameter(name, location, description)
+                    required = parameter_details.get('required')
+                    ptype = parameter_details.get('type')
+                    parameter = Parameter(name, location, required, ptype, description)
                     parameters.append(parameter)
 
             requestBody = None

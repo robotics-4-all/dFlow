@@ -8,7 +8,7 @@ def create_name(operationId, ending = None):
        return operationId + '_' + ending
     
 def create_service(service_name, verb, host, port, path):
-    file_loader = FileSystemLoader('templates') 
+    file_loader = FileSystemLoader('/Users/harabalos/Desktop/dFlow/dflow/templates') 
     env = Environment(loader=file_loader)
     template = env.get_template('grammar-templates/services.jinja')
 
@@ -16,7 +16,7 @@ def create_service(service_name, verb, host, port, path):
     return output
 
 def create_trigger(trigger_name, triggers, trigger_type="Intent"):
-    file_loader = FileSystemLoader('templates') 
+    file_loader = FileSystemLoader('/Users/harabalos/Desktop/dFlow/dflow/templates') 
     env = Environment(loader=file_loader)
     template = env.get_template('grammar-templates/triggers.jinja')
 
@@ -39,28 +39,47 @@ def create_trigger(trigger_name, triggers, trigger_type="Intent"):
     output = template.render(triggers=triggers)
     return output
 
-def create_dialogue(dialogue_name, intent_name, service_name):
-    file_loader = FileSystemLoader('templates') 
+def create_dialogue(dialogue_name, intent_name, service_name, parameters):
+    file_loader = FileSystemLoader('/Users/harabalos/Desktop/dFlow/dflow/templates') 
     env = Environment(loader=file_loader)
     template = env.get_template('grammar-templates/dialogues.jinja')
 
-    dlg_type = "Form"
+    form_slots = []
+    for param in parameters:
+        if param.required:  
+            slot = {
+                "name": param.name,
+                "type": param.ptype, 
+                "prompt": f"Please provide the {param.name}"
+            }
+            form_slots.append(slot)
+
+    if form_slots:
+        dlg_type = "Form"
+        response = {
+            "type": dlg_type,
+            "name": create_name(operation.operationId),
+            "slots": form_slots,
+            "actions": [service_name] 
+        }
+    else:  
+        dlg_type = "ActionGroup"
+        response = {
+            "type": dlg_type,
+            "name": create_name(operation.operationId),
+            "actions": [service_name]
+        }
 
     dialogue = {
         "name": dialogue_name,
         "triggers": [intent_name],
-        "responses": [{
-            "type": dlg_type,
-            "name": create_name(operation.operationId),
-            "actions": [service_name] 
-        }]
+        "responses": [response]
     }
 
     output = template.render(dialogues=[dialogue])
     return output
 
-
-fetchedApi = fetch_specification("https://petstore.swagger.io/v2/swagger.json")
+fetchedApi = fetch_specification("/Users/harabalos/Desktop/petstore.json")
 parsed_api = extract_api_elements(fetchedApi)  
 
 for endpoint in parsed_api:
@@ -78,8 +97,10 @@ for endpoint in parsed_api:
 
         eservice_definition = create_service(service_name, verb, host, port, path)
         triggers = create_trigger(intent_name,triggers)
-        dialogues = create_dialogue(dialogue_name, intent_name, service_name)
+        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters)
+
 
         print(eservice_definition)
         print(triggers)
         print(dialogues)
+        
