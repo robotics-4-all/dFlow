@@ -39,6 +39,16 @@ def create_trigger(trigger_name, triggers, trigger_type="Intent"):
     output = template.render(triggers=triggers)
     return output
 
+def change_type_name(type_name):
+    if type_name == "integer": return "int"
+    elif type_name == "string": return "str"
+    elif type_name == "number": return "float"
+    elif type_name == "boolean": return "bool"
+    elif type_name == "array": return "list"
+    elif type_name == "object": return "dict"
+
+
+
 def create_dialogue(dialogue_name, intent_name, service_name, parameters):
     file_loader = FileSystemLoader('/Users/harabalos/Desktop/dFlow/dflow/templates') 
     env = Environment(loader=file_loader)
@@ -47,9 +57,25 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters):
     form_slots = []
     for param in parameters:
         if param.required:  
+            param_type = change_type_name(param.ptype)
+            if param_type is None:  
+                dlg_type = "ActionGroup"
+                response = {
+                    "type": dlg_type,
+                    "name": create_name(operation.operationId),
+                    "actions": [service_name]
+                }
+                dialogue = {
+                    "name": dialogue_name,
+                    "triggers": [intent_name],
+                    "responses": [response]
+                }
+                output = template.render(dialogues=[dialogue])
+                return output 
+
             slot = {
                 "name": param.name,
-                "type": param.ptype, 
+                "type": param_type,
                 "prompt": f"Please provide the {param.name}"
             }
             form_slots.append(slot)
