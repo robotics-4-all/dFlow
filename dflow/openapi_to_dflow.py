@@ -1,5 +1,15 @@
 from intent_generator import *
 from jinja2 import Environment, FileSystemLoader
+import spacy
+nlp = spacy.load("en_core_web_sm")
+
+
+PRETRAINED_ENTITIES = [
+    'PERSON', 'NORP', 'FAC', 'ORG', 'GPE', 'LOC', 'PRODUCT', 'EVENT',
+    'WORK_OF_ART', 'LAW', 'LANGUAGE', 'DATE', 'TIME', 'PERCENT', 'MONEY',
+    'QUANTITY', 'ORDINAL', 'CARDINAL'
+]
+
 
 def create_name(operationId, ending = None):
    if ending == None:
@@ -49,7 +59,7 @@ def change_type_name(type_name):
 
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters):
+def create_dialogue(dialogue_name, intent_name, service_name, parameters,triggers):
     file_loader = FileSystemLoader('/Users/harabalos/Desktop/dFlow/dflow/templates') 
     env = Environment(loader=file_loader)
     template = env.get_template('grammar-templates/dialogues.jinja')
@@ -73,11 +83,23 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters):
                 output = template.render(dialogues=[dialogue])
                 return output 
 
+            prompt_text = f"Please provide the {param.name}"
+            doc = nlp(prompt_text)
+
+            context = None
+            for ent in doc.ents:
+                if ent.label_ in PRETRAINED_ENTITIES:
+                    context = "PE:" +  ent.label_
+                    break
+
             slot = {
                 "name": param.name,
                 "type": param_type,
-                "prompt": f"Please provide the {param.name}"
+                "prompt": prompt_text
             }
+
+            if context:  
+                slot["context"] = context
             form_slots.append(slot)
 
     if form_slots:
@@ -106,7 +128,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters):
     return output
 
 fetchedApi = fetch_specification("/Users/harabalos/Desktop/petstore.json")
-parsed_api = extract_api_elements(fetchedApi)  
+parsed_api = extract_api_elements(fetchedApi)
 
 for endpoint in parsed_api:
     for operation in endpoint.operations:
@@ -123,10 +145,9 @@ for endpoint in parsed_api:
 
         eservice_definition = create_service(service_name, verb, host, port, path)
         triggers = create_trigger(intent_name,triggers)
-        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters)
+        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters,triggers)
 
 
         print(eservice_definition)
         print(triggers)
         print(dialogues)
-        

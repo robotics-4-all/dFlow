@@ -12,7 +12,7 @@ dialogues
             {%- elif response.type == "Form" %}
                 Form {{ response.name }}
                 {%- for slot in response.slots %}
-                    {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}', [{{ slot.context }}]){%- if not loop.last %},{% endif %}
+                    {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% if not loop.last %},{% endif %}
                 {%- endfor %}
                 end,
                 ActionGroup {{ response.name }}
