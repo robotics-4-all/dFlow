@@ -32,7 +32,7 @@ def create_trigger(trigger_name, trigger_type="Intent"):
     template = env.get_template('grammar-templates/triggers.jinja')
 
     triggers = []
-    
+
     if trigger_type == "Intent":
         phrases = generate_intent_examples(model, tokenizer, operation.summary)
         trigger = {
@@ -89,7 +89,8 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters,trigger
                 response = {
                     "type": dlg_type,
                     "name": create_name(operation.operationId),
-                    "actions": [service_name]
+                    "actions": [service_name],
+                    "text": "Your request has been processed successfully. Is there anything else I can help you with?"
                 }
                 dialogue = {
                     "name": dialogue_name,
@@ -118,14 +119,16 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters,trigger
             "type": dlg_type,
             "name": create_name(operation.operationId),
             "slots": form_slots,
-            "actions": [service_name] 
+            "actions": [service_name], 
+            "text": "Is there anything else I can help you with?"
         }
     else:  
         dlg_type = "ActionGroup"
         response = {
             "type": dlg_type,
             "name": create_name(operation.operationId),
-            "actions": [service_name]
+            "actions": [service_name],
+            "text": "Your request has been processed successfully. Is there anything else I can help you with?"
         }
 
     dialogue = {

@@ -5,9 +5,7 @@ dialogues
         responses: {%- for response in dialogue.responses %}
             {%- if response.type == "ActionGroup" %}
                 ActionGroup {{ response.name }}
-                {%- for action in response.actions %}
-                    Speak('{{ action.text }}'){%- if not loop.last %},{% endif %}
-                {%- endfor %}
+                    Speak('{{ response.text }}')
                 end
             {%- elif response.type == "Form" %}
                 Form {{ response.name }}
@@ -16,13 +14,10 @@ dialogues
                 {%- endfor %}
                 end,
                 ActionGroup {{ response.name }}
-                {%- for action in response.actions %}
-                    Speak('{{ action.text }}'){%- if not loop.last %},{% endif %}
-                {%- endfor %}
+                    Speak('{{ response.text }}')
                 end
             {%- endif %}
         {%- endfor %}
     end
 {%- endfor %}
 end
-
