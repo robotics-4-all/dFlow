@@ -2,7 +2,15 @@ from intent_generator import *
 from jinja2 import Environment, FileSystemLoader
 import spacy
 from collections import Counter
+from os import path
+import jinja2
 nlp = spacy.load("en_core_web_sm")
+
+
+_THIS_DIR = path.abspath(path.dirname(__file__))
+
+jinja_env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(path.join(_THIS_DIR, 'templates/grammar-templates')))
 
 
 PRETRAINED_ENTITIES = [
@@ -19,17 +27,13 @@ def create_name(operationId, ending = None):
        return operationId + '_' + ending
     
 def create_service(service_name, verb, host, port, path):
-    file_loader = FileSystemLoader('/Users/harabalos/Desktop/dFlow/dflow/templates') 
-    env = Environment(loader=file_loader)
-    template = env.get_template('grammar-templates/services.jinja')
+    template = jinja_env.get_template('services.jinja')
 
     output = template.render(service_name=service_name, verb=verb, host=host, port=port, path=path)
     return output
 
 def create_trigger(trigger_name, trigger_type="Intent"):
-    file_loader = FileSystemLoader('/Users/harabalos/Desktop/dFlow/dflow/templates') 
-    env = Environment(loader=file_loader)
-    template = env.get_template('grammar-templates/triggers.jinja')
+    template = jinja_env.get_template('triggers.jinja')
 
     triggers = []
 
@@ -63,9 +67,7 @@ def change_type_name(type_name):
 
 
 def create_dialogue(dialogue_name, intent_name, service_name, parameters,triggers):
-    file_loader = FileSystemLoader('/Users/harabalos/Desktop/dFlow/dflow/templates') 
-    env = Environment(loader=file_loader)
-    template = env.get_template('grammar-templates/dialogues.jinja')
+    template = jinja_env.get_template('dialogues.jinja')
 
     form_slots = []
 
