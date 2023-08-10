@@ -1,5 +1,4 @@
 from intent_generator import *
-from jinja2 import Environment, FileSystemLoader
 import spacy
 from collections import Counter
 from os import path
