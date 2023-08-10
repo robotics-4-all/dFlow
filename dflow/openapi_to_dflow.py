@@ -1,6 +1,7 @@
 from intent_generator import *
 from jinja2 import Environment, FileSystemLoader
 import spacy
+from collections import Counter
 nlp = spacy.load("en_core_web_sm")
 
 
@@ -25,11 +26,13 @@ def create_service(service_name, verb, host, port, path):
     output = template.render(service_name=service_name, verb=verb, host=host, port=port, path=path)
     return output
 
-def create_trigger(trigger_name, triggers, trigger_type="Intent"):
+def create_trigger(trigger_name, trigger_type="Intent"):
     file_loader = FileSystemLoader('/Users/harabalos/Desktop/dFlow/dflow/templates') 
     env = Environment(loader=file_loader)
     template = env.get_template('grammar-templates/triggers.jinja')
 
+    triggers = []
+    
     if trigger_type == "Intent":
         phrases = generate_intent_examples(model, tokenizer, operation.summary)
         trigger = {
@@ -65,6 +68,19 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters,trigger
     template = env.get_template('grammar-templates/dialogues.jinja')
 
     form_slots = []
+
+    entities = []
+    for phrase in triggers:
+        doc = nlp(phrase)
+        for ent in doc.ents:
+            if ent.label_ in PRETRAINED_ENTITIES:
+                entities.append(ent.label_)
+
+    entity_counts = Counter(entities)
+    dominant_entity, _ = entity_counts.most_common(1)[0] if entity_counts else (None, None)
+    context = "PE:" + dominant_entity if dominant_entity else None
+
+
     for param in parameters:
         if param.required:  
             param_type = change_type_name(param.ptype)
@@ -85,12 +101,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters,trigger
 
             prompt_text = f"Please provide the {param.name}"
             doc = nlp(prompt_text)
-
-            context = None
-            for ent in doc.ents:
-                if ent.label_ in PRETRAINED_ENTITIES:
-                    context = "PE:" +  ent.label_
-                    break
 
             slot = {
                 "name": param.name,
@@ -133,7 +143,7 @@ parsed_api = extract_api_elements(fetchedApi)
 for endpoint in parsed_api:
     for operation in endpoint.operations:
 
-        triggers = []  
+        triggersList = []  
 
         service_name = create_name(operation.operationId, "svc")
         intent_name = create_name(operation.operationId)
@@ -144,8 +154,9 @@ for endpoint in parsed_api:
         path = endpoint.path
 
         eservice_definition = create_service(service_name, verb, host, port, path)
-        triggers = create_trigger(intent_name,triggers)
-        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters,triggers)
+        triggers = create_trigger(intent_name)
+        triggersList = triggers.split("\n")
+        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters,triggersList)
 
 
         print(eservice_definition)
