@@ -1,0 +1,51 @@
+eservices
+    EServiceHTTP {{ service_name }}
+        verb: {{ verb }}
+        host: '{{ host }}'
+        {%- if port %}
+        port: {{ port }}
+        {%- endif %}
+        {%- if path %}
+        path: '{{ path }}'
+        {%- endif %}
+    end
+end
+
+triggers
+{%- for trigger in triggers %}
+  {{ trigger.type }} {{ trigger.name }}
+  {%- if trigger.type == 'Intent' %}
+    {%- for phrase in trigger.phrases %}
+      '{{ phrase }}'{{ "," if not loop.last else "" }}
+    {%- endfor %}
+  {%- elif trigger.type == 'Event' %}
+    '{{ trigger.uri }}'
+  {%- endif %}
+  end
+{%- endfor %}
+end
+
+dialogues
+{%- for dialogue in dialogues %}
+    Dialogue {{ dialogue.name }}
+        on:  {%- for trigger in dialogue.triggers %}{{ trigger }}{%- if not loop.last %}, {% endif %}{% endfor %}
+        responses: {%- for response in dialogue.responses %}
+            {%- if response.type == "ActionGroup" %}
+                ActionGroup {{ response.name }}
+                    Speak('{{ response.text }}')
+                end
+            {%- elif response.type == "Form" %}
+                Form {{ response.name }}
+                {%- for slot in response.slots %}
+                    {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% if not loop.last %},{% endif %}
+                {%- endfor %}
+                end,
+                ActionGroup {{ response.name }}
+                    Speak('{{ response.text }}')
+                end
+            {%- endif %}
+        {%- endfor %}
+    end
+{%- endfor %}
+end
+
