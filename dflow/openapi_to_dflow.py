@@ -118,7 +118,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             }
             responses.append(form_response)
 
-        if verb in ["POST", "PUT"]:
+        if verb in ["POST", "PUT","DELETE"]:
             path_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters if change_type_name(param.ptype) != None and param.required])
             action_group_response = {
                 "type": "ActionGroup",

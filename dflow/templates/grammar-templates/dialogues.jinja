@@ -3,7 +3,7 @@ dialogues
     Dialogue {{ dialogue.name }}
         on: {%- for trigger in dialogue.triggers %}{{ trigger }}{%- if not loop.last %}, {% endif %}{% endfor %}
         responses:
-            {%- if dialogue.verb == "POST" or dialogue.verb == "PUT" %}
+            {%- if dialogue.verb == "POST" or dialogue.verb == "PUT" or dialogue.verb == "DELETE" %}
             {%- for response in dialogue.responses %}
                 {%- if response.type == "Form" %}
                 Form {{ response.name }}
