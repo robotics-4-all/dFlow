@@ -104,7 +104,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     if has_none_type:
         response = {
             "type": "ActionGroup",
-            "name": create_name(service_name),
+            "name": create_name(dialogue_name,"ag"),
             "service_call": f"{service_name}(, )",
             "text": "Your request has been processed successfully."
         }
@@ -113,7 +113,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         if form_slots:
             form_response = {
                 "type": "Form",
-                "name": create_name(service_name),
+                "name": create_name(dialogue_name,"form"),
                 "slots": form_slots
             }
             responses.append(form_response)
@@ -122,7 +122,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             path_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters if change_type_name(param.ptype) != None and param.required])
             action_group_response = {
                 "type": "ActionGroup",
-                "name": create_name(service_name),
+                "name": create_name(dialogue_name,"ag"),
                 "service_call": f"{service_name}( path=[{path_parameters}], )",
                 "text": "Your request has been processed successfully."
             }
@@ -131,7 +131,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
             action_group_response = {
                 "type": "ActionGroup",
-                "name": create_name(service_name) + "_back",
+                "name": create_name(dialogue_name,"ag"),
                 "service_call": f"{service_name}( query=[{query_parameters}], )",
                 "text": "The information you requested is as follows: {result}."
             }
@@ -159,7 +159,7 @@ for endpoint in parsed_api:
 
         service_name = create_name(operation.operationId, "svc")
         intent_name = create_name(operation.operationId)
-        dialogue_name = create_name(operation.operationId, "dialogue")
+        dialogue_name = create_name(operation.operationId, "dlg")
         verb = operation.type.upper() 
         host = fetchedApi["host"]
         port = fetchedApi.get("port", None)
