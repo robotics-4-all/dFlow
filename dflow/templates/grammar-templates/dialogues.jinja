@@ -1,23 +1,40 @@
 dialogues
 {%- for dialogue in dialogues %}
     Dialogue {{ dialogue.name }}
-        on:  {%- for trigger in dialogue.triggers %}{{ trigger }}{%- if not loop.last %}, {% endif %}{% endfor %}
-        responses: {%- for response in dialogue.responses %}
-            {%- if response.type == "ActionGroup" %}
-                ActionGroup {{ response.name }}
-                    Speak('{{ response.text }}')
-                end
-            {%- elif response.type == "Form" %}
+        on: {%- for trigger in dialogue.triggers %}{{ trigger }}{%- if not loop.last %}, {% endif %}{% endfor %}
+        responses:
+            {%- if dialogue.verb == "POST" or dialogue.verb == "PUT" %}
+            {%- for response in dialogue.responses %}
+                {%- if response.type == "Form" %}
                 Form {{ response.name }}
-                {%- for slot in response.slots %}
-                    {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% if not loop.last %},{% endif %}
-                {%- endfor %}
-                end,
+                    {%- for slot in response.slots %}
+                        {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% if not loop.last %},{% endif %}
+                    {%- endfor %}
+                    end,
+                {%- elif response.type == "ActionGroup" %}
                 ActionGroup {{ response.name }}
+                    {{ response.service_call }}
                     Speak('{{ response.text }}')
                 end
+                {%- endif %}
+            {%- endfor %}
+            {%- elif dialogue.verb == "GET" %}
+            {%- for response in dialogue.responses %}
+                {%- if response.type == "Form" %}
+                Form {{ response.name }}
+                    {%- for slot in response.slots %}
+                        {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% if not loop.last %},{% endif %}
+                    {%- endfor %}
+                    end,
+                {%- elif response.type == "ActionGroup" %}
+                ActionGroup {{ response.name }}
+                    {{ response.service_call }}
+                    Speak('{{ response.text }}')
+                end
+                {%- endif %}
+            {%- endfor %}
             {%- endif %}
-        {%- endfor %}
     end
 {%- endfor %}
 end
+
