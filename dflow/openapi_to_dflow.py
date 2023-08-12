@@ -65,10 +65,12 @@ def change_type_name(type_name):
 
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters,triggers, verb):
+def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb):
     template = jinja_env.get_template('dialogues.jinja')
 
     form_slots = []
+    responses = []
+    has_none_type = False
 
     entities = []
     for phrase in triggers:
@@ -81,62 +83,71 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters,trigger
     dominant_entity, _ = entity_counts.most_common(1)[0] if entity_counts else (None, None)
     context = "PE:" + dominant_entity if dominant_entity else None
 
-
     for param in parameters:
-        if param.required:  
+        if param.required:
             param_type = change_type_name(param.ptype)
-            if param_type is None:  
-                dlg_type = "ActionGroup"
-                response = {
-                    "type": dlg_type,
-                    "name": create_name(operation.operationId),
-                    "text": "Your request has been processed successfully. Is there anything else I can help you with?"
-                }
-                dialogue = {
-                    "name": dialogue_name,
-                    "triggers": [intent_name],
-                    "responses": [response]
-                }
-                output = template.render(dialogues=[dialogue])
-                return output 
-
+            if param_type is None:
+                has_none_type = True
+                break
+            
             prompt_text = f"Please provide the {param.name}"
-            doc = nlp(prompt_text)
-
             slot = {
                 "name": param.name,
                 "type": param_type,
                 "prompt": prompt_text
             }
 
-            if context:  
+            if context:
                 slot["context"] = context
             form_slots.append(slot)
 
-    if form_slots:
-        dlg_type = "Form"
+    if has_none_type:
         response = {
-            "type": dlg_type,
-            "name": create_name(operation.operationId),
-            "slots": form_slots,
-            "text": "Is there anything else I can help you with?"
+            "type": "ActionGroup",
+            "name": create_name(service_name),
+            "service_call": f"{service_name}(, )",
+            "text": "Your request has been processed successfully."
         }
-    else:  
-        dlg_type = "ActionGroup"
-        response = {
-            "type": dlg_type,
-            "name": create_name(operation.operationId),
-            "text": "Your request has been processed successfully. Is there anything else I can help you with?"
-        }
+        responses.append(response)
+    else:
+        if form_slots:
+            form_response = {
+                "type": "Form",
+                "name": create_name(service_name),
+                "slots": form_slots
+            }
+            responses.append(form_response)
+
+        if verb in ["POST", "PUT"]:
+            path_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters if change_type_name(param.ptype) != None and param.required])
+            action_group_response = {
+                "type": "ActionGroup",
+                "name": create_name(service_name),
+                "service_call": f"{service_name}( path=[{path_parameters}], )",
+                "text": "Your request has been processed successfully."
+            }
+            responses.append(action_group_response)
+        elif verb == "GET":
+            query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
+            action_group_response = {
+                "type": "ActionGroup",
+                "name": create_name(service_name) + "_back",
+                "service_call": f"{service_name}( query=[{query_parameters}], )",
+                "text": "The information you requested is as follows: {result}."
+            }
+            responses.append(action_group_response)
 
     dialogue = {
         "name": dialogue_name,
+        "verb": verb,
         "triggers": [intent_name],
-        "responses": [response]
+        "responses": responses
     }
 
     output = template.render(dialogues=[dialogue])
     return output
+
+
 
 fetchedApi = fetch_specification("/Users/harabalos/Desktop/petstore.json")
 parsed_api = extract_api_elements(fetchedApi)
