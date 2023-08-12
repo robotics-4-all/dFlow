@@ -65,7 +65,7 @@ def change_type_name(type_name):
 
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters,triggers):
+def create_dialogue(dialogue_name, intent_name, service_name, parameters,triggers, verb):
     template = jinja_env.get_template('dialogues.jinja')
 
     form_slots = []
@@ -90,7 +90,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters,trigger
                 response = {
                     "type": dlg_type,
                     "name": create_name(operation.operationId),
-                    "actions": [service_name],
                     "text": "Your request has been processed successfully. Is there anything else I can help you with?"
                 }
                 dialogue = {
@@ -120,7 +119,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters,trigger
             "type": dlg_type,
             "name": create_name(operation.operationId),
             "slots": form_slots,
-            "actions": [service_name], 
             "text": "Is there anything else I can help you with?"
         }
     else:  
@@ -128,7 +126,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters,trigger
         response = {
             "type": dlg_type,
             "name": create_name(operation.operationId),
-            "actions": [service_name],
             "text": "Your request has been processed successfully. Is there anything else I can help you with?"
         }
 
@@ -160,7 +157,7 @@ for endpoint in parsed_api:
         eservice_definition = create_service(service_name, verb, host, port, path)
         triggers = create_trigger(intent_name)
         triggersList = triggers.split("\n")
-        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters,triggersList)
+        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters,triggersList, verb)
 
 
         print(eservice_definition)
