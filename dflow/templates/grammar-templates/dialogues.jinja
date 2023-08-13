@@ -23,12 +23,14 @@ dialogues
                 {%- if response.type == "Form" %}
                 Form {{ response.name }}
                     {%- for slot in response.slots %}
-                        {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% if not loop.last %},{% endif %}
+                        {{ slot.name }}: {{ slot.type }} = {% if slot.service_call %}{{ slot.service_call }}{% else %}HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% endif %}{% if not loop.last %},{% endif %}
                     {%- endfor %}
-                    end,
+                    end,    
                 {%- elif response.type == "ActionGroup" %}
                 ActionGroup {{ response.name }}
+                    {%- if response.service_call %}
                     {{ response.service_call }}
+                    {%- endif %}
                     Speak('{{ response.text }}')
                 end
                 {%- endif %}

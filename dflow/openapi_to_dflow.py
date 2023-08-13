@@ -129,13 +129,29 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             responses.append(action_group_response)
         elif verb == "GET":
             query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
+            answer_service_call = f"{service_name}(query=[{query_parameters}],)"
+
+            form_slots.append({
+                "name": "answer",
+                "type": "list",
+                "service_call": answer_service_call
+            })
+
+            form_response = {
+                "type": "Form",
+                "name": create_name(dialogue_name, "form"),
+                "slots": form_slots
+            }
+            #Override the existing responses with the updated form
+            responses = [form_response]  
+
             action_group_response = {
                 "type": "ActionGroup",
-                "name": create_name(dialogue_name,"ag"),
-                "service_call": f"{service_name}( query=[{query_parameters}], )",
-                "text": "The information you requested is as follows: {result}."
+                "name": create_name(dialogue_name, "ag"),
+                "text": f"The information you requested is as follows: {form_response['name']}.answer."
             }
             responses.append(action_group_response)
+
 
     dialogue = {
         "name": dialogue_name,
