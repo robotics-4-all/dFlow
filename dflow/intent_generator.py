@@ -42,10 +42,12 @@ class RequestBody:
 
 
 class Response:
-    def __init__(self, status_code, description=None, content=None):
+    def __init__(self, status_code, description=None, content=None, properties=None):
         self.status_code = status_code
         self.description = description
-        self.content = content  
+        self.content = content
+        self.properties = properties or {}
+
 
 
 
@@ -69,8 +71,22 @@ def fetch_specification(source):
             raise ValueError("Invalid URL type. Only JSON and YAML are supported.")
         
 
+def get_schema_properties(schema, definitions):
+    if 'type' in schema and schema['type'] == 'array':
+        items_schema = schema['items']
+        return get_schema_properties(items_schema, definitions)
+    elif '$ref' in schema:
+        ref_path = schema['$ref']
+        definition_name = ref_path.split('/')[-1]
+        return definitions[definition_name]['properties']
+    elif 'properties' in schema:
+        return schema['properties']
+    else:
+        return {}
+
 def extract_api_elements(api_specification):
     endpoints = []
+    definitions = api_specification.get('definitions', {})
 
     for path, operations in api_specification['paths'].items():
         endpoint = Endpoint(path)
@@ -102,8 +118,11 @@ def extract_api_elements(api_specification):
             if 'responses' in operation_details:
                 for status_code, response_details in operation_details['responses'].items():
                     description = response_details.get('description')
-                    content = response_details.get('content')
-                    response = Response(status_code, description, content)
+                    properties = {}
+                    if 'schema' in response_details:  # OpenAPI 2.0 has "schema" directly under response
+                        schema = response_details['schema']
+                        properties = get_schema_properties(schema, definitions)
+                    response = Response(status_code, description, None, properties)  # No "content" field in OpenAPI 2.0
                     responses.append(response)
 
             operation = Operation(operation_type, operationId, operationSummary, operationdDescription, parameters, requestBody, responses)
@@ -169,7 +188,7 @@ def generate_intent_examples(model, tokenizer, operation_summary):
     return clean_intent_examples
 
 
-# parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
+parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
 
 # for endpoint in parsed_api:
 #     for operation in endpoint.operations:
