@@ -76,48 +76,42 @@ def extract_response_properties(api_specification):
 
     response_details = {}
 
-    # Loop through paths
+    def extract_properties_from_schema(schema, path):
+        if 'properties' in schema:
+            for prop, details in schema['properties'].items():
+                is_required = prop in schema.get('required', [])
+                if 'type' in details:
+                    response_details[path][prop] = {"type": details['type'], "required": is_required}
+                else:
+                    response_details[path][prop] = {"type": 'unknown', "required": is_required}
+
     for path, operations in api_specification['paths'].items():
-        if 'get' in operations:  # Focusing only on 'get' verbs
+        if 'get' in operations: 
             get_operation = operations['get']
 
-            # Check if responses exist in the operation
             if 'responses' in get_operation:
-                # We're usually interested in the '200' response, but you might need to adjust based on your needs.
                 if '200' in get_operation['responses']:
                     response_200 = get_operation['responses']['200']
                     if 'schema' in response_200:
                         schema = response_200['schema']
                         
-                        # Initialize the dictionary for this path
                         response_details[path] = {}
                         
-                        # Handling arrays of items
+
                         if 'type' in schema and schema['type'] == 'array' and 'items' in schema:
                             schema = schema['items']
 
-                        # If the schema directly contains properties
-                        if 'properties' in schema:
-                            for prop, details in schema['properties'].items():
-                                if 'type' in details:  # Ensure type exists before accessing
-                                    response_details[path][prop] = details['type']
-                                else:
-                                    response_details[path][prop] = 'unknown'
-                                
-                        # If the schema references another definition
-                        elif '$ref' in schema:
+                        extract_properties_from_schema(schema, path)
+                        
+                        if '$ref' in schema:
                             ref_path = schema['$ref']
                             definition_name = ref_path.split('/')[-1]
                             if definition_name in api_specification['definitions']:
                                 definition = api_specification['definitions'][definition_name]
-                                if 'properties' in definition:
-                                    for prop, details in definition['properties'].items():
-                                        if 'type' in details:  # Ensure type exists before accessing
-                                            response_details[path][prop] = details['type']
-                                        else:
-                                            response_details[path][prop] = 'unknown'
+                                extract_properties_from_schema(definition, path)
 
     return response_details
+
 
 
 
