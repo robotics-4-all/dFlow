@@ -71,18 +71,49 @@ def fetch_specification(source):
             raise ValueError("Invalid URL type. Only JSON and YAML are supported.")
         
 
-def get_schema_properties(schema, definitions):
-    if 'type' in schema and schema['type'] == 'array':
-        items_schema = schema['items']
-        return get_schema_properties(items_schema, definitions)
-    elif '$ref' in schema:
-        ref_path = schema['$ref']
-        definition_name = ref_path.split('/')[-1]
-        return definitions[definition_name]['properties']
-    elif 'properties' in schema:
-        return schema['properties']
-    else:
-        return {}
+def extract_response_properties(api_specification):
+    """Extract response properties and their types for 'get' methods from the OpenAPI specification."""
+
+    response_details = {}
+
+    # Loop through paths
+    for path, operations in api_specification['paths'].items():
+        if 'get' in operations:  # Focusing only on 'get' verbs
+            get_operation = operations['get']
+
+            # Check if responses exist in the operation
+            if 'responses' in get_operation:
+                # We're usually interested in the '200' response, but you might need to adjust based on your needs.
+                if '200' in get_operation['responses']:
+                    response_200 = get_operation['responses']['200']
+                    if 'schema' in response_200:
+                        schema = response_200['schema']
+                        
+                        # Initialize the dictionary for this path
+                        response_details[path] = {}
+                        
+                        # Handling arrays of items
+                        if 'type' in schema and schema['type'] == 'array' and 'items' in schema:
+                            schema = schema['items']
+
+                        # If the schema directly contains properties
+                        if 'properties' in schema:
+                            for prop, details in schema['properties'].items():
+                                response_details[path][prop] = details['type']
+                                
+                        # If the schema references another definition
+                        elif '$ref' in schema:
+                            ref_path = schema['$ref']
+                            definition_name = ref_path.split('/')[-1]
+                            if definition_name in api_specification['definitions']:
+                                definition = api_specification['definitions'][definition_name]
+                                if 'properties' in definition:
+                                    for prop, details in definition['properties'].items():
+                                        response_details[path][prop] = details['type']
+
+    return response_details
+
+
 
 def extract_api_elements(api_specification):
     endpoints = []
@@ -188,7 +219,8 @@ def generate_intent_examples(model, tokenizer, operation_summary):
     return clean_intent_examples
 
 
-parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
+# parsed_api = extract_api_elements(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))  
+parsed_responses = extract_response_properties(fetch_specification("https://petstore.swagger.io/v2/swagger.json"))
 
 # for endpoint in parsed_api:
 #     for operation in endpoint.operations:
