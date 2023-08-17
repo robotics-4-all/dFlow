@@ -99,7 +99,10 @@ def extract_response_properties(api_specification):
                         # If the schema directly contains properties
                         if 'properties' in schema:
                             for prop, details in schema['properties'].items():
-                                response_details[path][prop] = details['type']
+                                if 'type' in details:  # Ensure type exists before accessing
+                                    response_details[path][prop] = details['type']
+                                else:
+                                    response_details[path][prop] = 'unknown'
                                 
                         # If the schema references another definition
                         elif '$ref' in schema:
@@ -109,9 +112,13 @@ def extract_response_properties(api_specification):
                                 definition = api_specification['definitions'][definition_name]
                                 if 'properties' in definition:
                                     for prop, details in definition['properties'].items():
-                                        response_details[path][prop] = details['type']
+                                        if 'type' in details:  # Ensure type exists before accessing
+                                            response_details[path][prop] = details['type']
+                                        else:
+                                            response_details[path][prop] = 'unknown'
 
     return response_details
+
 
 
 
