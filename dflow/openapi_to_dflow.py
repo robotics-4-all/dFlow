@@ -65,7 +65,7 @@ def change_type_name(type_name):
 
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, response_properties=None):
+def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb,current_path, response_properties=None):
     template = jinja_env.get_template('dialogues.jinja')
 
     form_slots = []
@@ -129,19 +129,18 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             responses.append(action_group_response)
         elif verb == "GET":
             query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
-
-            if response_properties:
-                for prop, prop_details in response_properties.items():
-                    for prop_name, prop_data in prop_details.items():
-                        if prop_data['required']:
-                            slot_type = change_type_name(prop_data['type'])
-                            if slot_type:
-                                service_call = f"{service_name}(query=[{query_parameters}],)[{prop}]"
-                                form_slots.append({
-                                    "name": prop,
-                                    "type": slot_type,
-                                    "service_call": service_call
-                                })
+            
+            if response_properties and current_path in response_properties:
+                for prop, prop_data in response_properties[current_path].items():  #directly access properties for the current path
+                    if prop_data.get('required'):
+                        slot_type = change_type_name(prop_data['type'])
+                        if slot_type:
+                            service_call = f"{service_name}(query=[{query_parameters}],)[{prop}]"
+                            form_slots.append({
+                                "name": prop,
+                                "type": slot_type,
+                                "service_call": service_call
+                            })
 
             if form_slots:
                 form_response = {
@@ -192,7 +191,7 @@ for endpoint in parsed_api:
         eservice_definition = create_service(service_name, verb, host, port, path)
         triggers = create_trigger(intent_name)
         triggersList = triggers.split("\n")
-        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters,triggersList, verb, response_properties)
+        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, response_properties)
 
 
         print(eservice_definition)
