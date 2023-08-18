@@ -65,7 +65,7 @@ def change_type_name(type_name):
 
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb):
+def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, response_properties=None):
     template = jinja_env.get_template('dialogues.jinja')
 
     form_slots = []
@@ -129,28 +129,35 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             responses.append(action_group_response)
         elif verb == "GET":
             query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
-            answer_service_call = f"{service_name}(query=[{query_parameters}],)"
 
-            form_slots.append({
-                "name": "answer",
-                "type": "list",
-                "service_call": answer_service_call
-            })
+            if response_properties:
+                for prop, prop_details in response_properties.items():
+                    for prop_name, prop_data in prop_details.items():
+                        if prop_data['required']:
+                            slot_type = change_type_name(prop_data['type'])
+                            if slot_type:
+                                service_call = f"{service_name}(query=[{query_parameters}],)[{prop}]"
+                                form_slots.append({
+                                    "name": prop,
+                                    "type": slot_type,
+                                    "service_call": service_call
+                                })
 
-            form_response = {
-                "type": "Form",
-                "name": create_name(dialogue_name, "form"),
-                "slots": form_slots
-            }
-            #Override the existing responses with the updated form
-            responses = [form_response]  
+            if form_slots:
+                form_response = {
+                    "type": "Form",
+                    "name": create_name(dialogue_name, "form"),
+                    "slots": form_slots
+                }
+                responses.append(form_response)
 
-            action_group_response = {
-                "type": "ActionGroup",
-                "name": create_name(dialogue_name, "ag"),
-                "text": f"The information you requested is as follows: {form_response['name']}.answer."
-            }
-            responses.append(action_group_response)
+                ag_text = "The information you requested is: " + ' '.join([f"{form_response['name']}.{slot['name']}" for slot in form_slots])
+                action_group_response = {
+                    "type": "ActionGroup",
+                    "name": create_name(dialogue_name, "ag"),
+                    "text": ag_text
+                }
+                responses.append(action_group_response)
 
 
     dialogue = {
@@ -167,6 +174,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
 
 fetchedApi = fetch_specification("/Users/harabalos/Desktop/petstore.json")
 parsed_api = extract_api_elements(fetchedApi)
+response_properties = extract_response_properties(fetchedApi)
 
 for endpoint in parsed_api:
     for operation in endpoint.operations:
@@ -184,7 +192,7 @@ for endpoint in parsed_api:
         eservice_definition = create_service(service_name, verb, host, port, path)
         triggers = create_trigger(intent_name)
         triggersList = triggers.split("\n")
-        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters,triggersList, verb)
+        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters,triggersList, verb, response_properties)
 
 
         print(eservice_definition)
