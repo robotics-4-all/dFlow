@@ -65,7 +65,7 @@ def change_type_name(type_name):
 
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb,current_path, response_properties=None):
+def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path, response_properties=None):
     template = jinja_env.get_template('dialogues.jinja')
 
     form_slots = []
@@ -89,7 +89,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             if param_type is None:
                 has_none_type = True
                 break
-            
+
             prompt_text = f"Please provide the {param.name}"
             slot = {
                 "name": param.name,
@@ -101,10 +101,23 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 slot["context"] = context
             form_slots.append(slot)
 
+    if verb == "GET" and response_properties and current_path in response_properties:
+        query_parameters = ', '.join([f"{param.name}={param.name}" for param in parameters])
+        for prop, prop_data in response_properties[current_path].items():  # directly access properties for the current path
+            if prop_data.get('required'):
+                slot_type = change_type_name(prop_data['type'])
+                if slot_type:
+                    service_call = f"{service_name}(query=[{query_parameters}],)[{prop}]"
+                    form_slots.append({
+                        "name": prop,
+                        "type": slot_type,
+                        "service_call": service_call
+                    })
+
     if has_none_type:
         response = {
             "type": "ActionGroup",
-            "name": create_name(dialogue_name,"ag"),
+            "name": create_name(dialogue_name, "ag"),
             "service_call": f"{service_name}(, )",
             "text": "Your request has been processed successfully."
         }
@@ -113,51 +126,27 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         if form_slots:
             form_response = {
                 "type": "Form",
-                "name": create_name(dialogue_name,"form"),
+                "name": create_name(dialogue_name, "form"),
                 "slots": form_slots
             }
             responses.append(form_response)
 
-        if verb in ["POST", "PUT","DELETE"]:
+            ag_text = "The information you requested is: " + ' '.join([f"{form_response['name']}.{slot['name']}" for slot in form_slots])
+            action_group_response = {
+                "type": "ActionGroup",
+                "name": create_name(dialogue_name, "ag"),
+                "text": ag_text
+            }
+            responses.append(action_group_response)
+        elif verb in ["POST", "PUT", "DELETE"]:
             path_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters if change_type_name(param.ptype) != None and param.required])
             action_group_response = {
                 "type": "ActionGroup",
-                "name": create_name(dialogue_name,"ag"),
+                "name": create_name(dialogue_name, "ag"),
                 "service_call": f"{service_name}( path=[{path_parameters}], )",
                 "text": "Your request has been processed successfully."
             }
             responses.append(action_group_response)
-        elif verb == "GET":
-            query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
-            
-            if response_properties and current_path in response_properties:
-                for prop, prop_data in response_properties[current_path].items():  #directly access properties for the current path
-                    if prop_data.get('required'):
-                        slot_type = change_type_name(prop_data['type'])
-                        if slot_type:
-                            service_call = f"{service_name}(query=[{query_parameters}],)[{prop}]"
-                            form_slots.append({
-                                "name": prop,
-                                "type": slot_type,
-                                "service_call": service_call
-                            })
-
-            if form_slots:
-                form_response = {
-                    "type": "Form",
-                    "name": create_name(dialogue_name, "form"),
-                    "slots": form_slots
-                }
-                responses.append(form_response)
-
-                ag_text = "The information you requested is: " + ' '.join([f"{form_response['name']}.{slot['name']}" for slot in form_slots])
-                action_group_response = {
-                    "type": "ActionGroup",
-                    "name": create_name(dialogue_name, "ag"),
-                    "text": ag_text
-                }
-                responses.append(action_group_response)
-
 
     dialogue = {
         "name": dialogue_name,
