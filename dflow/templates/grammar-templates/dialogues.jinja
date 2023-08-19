@@ -13,7 +13,7 @@ dialogues
                     end,
                 {%- elif response.type == "ActionGroup" %}
                 ActionGroup {{ response.name }}
-                    {{ response.service_call }}
+                    {%- if response.service_call %}{{ response.service_call }}{% endif %}
                     Speak('{{ response.text }}')
                 end
                 {%- endif %}
@@ -28,9 +28,7 @@ dialogues
                     end,    
                 {%- elif response.type == "ActionGroup" %}
                 ActionGroup {{ response.name }}
-                    {%- if response.service_call %}
-                    {{ response.service_call }}
-                    {%- endif %}
+                    {%- if response.service_call %}{{ response.service_call }}{% endif %}
                     Speak('{{ response.text }}')
                 end
                 {%- endif %}
