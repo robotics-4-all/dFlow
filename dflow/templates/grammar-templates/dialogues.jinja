@@ -13,7 +13,10 @@ dialogues
                     end,
                 {%- elif response.type == "ActionGroup" %}
                 ActionGroup {{ response.name }}
-                    {%- if response.service_call %}{{ response.service_call }}{% endif %}
+                    {%- if response.service_call %}
+                    {%- set svc_call_parts = response.service_call.split('(') %}
+                    {{ svc_call_parts[0] }}({%- if "path=[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip() }}{% else %} , {% endif %})
+                    {%- endif %}
                     Speak('{{ response.text }}')
                 end
                 {%- endif %}
@@ -28,7 +31,10 @@ dialogues
                     end,    
                 {%- elif response.type == "ActionGroup" %}
                 ActionGroup {{ response.name }}
-                    {%- if response.service_call %}{{ response.service_call }}{% endif %}
+                    {%- if response.service_call %}
+                    {%- set svc_call_parts = response.service_call.split('(') %}
+                    {{ svc_call_parts[0] }}({%- if "path=[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip() }}{% else %} , {% endif %})
+                    {%- endif %}
                     Speak('{{ response.text }}')
                 end
                 {%- endif %}
