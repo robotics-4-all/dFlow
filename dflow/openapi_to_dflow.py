@@ -70,7 +70,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
 
     form_slots = []
     responses = []
-    has_none_type = False
 
     entities = []
     for phrase in triggers:
@@ -87,7 +86,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         if param.required:
             param_type = change_type_name(param.ptype)
             if param_type is None:
-                has_none_type = True
                 break
 
             prompt_text = f"Please provide the {param.name}"
@@ -111,7 +109,12 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
 
     if verb == "GET":
         if response_properties and current_path in response_properties:
-            query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
+            if parameters:
+                query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
+                service_call = f"{service_name}(query=[{query_parameters}],)"
+            else:
+                service_call = f"{service_name}()"
+                
             has_required_response = False
 
             for prop, prop_data in response_properties[current_path].items():
@@ -119,7 +122,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                     has_required_response = True
                     slot_type = change_type_name(prop_data['type'])
                     if slot_type:
-                        service_call = f"{service_name}(query=[{query_parameters}],)[{prop}]"
                         form_slots.append({
                             "name": prop,
                             "type": slot_type,
@@ -130,7 +132,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 action_group_response = {
                     "type": "ActionGroup",
                     "name": create_name(dialogue_name, "ag"),
-                    "service_call": f"{service_name}(query=[{query_parameters}],)",
+                    "service_call": service_call,
                     "text": "Your request has been processed successfully."
                 }
                 responses.append(action_group_response)
@@ -143,37 +145,31 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 }
                 responses.append(action_group_response)
         else:
-            query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
+            if parameters:
+                query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
+                service_call = f"{service_name}(query=[{query_parameters}],)"
+            else:
+                service_call = f"{service_name}()"
+                
             action_group_response = {
                 "type": "ActionGroup",
                 "name": create_name(dialogue_name, "ag"),
-                "service_call": f"{service_name}(query=[{query_parameters}],)",
+                "service_call": service_call,
                 "text": "Your request has been processed successfully."
             }
             responses.append(action_group_response)
     elif verb in ["POST", "PUT", "DELETE"]:
-        path_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters if change_type_name(param.ptype) != None and param.required])
+        if parameters:
+            path_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters if change_type_name(param.ptype) != None and param.required])
+            service_call = f"{service_name}(path=[{path_parameters}],)"
+        else:
+            service_call = f"{service_name}()"
+            
         action_group_response = {
             "type": "ActionGroup",
             "name": create_name(dialogue_name, "ag"),
-            "service_call": f"{service_name}( path=[{path_parameters}], )",
+            "service_call": service_call,
             "text": "Your request has been processed successfully."
-        }
-        responses.append(action_group_response)
-    elif has_none_type:
-        response = {
-            "type": "ActionGroup",
-            "name": create_name(dialogue_name, "ag"),
-            "service_call": f"{service_name}(, )",
-            "text": "Your request has been processed successfully."
-        }
-        responses.append(response)
-    else:
-        ag_text = "The information you requested is: " + ' '.join([f"{form_response['name']}.{slot['name']}" for slot in form_slots])
-        action_group_response = {
-            "type": "ActionGroup",
-            "name": create_name(dialogue_name, "ag"),
-            "text": ag_text
         }
         responses.append(action_group_response)
 

@@ -15,7 +15,7 @@ dialogues
                 ActionGroup {{ response.name }}
                     {%- if response.service_call %}
                     {%- set svc_call_parts = response.service_call.split('(') %}
-                    {{ svc_call_parts[0] }}({%- if "path=[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip() }}{% else %} , {% endif %})
+                    {{ svc_call_parts[0] }}({% if "[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip(")") }}{% endif %})
                     {%- endif %}
                     Speak('{{ response.text }}')
                 end
@@ -33,7 +33,7 @@ dialogues
                 ActionGroup {{ response.name }}
                     {%- if response.service_call %}
                     {%- set svc_call_parts = response.service_call.split('(') %}
-                    {{ svc_call_parts[0] }}({%- if "path=[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip() }}{% else %} , {% endif %})
+                    {{ svc_call_parts[0] }}({% if "[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip(")") }}{% endif %})
                     {%- endif %}
                     Speak('{{ response.text }}')
                 end

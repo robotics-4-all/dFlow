@@ -40,7 +40,10 @@ dialogues
                     end,
                 {%- elif response.type == "ActionGroup" %}
                 ActionGroup {{ response.name }}
-                    {{ response.service_call }}
+                    {%- if response.service_call %}
+                    {%- set svc_call_parts = response.service_call.split('(') %}
+                    {{ svc_call_parts[0] }}({% if "[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip(")") }}{% endif %})
+                    {%- endif %}
                     Speak('{{ response.text }}')
                 end
                 {%- endif %}
@@ -50,12 +53,15 @@ dialogues
                 {%- if response.type == "Form" %}
                 Form {{ response.name }}
                     {%- for slot in response.slots %}
-                        {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% if not loop.last %},{% endif %}
+                        {{ slot.name }}: {{ slot.type }} = {% if slot.service_call %}{{ slot.service_call }}{% else %}HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% endif %}{% if not loop.last %},{% endif %}
                     {%- endfor %}
-                    end,
+                    end,    
                 {%- elif response.type == "ActionGroup" %}
                 ActionGroup {{ response.name }}
-                    {{ response.service_call }}
+                    {%- if response.service_call %}
+                    {%- set svc_call_parts = response.service_call.split('(') %}
+                    {{ svc_call_parts[0] }}({% if "[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip(")") }}{% endif %})
+                    {%- endif %}
                     Speak('{{ response.text }}')
                 end
                 {%- endif %}
