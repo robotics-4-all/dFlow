@@ -82,6 +82,10 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     dominant_entity, _ = entity_counts.most_common(1)[0] if entity_counts else (None, None)
     context = "PE:" + dominant_entity if dominant_entity else None
 
+    path_params = []
+    query_params = []
+    header_params = []
+
     for param in parameters:
         if param.required:
             param_type = change_type_name(param.ptype)
@@ -107,14 +111,25 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         }
         responses.append(form_response)
 
+        for param in parameters:
+            if param.location == "path":
+                path_params.append(f"{param.name}={form_response['name']}.{param.name}")
+            elif param.location == "query":
+                query_params.append(f"{param.name}={form_response['name']}.{param.name}")
+            elif param.location == "header":
+                header_params.append(f"{param.name}={form_response['name']}.{param.name}")
+
+    service_call = service_name + "("
+    if path_params:
+        service_call += f"path=[{', '.join(path_params)}], "
+    if query_params:
+        service_call += f"query=[{', '.join(query_params)}], "
+    if header_params:
+        service_call += f"header=[{', '.join(header_params)}], "
+    service_call = service_call.rstrip(", ") + ")"
+
     if verb == "GET":
         if response_properties and current_path in response_properties:
-            if parameters:
-                query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
-                service_call = f"{service_name}(query=[{query_parameters}],)"
-            else:
-                service_call = f"{service_name}()"
-                
             has_required_response = False
 
             for prop, prop_data in response_properties[current_path].items():
@@ -145,12 +160,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 }
                 responses.append(action_group_response)
         else:
-            if parameters:
-                query_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters])
-                service_call = f"{service_name}(query=[{query_parameters}],)"
-            else:
-                service_call = f"{service_name}()"
-                
             action_group_response = {
                 "type": "ActionGroup",
                 "name": create_name(dialogue_name, "ag"),
@@ -159,12 +168,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             }
             responses.append(action_group_response)
     elif verb in ["POST", "PUT", "DELETE"]:
-        if parameters:
-            path_parameters = ', '.join([f"{param.name}={form_response['name']}.{param.name}" for param in parameters if change_type_name(param.ptype) != None and param.required])
-            service_call = f"{service_name}(path=[{path_parameters}],)"
-        else:
-            service_call = f"{service_name}()"
-            
         action_group_response = {
             "type": "ActionGroup",
             "name": create_name(dialogue_name, "ag"),
