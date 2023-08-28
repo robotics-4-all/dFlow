@@ -64,6 +64,64 @@ def change_type_name(type_name):
     elif type_name == "object": return "dict"
 
 
+def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_summary=""):
+    
+    prompt_text = f"""
+    Generate a human-like response for the HTTP GET operation in a web service context. Use the given parameters, info slots, and the operation summary to craft a user-friendly message.
+
+    Example:
+    Verb: GET
+    Parameters: [id, name]
+    Slots: [status]
+    Operation Summary: Retrieve a user's status by their id and name.
+    Response: The status of {{name}} with id {{id}} is {{status}}
+
+    Example:
+    Verb: POST
+    Parameters: [bookId, bookTitle]
+    Slots: 
+    Operation Summary: Submit a new book with its ID and title.
+    Response: Your book with ID {{bookId}} and title "{{bookTitle}}" has been added.
+
+    Example:
+    Verb: PUT
+    Parameters: [orderId, quantity]
+    Slots: 
+    Operation Summary: Update the quantity of an order.
+    Response: Your order {{orderId}} has been updated to a quantity of {{quantity}}.
+
+    Example:
+    Verb: DELETE
+    Parameters: [photoId]
+    Slots: 
+    Operation Summary: Remove a photo based on its ID.
+    Response: The photo with ID {{photoId}} has been deleted.
+
+    Given the following HTTP operation, generate a relevant response:
+
+    Verb: {verb}
+    Parameters: {', '.join(parameters)}
+    Slots: {', '.join(slots)}
+    Operation Summary: {operation_summary}
+    Response:
+    """
+
+    inputs = tokenizer.encode(prompt_text, return_tensors="pt")
+
+    outputs = model.generate(
+        inputs,
+        max_length=1000, 
+        temperature=0.7,
+        do_sample=True,
+        num_return_sequences=1,  
+        pad_token_id=tokenizer.eos_token_id
+    )
+
+    decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    response = decoded_output.split("Response:")[-1].strip()
+
+    return response
+
 
 def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path, response_properties=None):
     template = jinja_env.get_template('dialogues.jinja')
@@ -211,7 +269,7 @@ for endpoint in parsed_api:
         triggersList = triggers.split("\n")
         dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, response_properties)
 
-
         print(eservice_definition)
         # print(triggers)
         print(dialogues)
+        print(operation.summary)
