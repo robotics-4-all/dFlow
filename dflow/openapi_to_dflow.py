@@ -77,6 +77,13 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
     Response: The status of {{name}} with id {{id}} is {{status}}
 
     Example:
+    Verb: GET
+    Parameters: []
+    Slots: []
+    Operation Summary: Log the user out of the system.
+    Response: You have been successfully logged out.
+
+    Example:
     Verb: POST
     Parameters: [bookId, bookTitle]
     Slots: 
@@ -110,7 +117,7 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
 
     outputs = model.generate(
         inputs,
-        max_length=1000, 
+        max_length=700, 
         temperature=0.7,
         do_sample=True,
         num_return_sequences=1,  
@@ -171,11 +178,15 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
 
         for param in parameters:
             if param.location == "path":
-                path_params.append(f"{param.name}={form_response['name']}.{param.name}")
+                param_called = f"{form_response['name']}.{param.name}"
+                path_params.append(f"{param.name}={param_called}")
             elif param.location == "query":
-                query_params.append(f"{param.name}={form_response['name']}.{param.name}")
+                param_called = f"{form_response['name']}.{param.name}"
+                query_params.append(f"{param.name}={param_called}")
             elif param.location == "header":
-                header_params.append(f"{param.name}={form_response['name']}.{param.name}")
+                param_called = f"{form_response['name']}.{param.name}"
+                header_params.append(f"{param.name}={param_called}")
+
 
     service_call = service_name + "("
     if path_params:
