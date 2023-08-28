@@ -178,7 +178,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
 
         for param in parameters:
 
-            if 'location' not in param:
+            if not hasattr(param, 'location'):
                 continue
 
             if param.location == "path":
@@ -207,7 +207,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
 
             for prop, prop_data in response_properties[current_path].items():
 
-                if 'type' not in prop_data:
+                if not hasattr(prop_data, 'type'):
                     continue
 
                 if prop_data.get('required'):
