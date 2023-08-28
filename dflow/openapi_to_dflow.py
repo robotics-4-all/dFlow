@@ -207,7 +207,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
 
             for prop, prop_data in response_properties[current_path].items():
 
-                if not hasattr(prop_data, 'type'):
+                if 'type' not in prop_data:
                     continue
 
                 if prop_data.get('required'):
