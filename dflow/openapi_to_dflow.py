@@ -177,6 +177,10 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         responses.append(form_response)
 
         for param in parameters:
+
+            if 'location' not in param:
+                continue
+
             if param.location == "path":
                 param_called = f"{form_response['name']}.{param.name}"
                 path_params.append(f"{param.name}={param_called}")
@@ -202,6 +206,10 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             has_required_response = False
 
             for prop, prop_data in response_properties[current_path].items():
+
+                if 'type' not in prop_data:
+                    continue
+
                 if prop_data.get('required'):
                     has_required_response = True
                     slot_type = change_type_name(prop_data['type'])
