@@ -117,7 +117,7 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
 
     outputs = model.generate(
         inputs,
-        max_length=700, 
+        max_length=500, 
         temperature=0.7,
         do_sample=True,
         num_return_sequences=1,  
@@ -150,6 +150,8 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     path_params = []
     query_params = []
     header_params = []
+    param_called_list = []
+    response_called_list = []
 
     for param in parameters:
         if param.required:
@@ -175,7 +177,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             "slots": form_slots
         }
         responses.append(form_response)
-
         for param in parameters:
 
             if not hasattr(param, 'location'):
@@ -183,12 +184,15 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
 
             if param.location == "path":
                 param_called = f"{form_response['name']}.{param.name}"
+                param_called_list.append(param_called)
                 path_params.append(f"{param.name}={param_called}")
             elif param.location == "query":
                 param_called = f"{form_response['name']}.{param.name}"
+                param_called_list.append(param_called)
                 query_params.append(f"{param.name}={param_called}")
             elif param.location == "header":
                 param_called = f"{form_response['name']}.{param.name}"
+                param_called_list.append(param_called)
                 header_params.append(f"{param.name}={param_called}")
 
 
@@ -200,6 +204,8 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     if header_params:
         service_call += f"header=[{', '.join(header_params)}], "
     service_call = service_call.rstrip(", ") + ")"
+
+    
 
     if verb == "GET":
         if response_properties and current_path in response_properties:
@@ -221,19 +227,22 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                         })
 
             if not has_required_response:
+                response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation.summary)
                 action_group_response = {
                     "type": "ActionGroup",
                     "name": create_name(dialogue_name, "ag"),
                     "service_call": service_call,
-                    "text": "Your request has been processed successfully."
+                    "text": response_text
                 }
                 responses.append(action_group_response)
             else:
-                ag_text = "The information you requested is: " + ' '.join([f"{form_response['name']}.{slot['name']}" for slot in form_slots])
+                response_called = ','.join([f"{form_response['name']}.{slot['name']}" for slot in form_slots if 'prompt' not in slot])
+                response_called_list = response_called.split(',')
+                response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation.summary)
                 action_group_response = {
                     "type": "ActionGroup",
                     "name": create_name(dialogue_name, "ag"),
-                    "text": ag_text
+                    "text": response_text
                 }
                 responses.append(action_group_response)
         else:
@@ -241,17 +250,19 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 "type": "ActionGroup",
                 "name": create_name(dialogue_name, "ag"),
                 "service_call": service_call,
-                "text": "Your request has been processed successfully."
+                "text": response_text
             }
             responses.append(action_group_response)
     elif verb in ["POST", "PUT", "DELETE"]:
+        response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation.summary)
         action_group_response = {
             "type": "ActionGroup",
             "name": create_name(dialogue_name, "ag"),
             "service_call": service_call,
-            "text": "Your request has been processed successfully."
+            "text": response_text
         }
         responses.append(action_group_response)
+
 
     dialogue = {
         "name": dialogue_name,
