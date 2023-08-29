@@ -81,7 +81,11 @@ def extract_response_properties(api_specification):
                     current_details[prop] = {"type": details['type'], "required": is_required}
                 elif '$ref' in details:
                     ref_schema = resolve_ref(details['$ref'], api_specification)
-                    current_details[prop] = extract_properties_from_schema(ref_schema)
+                    current_details[prop] = {
+                        "type": "object",  #since $ref refers to an object in OpenAPI spec
+                        "required": is_required,
+                        "properties": extract_properties_from_schema(ref_schema)
+                    }
                 else:
                     current_details[prop] = {"type": 'unknown', "required": is_required}
         return current_details
@@ -120,9 +124,6 @@ def extract_response_properties(api_specification):
                             response_details[path].update(extracted_props)
 
     return response_details
-
-
-
 
 
 def extract_api_elements(api_specification):
