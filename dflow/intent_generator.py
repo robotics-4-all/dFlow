@@ -72,17 +72,32 @@ def extract_response_properties(api_specification):
 
     response_details = {}
 
-    def extract_properties_from_schema(schema, path):
+    def extract_properties_from_schema(schema):
+        current_details = {}
         if 'properties' in schema:
             for prop, details in schema['properties'].items():
                 is_required = prop in schema.get('required', [])
                 if 'type' in details:
-                    response_details[path][prop] = {"type": details['type'], "required": is_required}
+                    current_details[prop] = {"type": details['type'], "required": is_required}
+                elif '$ref' in details:
+                    ref_schema = resolve_ref(details['$ref'], api_specification)
+                    current_details[prop] = extract_properties_from_schema(ref_schema)
                 else:
-                    response_details[path][prop] = {"type": 'unknown', "required": is_required}
+                    current_details[prop] = {"type": 'unknown', "required": is_required}
+        return current_details
+
+    def resolve_ref(ref, spec):
+        """Resolve a $ref link."""
+        parts = ref.split('/')
+        definition = spec
+        for part in parts:
+            if part == '#':
+                continue
+            definition = definition.get(part, {})
+        return definition
 
     for path, operations in api_specification['paths'].items():
-        if 'get' in operations: 
+        if 'get' in operations:
             get_operation = operations['get']
 
             if 'responses' in get_operation:
@@ -90,21 +105,19 @@ def extract_response_properties(api_specification):
                     response_200 = get_operation['responses']['200']
                     if 'schema' in response_200:
                         schema = response_200['schema']
-                        
+
                         response_details[path] = {}
-                        
 
                         if 'type' in schema and schema['type'] == 'array' and 'items' in schema:
                             schema = schema['items']
 
-                        extract_properties_from_schema(schema, path)
-                        
+                        extracted_props = extract_properties_from_schema(schema)
+                        response_details[path].update(extracted_props)
+
                         if '$ref' in schema:
-                            ref_path = schema['$ref']
-                            definition_name = ref_path.split('/')[-1]
-                            if definition_name in api_specification['definitions']:
-                                definition = api_specification['definitions'][definition_name]
-                                extract_properties_from_schema(definition, path)
+                            ref_schema = resolve_ref(schema['$ref'], api_specification)
+                            extracted_props = extract_properties_from_schema(ref_schema)
+                            response_details[path].update(extracted_props)
 
     return response_details
 
