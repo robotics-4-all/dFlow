@@ -9,8 +9,8 @@ nlp = spacy.load("en_core_web_sm")
 _THIS_DIR = path.abspath(path.dirname(__file__))
 
 jinja_env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(path.join(_THIS_DIR, 'templates/grammar-templates')))
-
+    loader=jinja2.FileSystemLoader(path.join(_THIS_DIR, 'templates')))
+template = jinja_env.get_template('model.dflow.jinja')
 
 PRETRAINED_ENTITIES = [
     'PERSON', 'NORP', 'FAC', 'ORG', 'GPE', 'LOC', 'PRODUCT', 'EVENT',
@@ -26,7 +26,6 @@ def create_name(operationId, ending = None):
        return operationId + '_' + ending
     
 def create_service(service_name, verb, host, port, path):
-    template = jinja_env.get_template('services.jinja')
 
     eservice_data = {
         "name": service_name,
@@ -36,11 +35,9 @@ def create_service(service_name, verb, host, port, path):
         "path": path
     }
 
-    output = template.render(eservice=eservice_data)
-    return output
+    return eservice_data
 
 def create_trigger(trigger_name, trigger_type="Intent"):
-    template = jinja_env.get_template('triggers.jinja')
 
     triggers = []
 
@@ -60,8 +57,7 @@ def create_trigger(trigger_name, trigger_type="Intent"):
 
     triggers.append(trigger)
 
-    output = template.render(triggers=triggers)
-    return output
+    return triggers
 
 def change_type_name(type_name):
     if type_name == "integer": return "int"
@@ -139,10 +135,10 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
 
 
 def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path, response_properties=None):
-    template = jinja_env.get_template('dialogues.jinja')
 
     form_slots = []
     responses = []
+    response_text = ""
 
     entities = []
     for phrase in triggers:
@@ -279,8 +275,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         "responses": responses
     }
 
-    output = template.render(dialogues=[dialogue])
-    return output
+    return dialogue
 
 
 
@@ -288,6 +283,10 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
 fetchedApi = fetch_specification("/Users/harabalos/Desktop/petstore.json")
 parsed_api = extract_api_elements(fetchedApi)
 response_properties = extract_response_properties(fetchedApi)
+
+eservices = []  
+all_triggers = []  
+all_dialogues = []  
 
 for endpoint in parsed_api:
     for operation in endpoint.operations:
@@ -304,10 +303,13 @@ for endpoint in parsed_api:
 
         eservice_definition = create_service(service_name, verb, host, port, path)
         triggers = create_trigger(intent_name)
-        triggersList = triggers.split("\n")
-        dialogues = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, response_properties)
+        triggersList = triggers[0]['phrases']
+        dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, response_properties)
+        
+        eservices.append(eservice_definition)
+        all_triggers.extend(triggers)  
+        all_dialogues.append(dialogue)
 
-        print(eservice_definition)
-        # print(triggers)
-        print(dialogues)
-        print(operation.summary)
+
+output = template.render(eservices=eservices, triggers=all_triggers, dialogues=all_dialogues)
+print(output)

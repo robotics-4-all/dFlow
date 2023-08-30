@@ -1,14 +1,16 @@
 eservices
-    EServiceHTTP {{ service_name }}
-        verb: {{ verb }}
-        host: '{{ host }}'
-        {%- if port %}
-        port: {{ port }}
+    {%- for eservice in eservices %}
+    EServiceHTTP {{ eservice.name }}
+        verb: {{ eservice.verb }}
+        host: '{{ eservice.host }}'
+        {%- if eservice.port %}
+        port: {{ eservice.port }}
         {%- endif %}
-        {%- if path %}
-        path: '{{ path }}'
+        {%- if eservice.path %}
+        path: '{{ eservice.path }}'
         {%- endif %}
     end
+    {%- endfor %}
 end
 
 triggers
