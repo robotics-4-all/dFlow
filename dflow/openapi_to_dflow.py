@@ -28,7 +28,15 @@ def create_name(operationId, ending = None):
 def create_service(service_name, verb, host, port, path):
     template = jinja_env.get_template('services.jinja')
 
-    output = template.render(service_name=service_name, verb=verb, host=host, port=port, path=path)
+    eservice_data = {
+        "name": service_name,
+        "verb": verb,
+        "host": host,
+        "port": port,
+        "path": path
+    }
+
+    output = template.render(eservice=eservice_data)
     return output
 
 def create_trigger(trigger_name, trigger_type="Intent"):
