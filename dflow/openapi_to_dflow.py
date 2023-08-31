@@ -5,7 +5,6 @@ from os import path
 import jinja2
 nlp = spacy.load("en_core_web_sm")
 
-
 _THIS_DIR = path.abspath(path.dirname(__file__))
 
 jinja_env = jinja2.Environment(
@@ -37,12 +36,12 @@ def create_service(service_name, verb, host, port, path):
 
     return eservice_data
 
-def create_trigger(trigger_name, trigger_type="Intent"):
+def create_trigger(trigger_name, operation_summary, trigger_type="Intent"):
 
     triggers = []
 
     if trigger_type == "Intent":
-        phrases = generate_intent_examples(model, tokenizer, operation.summary)
+        phrases = generate_intent_examples(model, tokenizer, operation_summary)
         trigger = {
             "type": trigger_type,
             "name": trigger_name,  
@@ -134,7 +133,7 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
     return response
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path, response_properties=None):
+def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path,operation_summary, response_properties=None):
 
     form_slots = []
     responses = []
@@ -231,7 +230,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                         })
 
             if not has_required_response:
-                response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation.summary)
+                response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation_summary)
                 action_group_response = {
                     "type": "ActionGroup",
                     "name": create_name(dialogue_name, "ag"),
@@ -242,7 +241,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             else:
                 response_called = ','.join([f"{form_response['name']}.{slot['name']}" for slot in form_slots if 'prompt' not in slot])
                 response_called_list = response_called.split(',')
-                response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation.summary)
+                response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation_summary)
                 action_group_response = {
                     "type": "ActionGroup",
                     "name": create_name(dialogue_name, "ag"),
@@ -258,7 +257,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             }
             responses.append(action_group_response)
     elif verb in ["POST", "PUT", "DELETE"]:
-        response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation.summary)
+        response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation_summary)
         action_group_response = {
             "type": "ActionGroup",
             "name": create_name(dialogue_name, "ag"),
@@ -278,38 +277,66 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     return dialogue
 
 
+def get_title(title):
+    ignore_words = [
+        "Swagger", "API", "REST", "RESTful", "Service", "Services", 
+        "Web", "WebAPI", "Endpoint", "Endpoints", "Server", "Application",
+        "System", "Interface", "Platform", "Protocol", "Database", "DB", 
+        "Microservice", "Specification", "OpenAPI", "Resource", "Resources",
+        "Network", "Utility", "Utilities", "Toolkit", "Provider", "Hub", 
+        "Solution", "Solutions", "Package", "Library", "Framework", "Module", 
+        "Unit", "Component", "Function", "Operation", "Method", "Gateway",
+        "Proxy", "Service", "Repository", "Connector", "Plugin", "Add-on",
+        "Extension", "Handler", "Driver", "Layer", "Object", "Manager", 
+        "Runtime", "Session", "Client", "Middleware", "Adapter", "Model", 
+        "Engine", "Instance", "Protocol", "Suite", "Set", "Collection", 
+        "Group", "Cluster", "Version", "Edition", "Build"
+    ]
+    
+    cleaned_title = " ".join([word for word in title.split() if word not in ignore_words])
+    
+    return cleaned_title.lower().replace(" ", "_")
 
 
-fetchedApi = fetch_specification("/Users/harabalos/Desktop/petstore.json")
-parsed_api = extract_api_elements(fetchedApi)
-response_properties = extract_response_properties(fetchedApi)
+def transform(api_path):
+    fetchedApi = fetch_specification(api_path)
+    parsed_api = extract_api_elements(fetchedApi)
+    response_properties = extract_response_properties(fetchedApi)
 
-eservices = []  
-all_triggers = []  
-all_dialogues = []  
+    eservices = []  
+    all_triggers = []  
+    all_dialogues = []  
 
-for endpoint in parsed_api:
-    for operation in endpoint.operations:
+    for endpoint in parsed_api:
+        for operation in endpoint.operations:
 
-        triggersList = []  
+            triggersList = []  
 
-        service_name = create_name(operation.operationId, "svc")
-        intent_name = create_name(operation.operationId)
-        dialogue_name = create_name(operation.operationId, "dlg")
-        verb = operation.type.upper() 
-        host = fetchedApi["host"]
-        port = fetchedApi.get("port", None)
-        path = endpoint.path
+            service_name = create_name(operation.operationId, "svc")
+            intent_name = create_name(operation.operationId)
+            dialogue_name = create_name(operation.operationId, "dlg")
+            verb = operation.type.upper() 
+            host = fetchedApi["host"]
+            port = fetchedApi.get("port", None)
+            path = endpoint.path
 
-        eservice_definition = create_service(service_name, verb, host, port, path)
-        triggers = create_trigger(intent_name)
-        triggersList = triggers[0]['phrases']
-        dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, response_properties)
-        
-        eservices.append(eservice_definition)
-        all_triggers.extend(triggers)  
-        all_dialogues.append(dialogue)
+            eservice_definition = create_service(service_name, verb, host, port, path)
+            triggers = create_trigger(intent_name,operation.summary)
+            triggersList = triggers[0]['phrases']
+            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary, response_properties)
+            
+            eservices.append(eservice_definition)
+            all_triggers.extend(triggers)  
+            all_dialogues.append(dialogue)
+
+    output = template.render(eservices=eservices, triggers=all_triggers, dialogues=all_dialogues)
+    
+    api_title = fetchedApi.get('info', {}).get('title', 'default_name')
+    title = get_title(api_title)
+    dflow_file_name = f"{title}.dflow"
+    
+    with open(dflow_file_name, 'w') as file:
+        file.write(output)
 
 
-output = template.render(eservices=eservices, triggers=all_triggers, dialogues=all_dialogues)
-print(output)
+transform("/Users/harabalos/Desktop/petstore.json")
