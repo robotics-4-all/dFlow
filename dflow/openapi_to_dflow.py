@@ -2,7 +2,6 @@ import spacy
 from collections import Counter
 from os import path
 import jinja2
-import os.path
 import requests
 import yaml
 import json
@@ -65,7 +64,7 @@ class Response:
 
 
 def fetch_specification(source):
-    if os.path.isfile(source):  
+    if path.isfile(source):  
         with open(source, 'r') as f:
             if source.endswith('.yaml'):
                 return yaml.safe_load(f)
