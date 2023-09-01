@@ -64,6 +64,12 @@ class Response:
 
 
 def fetch_specification(source):
+    """
+    Fetches an OpenAPI specification from a given source.
+
+    This function retrieves the OpenAPI specification either from a local file or a remote URL. 
+    It supports both JSON and YAML formats.
+    """
     if path.isfile(source):  
         with open(source, 'r') as f:
             if source.endswith('.yaml'):
@@ -81,6 +87,7 @@ def fetch_specification(source):
             return json.loads(response.text)
         else:
             raise ValueError("Invalid URL type. Only JSON and YAML are supported.")
+
         
 
 
@@ -90,16 +97,19 @@ def extract_response_properties(api_specification):
     response_details = {}
 
     def extract_properties_from_schema(schema):
+        """Extract properties from a given schema."""
         current_details = {}
         if 'properties' in schema:
             for prop, details in schema['properties'].items():
                 is_required = prop in schema.get('required', [])
                 if 'type' in details:
+                    #Standard property with a type
                     current_details[prop] = {"type": details['type'], "required": is_required}
                 elif '$ref' in details:
+                    #Property refers to another schema via $ref
                     ref_schema = resolve_ref(details['$ref'], api_specification)
                     current_details[prop] = {
-                        "type": "object",  #since $ref refers to an object in OpenAPI spec
+                        "type": "object",  # since $ref refers to an object in OpenAPI spec
                         "required": is_required,
                         "properties": extract_properties_from_schema(ref_schema)
                     }
@@ -108,15 +118,16 @@ def extract_response_properties(api_specification):
         return current_details
 
     def resolve_ref(ref, spec):
-        """Resolve a $ref link."""
+        """Resolve a $ref link to its actual schema definition."""
         parts = ref.split('/')
         definition = spec
         for part in parts:
             if part == '#':
-                continue
+                continue  #Skip the root definition signifier
             definition = definition.get(part, {})
         return definition
 
+    #Iterate through each path defined in the specification
     for path, operations in api_specification['paths'].items():
         if 'get' in operations:
             get_operation = operations['get']
@@ -136,6 +147,7 @@ def extract_response_properties(api_specification):
                         response_details[path].update(extracted_props)
 
                         if '$ref' in schema:
+                            #Handle schemas that refer to other definitions
                             ref_schema = resolve_ref(schema['$ref'], api_specification)
                             extracted_props = extract_properties_from_schema(ref_schema)
                             response_details[path].update(extracted_props)
@@ -143,9 +155,13 @@ def extract_response_properties(api_specification):
     return response_details
 
 
+
 def extract_api_elements(api_specification):
+    """Extract essential API components like endpoints, operations, parameters, request bodies, and responses 
+    from an OpenAPI specification.
+    """
+    
     endpoints = []
-    definitions = api_specification.get('definitions', {})
 
     for path, operations in api_specification['paths'].items():
         endpoint = Endpoint(path)
@@ -190,6 +206,9 @@ def extract_api_elements(api_specification):
 
 def generate_intent_examples(model, tokenizer, operation_summary):
     
+    """Generate human-like examples of how users might express an intent for a given operation summary.
+    """
+        
     prompt_text = f"""
     I need diverse examples of how a user might express certain intents related to tasks they want to perform. The examples should be human-like, varied, and cover different ways the same intent might be expressed. Here are a few tasks:
 
@@ -296,6 +315,10 @@ def change_type_name(type_name):
 
 def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_summary=""):
     
+    """
+    Generate a human-like response for a given HTTP operation using a model.
+    """
+        
     prompt_text = f"""
     Generate a human-like response for the HTTP GET operation in a web service context. Use the given parameters, info slots, and the operation summary to craft a user-friendly message.
 
@@ -361,6 +384,15 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
 
 
 def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path,operation_summary, response_properties=None):
+
+    """
+    Generate a dialogue configuration for an API operation.
+
+    This function is designed to produce a structured representation of a dialogue
+    that can guide a chatbot in handling interactions related to a specific API call.
+    The dialogue contains trigger intents, response actions (like forms and action groups),
+    and service calls.
+    """
 
     form_slots = []
     responses = []
@@ -526,6 +558,11 @@ def get_title(title):
 
 
 def transform(api_path):
+
+    """
+    Transforms the given API specification into a set of eservices, triggers, and dialogues.
+    """
+     
     fetchedApi = fetch_specification(api_path)
     parsed_api = extract_api_elements(fetchedApi)
     response_properties = extract_response_properties(fetchedApi)
