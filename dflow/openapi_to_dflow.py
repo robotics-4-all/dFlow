@@ -556,7 +556,6 @@ def get_title(title):
     
     return cleaned_title.lower().replace(" ", "_")
 
-
 def transform(api_path):
 
     """
@@ -570,6 +569,19 @@ def transform(api_path):
     eservices = []  
     all_triggers = []  
     all_dialogues = []  
+
+    basic_triggers = [{'type': 'Intent','name': 'greet','phrases': ["hey", "hello", "hi", "yo", "good morning", "evening", "moin", "hey there", "let's go", "good afternoon"]},
+                    {'type': 'Intent','name': 'goodbye','phrases': ["goodbye", "bye", "see you later", "bb", "catch you later"]},
+                    {'type': 'Intent','name': 'bot_origin','phrases': ["who created you?", "who's your creator?", "who made you?", "where do you come from?", "are you a bot?", "am I talking to a human?"]}]
+
+    basic_dialogues = [{'name': 'greet_dialogue','triggers': ['greet'],'verb': 'GET','responses': [{'type': 'ActionGroup','name': 'greet_back','text': 'Hello there!'}]},
+                    {'name': 'goodbye_dialogue','triggers': ['goodbye'],'verb': 'GET','responses': [{'type': 'ActionGroup','name': 'goodbye_response','text': 'Goodbye! If you have more questions, feel free to ask.'}]},
+                    {'name': 'bot_origin_dialogue','triggers': ['bot_origin'],'verb': 'GET','responses': [{'type': 'ActionGroup','name': 'origin_response','text': 'I am a bot, powered by dFlow and Rasa.'}]}]
+
+
+
+    all_triggers.extend(basic_triggers)  
+    all_dialogues.extend(basic_dialogues)
 
     for endpoint in parsed_api:
         for operation in endpoint.operations:
