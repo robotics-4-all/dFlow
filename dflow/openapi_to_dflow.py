@@ -42,7 +42,7 @@ class Operation:
 
 
 class Parameter:
-    def __init__(self, name, location, required, ptype, description=None):
+    def __init__(self, name, location, required, ptype, description=None,properties=None):
         self.name = name
         self.location = location
         self.description = description
@@ -78,9 +78,13 @@ def fetch_specification(source):
                 return json.load(f)
             else:
                 raise ValueError("Invalid file type. Only JSON and YAML are supported.")
-    else:  
-        response = requests.get(source)
-        response.raise_for_status()  
+    else:
+        try:
+            response = requests.get(source)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Failed to fetch the specification from {source}. Error: {e}")
+            return None
         if source.endswith('.yaml'):
             return yaml.safe_load(response.text)
         elif source.endswith('.json'):
@@ -155,6 +159,67 @@ def extract_response_properties(api_specification):
     return response_details
 
 
+def extract_body_parameter_properties(api_specification):
+    """Extract body parameter properties and their types from the OpenAPI specification."""
+
+    body_param_details = {}
+
+    def extract_properties_from_schema(schema):
+        """Extract properties from a given schema."""
+        current_details = {}
+        if 'properties' in schema:
+            for prop, details in schema['properties'].items():
+                is_required = prop in schema.get('required', [])
+                if 'type' in details:
+                    # Standard property with a type
+                    current_details[prop] = {"type": details['type'], "required": is_required}
+                elif '$ref' in details:
+                    # Property refers to another schema via $ref
+                    ref_schema = resolve_ref(details['$ref'], api_specification)
+                    current_details[prop] = {
+                        "type": "object",  # since $ref refers to an object in OpenAPI spec
+                        "required": is_required,
+                        "properties": extract_properties_from_schema(ref_schema)
+                    }
+                else:
+                    current_details[prop] = {"type": 'unknown', "required": is_required}
+        return current_details
+
+    def resolve_ref(ref, spec):
+        """Resolve a $ref link to its actual schema definition."""
+        parts = ref.split('/')
+        definition = spec
+        for part in parts:
+            if part == '#':
+                continue  # Skip the root definition signifier
+            definition = definition.get(part, {})
+        return definition
+
+    # Iterate through each path defined in the specification
+    for path, operations in api_specification['paths'].items():
+        for method, operation in operations.items():  # Adding this loop to check all methods, not just 'get'
+            if 'parameters' in operation:
+                for param in operation['parameters']:
+                    if param.get('in') == 'body':
+                        param_name = param.get('name')
+                        body_param_details[path] = {param_name: {}}
+
+                        schema = param.get('schema', {})
+                        if 'type' in schema and schema['type'] == 'array' and 'items' in schema:
+                            schema = schema['items']
+
+                        extracted_props = extract_properties_from_schema(schema)
+                        body_param_details[path][param_name].update(extracted_props)
+
+                        if '$ref' in schema:
+                            # Handle schemas that refer to other definitions
+                            ref_schema = resolve_ref(schema['$ref'], api_specification)
+                            extracted_props = extract_properties_from_schema(ref_schema)
+                            body_param_details[path][param_name].update(extracted_props)
+
+    return body_param_details
+
+
 
 def extract_api_elements(api_specification):
     """Extract essential API components like endpoints, operations, parameters, request bodies, and responses 
@@ -174,6 +239,7 @@ def extract_api_elements(api_specification):
             parameters = []
             if 'parameters' in operation_details:
                 for parameter_details in operation_details['parameters']:
+                    properties = []
                     name = parameter_details['name']
                     location = parameter_details['in']
                     description = parameter_details.get('description')
@@ -383,7 +449,7 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
     return response
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path,operation_summary, response_properties=None):
+def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path,operation_summary,api_specification, response_properties=None):
 
     """
     Generate a dialogue configuration for an API operation.
@@ -412,14 +478,19 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     path_params = []
     query_params = []
     header_params = []
+    body_params = []
     param_called_list = []
     response_called_list = []
 
     for param in parameters:
         if param.required:
-            param_type = change_type_name(param.ptype)
+            if param.location == "body" and hasattr(param, 'schema'):
+                param_type = change_type_name(param.schema.get('type'))
+            else:
+                param_type = change_type_name(param.ptype)
+
             if param_type is None:
-                break
+                continue
 
             prompt_text = f"Please provide the {param.name}"
             slot = {
@@ -565,6 +636,7 @@ def transform(api_path):
     fetchedApi = fetch_specification(api_path)
     parsed_api = extract_api_elements(fetchedApi)
     response_properties = extract_response_properties(fetchedApi)
+    body_properties = extract_body_parameter_properties(fetchedApi)
 
     eservices = []  
     all_triggers = []  
@@ -599,14 +671,14 @@ def transform(api_path):
             eservice_definition = create_service(service_name, verb, host, port, path)
             triggers = create_trigger(intent_name,operation.summary)
             triggersList = triggers[0]['phrases']
-            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary, response_properties)
+            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary,fetchedApi, response_properties)
             
             eservices.append(eservice_definition)
             all_triggers.extend(triggers)  
             all_dialogues.append(dialogue)
 
     output = template.render(eservices=eservices, triggers=all_triggers, dialogues=all_dialogues)
-    
+
     api_title = fetchedApi.get('info', {}).get('title', 'default_name')
     title = get_title(api_title)
     dflow_file_name = f"{title}.dflow"
