@@ -527,7 +527,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         responses.append(form_response)
         for param in parameters:
 
-            if not hasattr(param, 'location'):
+            if not param.required or not hasattr(param, 'location'):
                 continue
 
             if param.location == "path":
