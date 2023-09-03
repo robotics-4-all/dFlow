@@ -481,6 +481,8 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     header_params = []
     body_params = []
     param_called_list = []
+    form_data_params = []
+    response_called_list = []
 
     for param in parameters:
         if param.required:
@@ -547,6 +549,10 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                         prop_called = f"{form_response['name']}.{prop_name}"  
                         param_called_list.append(prop_called)
                         body_params.append(f"{prop_name}={prop_called}")
+            elif param.location == "formData":
+                param_called = f"{form_response['name']}.{param.name}"
+                param_called_list.append(param_called)
+                form_data_params.append(f"{param.name}={param_called}")
 
 
     service_call = service_name + "("
@@ -558,6 +564,8 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         service_call += f"header=[{', '.join(header_params)}], "
     if body_params: 
         service_call += f"body=[{', '.join(body_params)}], "
+    if form_data_params:
+        service_call += f"formData=[{', '.join(form_data_params)}], "
     service_call = service_call.rstrip(", ") + ")"
 
     
