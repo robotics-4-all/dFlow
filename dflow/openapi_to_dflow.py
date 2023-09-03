@@ -42,12 +42,13 @@ class Operation:
 
 
 class Parameter:
-    def __init__(self, name, location, required, ptype, description=None,properties=None):
+    def __init__(self, name, location, required, ptype, description=None, schema=None):
         self.name = name
         self.location = location
         self.description = description
         self.required = required
         self.ptype = ptype
+        self.schema = schema
 
 
 
@@ -202,20 +203,20 @@ def extract_body_parameter_properties(api_specification):
                 for param in operation['parameters']:
                     if param.get('in') == 'body':
                         param_name = param.get('name')
-                        body_param_details[path] = {param_name: {}}
+                        body_param_details[path] = {}
 
                         schema = param.get('schema', {})
                         if 'type' in schema and schema['type'] == 'array' and 'items' in schema:
                             schema = schema['items']
 
                         extracted_props = extract_properties_from_schema(schema)
-                        body_param_details[path][param_name].update(extracted_props)
+                        body_param_details[path].update(extracted_props)
 
                         if '$ref' in schema:
                             # Handle schemas that refer to other definitions
                             ref_schema = resolve_ref(schema['$ref'], api_specification)
                             extracted_props = extract_properties_from_schema(ref_schema)
-                            body_param_details[path][param_name].update(extracted_props)
+                            body_param_details[path].update(extracted_props)
 
     return body_param_details
 
@@ -239,13 +240,13 @@ def extract_api_elements(api_specification):
             parameters = []
             if 'parameters' in operation_details:
                 for parameter_details in operation_details['parameters']:
-                    properties = []
                     name = parameter_details['name']
                     location = parameter_details['in']
                     description = parameter_details.get('description')
                     required = parameter_details.get('required')
                     ptype = parameter_details.get('type')
-                    parameter = Parameter(name, location, required, ptype, description)
+                    schema = parameter_details.get('schema')  
+                    parameter = Parameter(name, location, required, ptype, description, schema)
                     parameters.append(parameter)
 
             requestBody = None
@@ -449,7 +450,7 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
     return response
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path,operation_summary,api_specification, response_properties=None):
+def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path,operation_summary,api_specification, response_properties=None, body_properties = None):
 
     """
     Generate a dialogue configuration for an API operation.
@@ -480,28 +481,40 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     header_params = []
     body_params = []
     param_called_list = []
-    response_called_list = []
 
     for param in parameters:
         if param.required:
-            if param.location == "body" and hasattr(param, 'schema'):
-                param_type = change_type_name(param.schema.get('type'))
+            if param.location == "body":
+                body_props = body_properties[current_path]
+                for prop_name, prop_data in body_props.items():
+                    if prop_data.get('required', False):
+                        prop_type = change_type_name(prop_data['type'])
+                        prompt_text = f"Please provide the {prop_name}"
+                        slot = {
+                            "name": prop_name,
+                            "type": prop_type,
+                            "prompt": prompt_text
+                        }
+
+                        if context:
+                            slot["context"] = context
+                        form_slots.append(slot)
+
             else:
                 param_type = change_type_name(param.ptype)
+                if param_type is None:
+                    continue
 
-            if param_type is None:
-                continue
+                prompt_text = f"Please provide the {param.name}"
+                slot = {
+                    "name": param.name,
+                    "type": param_type,
+                    "prompt": prompt_text
+                }
 
-            prompt_text = f"Please provide the {param.name}"
-            slot = {
-                "name": param.name,
-                "type": param_type,
-                "prompt": prompt_text
-            }
-
-            if context:
-                slot["context"] = context
-            form_slots.append(slot)
+                if context:
+                    slot["context"] = context
+                form_slots.append(slot)
 
     if form_slots:
         form_response = {
@@ -527,6 +540,13 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 param_called = f"{form_response['name']}.{param.name}"
                 param_called_list.append(param_called)
                 header_params.append(f"{param.name}={param_called}")
+            elif param.location == "body":
+                body_props = body_properties[current_path]
+                for prop_name, prop_data in body_props.items():
+                    if prop_data.get('required', False):  
+                        prop_called = f"{form_response['name']}.{prop_name}"  
+                        param_called_list.append(prop_called)
+                        body_params.append(f"{prop_name}={prop_called}")
 
 
     service_call = service_name + "("
@@ -536,6 +556,8 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         service_call += f"query=[{', '.join(query_params)}], "
     if header_params:
         service_call += f"header=[{', '.join(header_params)}], "
+    if body_params: 
+        service_call += f"body=[{', '.join(body_params)}], "
     service_call = service_call.rstrip(", ") + ")"
 
     
@@ -671,7 +693,7 @@ def transform(api_path):
             eservice_definition = create_service(service_name, verb, host, port, path)
             triggers = create_trigger(intent_name,operation.summary)
             triggersList = triggers[0]['phrases']
-            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary,fetchedApi, response_properties)
+            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary,fetchedApi, response_properties, body_properties)
             
             eservices.append(eservice_definition)
             all_triggers.extend(triggers)  
