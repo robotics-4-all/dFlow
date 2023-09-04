@@ -5,6 +5,7 @@ import jinja2
 import requests
 import yaml
 import json
+import re
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_name = "tiiuae/falcon-7b-instruct"
@@ -321,7 +322,7 @@ def generate_intent_examples(model, tokenizer, operation_summary):
     )
 
     decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
-
+    decoded_output = re.sub(r"(\w)'(\w)", r"\1\\'\2", decoded_output)
     intent_examples_raw = decoded_output.split("Intents:")[-1].strip()
     intent_examples = intent_examples_raw.split('\n')
 
@@ -445,6 +446,7 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
     )
 
     decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    decoded_output = re.sub(r"(\w)'(\w)", r"\1\\'\2", decoded_output)
     response = decoded_output.split("Response:")[-1].strip()
 
     return response
@@ -566,7 +568,12 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         service_call += f"body=[{', '.join(body_params)}], "
     if form_data_params:
         service_call += f"formData=[{', '.join(form_data_params)}], "
-    service_call = service_call.rstrip(", ") + ")"
+
+    if service_call.endswith(", "):
+        service_call = service_call[:-2] + ",)"
+    else:
+        service_call += ")"
+
 
     
 
@@ -672,9 +679,9 @@ def transform(api_path):
     all_triggers = []  
     all_dialogues = []  
 
-    basic_triggers = [{'type': 'Intent','name': 'greet','phrases': ["hey", "hello", "hi", "yo", "good morning", "evening", "moin", "hey there", "let's go", "good afternoon"]},
+    basic_triggers = [{'type': 'Intent','name': 'greet','phrases': ["hey", "hello", "hi", "yo", "good morning", "evening", "moin", "hey there", "lets go", "good afternoon"]},
                     {'type': 'Intent','name': 'goodbye','phrases': ["goodbye", "bye", "see you later", "bb", "catch you later"]},
-                    {'type': 'Intent','name': 'bot_origin','phrases': ["who created you?", "who's your creator?", "who made you?", "where do you come from?", "are you a bot?", "am I talking to a human?"]}]
+                    {'type': 'Intent','name': 'bot_origin','phrases': ["who created you?", "whos your creator?", "who made you?", "where do you come from?", "are you a bot?", "am I talking to a human?"]}]
 
     basic_dialogues = [{'name': 'greet_dialogue','triggers': ['greet'],'verb': 'GET','responses': [{'type': 'ActionGroup','name': 'greet_back','text': 'Hello there!'}]},
                     {'name': 'goodbye_dialogue','triggers': ['goodbye'],'verb': 'GET','responses': [{'type': 'ActionGroup','name': 'goodbye_response','text': 'Goodbye! If you have more questions, feel free to ask.'}]},
