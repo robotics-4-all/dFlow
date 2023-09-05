@@ -730,7 +730,7 @@ def transform(api_path):
             intent_name = create_name(operation_details)
             dialogue_name = create_name(operation_details, "dlg")
             verb = operation.type.upper() 
-            host = fetchedApi["host"]
+            host = "https://" + fetchedApi["host"]
             port = fetchedApi.get("port", None)
             path = endpoint.path
 
