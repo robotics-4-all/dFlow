@@ -8,7 +8,7 @@ import json
 import re
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-model_name = "gpt2"
+model_name = "tiiuae/falcon-7b-instruct"
 model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
