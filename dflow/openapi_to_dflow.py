@@ -8,7 +8,7 @@ import json
 import re
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-model_name = "tiiuae/falcon-7b-instruct"
+model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
@@ -331,13 +331,35 @@ def generate_intent_examples(model, tokenizer, operation_summary):
     return clean_intent_examples
 
 
+def create_name(operation_details, ending=None):
+    if operation_details['operationId']:
+        if ending is None:
+            return operation_details['operationId']
+        else:
+            return operation_details['operationId'] + "_" + ending
+    else:
+        doc = nlp(operation_details.get('description', ''))
+        
+        #find verb-noun pairs in the description
+        verb_noun_pairs = [(token.head.text, token) for token in doc if token.dep_ in ("dobj")]
 
-def create_name(operationId, ending = None):
-   if ending == None:
-       return operationId
-   else:
-       return operationId + '_' + ending
-    
+        #if verb-noun pairs are found construct operation ID using the first pair
+        if verb_noun_pairs:
+            verb, noun_token = verb_noun_pairs[0]
+            noun_phrase = "".join([w.text.capitalize() for w in noun_token.subtree])
+            op_id = f"{verb.capitalize()}{noun_phrase}"
+        else:
+            # If no verb-noun pairs are found, just use the longest noun phrase
+            noun_phrases = [chunk.text for chunk in doc.noun_chunks]
+            op_id = "".join([word.capitalize() for word in max(noun_phrases, key=len).split()])
+
+        op_id = op_id[0].lower() + op_id[1:]
+
+        if ending:
+            op_id += "_" + ending
+        
+        return op_id
+        
 def create_service(service_name, verb, host, port, path):
 
     eservice_data = {
@@ -523,7 +545,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     if form_slots:
         form_response = {
             "type": "Form",
-            "name": create_name(dialogue_name, "form"),
+            "name": create_name({'operationId': dialogue_name}, "form"),
             "slots": form_slots
         }
         responses.append(form_response)
@@ -600,7 +622,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation_summary)
                 action_group_response = {
                     "type": "ActionGroup",
-                    "name": create_name(dialogue_name, "ag"),
+                    "name": create_name({'operationId': dialogue_name}, "ag"),
                     "service_call": service_call,
                     "text": response_text
                 }
@@ -611,14 +633,14 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation_summary)
                 action_group_response = {
                     "type": "ActionGroup",
-                    "name": create_name(dialogue_name, "ag"),
+                    "name": create_name({'operationId': dialogue_name}, "ag"),
                     "text": response_text
                 }
                 responses.append(action_group_response)
         else:
             action_group_response = {
                 "type": "ActionGroup",
-                "name": create_name(dialogue_name, "ag"),
+                "name": create_name({'operationId': dialogue_name}, "ag"),
                 "service_call": service_call,
                 "text": response_text
             }
@@ -627,7 +649,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation_summary)
         action_group_response = {
             "type": "ActionGroup",
-            "name": create_name(dialogue_name, "ag"),
+            "name": create_name({'operationId': dialogue_name}, "ag"),
             "service_call": service_call,
             "text": response_text
         }
@@ -699,16 +721,21 @@ def transform(api_path):
 
             triggersList = []  
 
-            service_name = create_name(operation.operationId, "svc")
-            intent_name = create_name(operation.operationId)
-            dialogue_name = create_name(operation.operationId, "dlg")
+            operation_details = {
+                'operationId': operation.operationId,
+                'description': operation.description
+            }
+
+            service_name = create_name(operation_details, "svc")
+            intent_name = create_name(operation_details)
+            dialogue_name = create_name(operation_details, "dlg")
             verb = operation.type.upper() 
             host = fetchedApi["host"]
             port = fetchedApi.get("port", None)
             path = endpoint.path
 
             eservice_definition = create_service(service_name, verb, host, port, path)
-            triggers = create_trigger(intent_name,operation.summary)
+            triggers = create_trigger(intent_name,operation.description)
             triggersList = triggers[0]['phrases']
             dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary,fetchedApi, response_properties, body_properties)
             
