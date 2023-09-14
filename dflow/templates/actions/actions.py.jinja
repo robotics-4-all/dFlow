@@ -33,11 +33,10 @@ output.append(SlotSet("{{act.slot}}", {{act.value}}))
 try:
     response = requests.{{act.verb}}(f"{{act.url}}",
         headers = {{act.header_params}},
-        params = {{act.query_params}}
-        {% if act.verb == 'get' %}
-        {% else %}
+        {% if act.verb != 'get' %}
         data = {{act.body_params}},
         {% endif %}
+        params = {{act.query_params}}
     )
 except:
     print(f'Error retrieving response from {{act.url}} with code {response.status_code}.')

@@ -62,7 +62,7 @@ dialogues
             age: int = HRI('How old are you?')
           end,
           ActionGroup answer_back
-            Speak('Glad to meet you ' form1.name)
+            Speak('Glad to meet you' form1.name)
           end
   end
 end
