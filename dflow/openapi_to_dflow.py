@@ -9,7 +9,7 @@ import re
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_name = "tiiuae/falcon-7b-instruct"
-model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)    
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
 nlp = spacy.load("en_core_web_sm")
@@ -29,12 +29,12 @@ PRETRAINED_ENTITIES = [
 class Endpoint:
     def __init__(self, path):
         self.path = path
-        self.operations = [] 
+        self.operations = []
 
 class Operation:
     def __init__(self, type, operationId=None, summary=None, description=None, parameters=None, requestBody=None, responses=None):
         self.type = type
-        self.operationId = operationId 
+        self.operationId = operationId
         self.summary = summary
         self.description = description
         self.parameters = parameters or []
@@ -52,11 +52,10 @@ class Parameter:
         self.schema = schema
 
 
-
 class RequestBody:
     def __init__(self, description=None, content=None):
         self.description = description
-        self.content = content  
+        self.content = content
 
 
 class Response:
@@ -67,12 +66,12 @@ class Response:
 
 def fetch_specification(source):
     """
-    Fetches an OpenAPI specification from a given source.
+        Fetches an OpenAPI specification from a given source.
 
-    This function retrieves the OpenAPI specification either from a local file or a remote URL. 
-    It supports both JSON and YAML formats.
+        This function retrieves the OpenAPI specification either from a local file or a remote URL.
+        It supports both JSON and YAML formats.
     """
-    if path.isfile(source):  
+    if path.isfile(source):
         with open(source, 'r') as f:
             if source.endswith('.yaml'):
                 return yaml.safe_load(f)
@@ -94,45 +93,44 @@ def fetch_specification(source):
         else:
             raise ValueError("Invalid URL type. Only JSON and YAML are supported.")
 
-        
+
+def extract_properties_from_schema(schema):
+    """Extract properties from a given schema."""
+    current_details = {}
+    if 'properties' in schema:
+        for prop, details in schema['properties'].items():
+            is_required = prop in schema.get('required', [])
+            if 'type' in details:
+                # Standard property with a type
+                current_details[prop] = {"type": details['type'], "required": is_required}
+            elif '$ref' in details:
+                # Property refers to another schema via $ref
+                ref_schema = resolve_ref(details['$ref'], api_specification)
+                current_details[prop] = {
+                    "type": "object",  # since $ref refers to an object in OpenAPI spec
+                    "required": is_required,
+                    "properties": extract_properties_from_schema(ref_schema)
+                }
+            else:
+                current_details[prop] = {"type": 'unknown', "required": is_required}
+    return current_details
+
+
+def resolve_ref(ref, spec):
+    """Resolve a $ref link to its actual schema definition."""
+    parts = ref.split('/')
+    definition = spec
+    for part in parts:
+        if part == '#':
+            continue  # Skip the root definition signifier
+        definition = definition.get(part, {})
+    return definition
 
 
 def extract_response_properties(api_specification):
     """Extract response properties and their types for 'get' methods from the OpenAPI specification."""
 
     response_details = {}
-
-    def extract_properties_from_schema(schema):
-        """Extract properties from a given schema."""
-        current_details = {}
-        if 'properties' in schema:
-            for prop, details in schema['properties'].items():
-                is_required = prop in schema.get('required', [])
-                if 'type' in details:
-                    #Standard property with a type
-                    current_details[prop] = {"type": details['type'], "required": is_required}
-                elif '$ref' in details:
-                    #Property refers to another schema via $ref
-                    ref_schema = resolve_ref(details['$ref'], api_specification)
-                    current_details[prop] = {
-                        "type": "object",  # since $ref refers to an object in OpenAPI spec
-                        "required": is_required,
-                        "properties": extract_properties_from_schema(ref_schema)
-                    }
-                else:
-                    current_details[prop] = {"type": 'unknown', "required": is_required}
-        return current_details
-
-    def resolve_ref(ref, spec):
-        """Resolve a $ref link to its actual schema definition."""
-        parts = ref.split('/')
-        definition = spec
-        for part in parts:
-            if part == '#':
-                continue  #Skip the root definition signifier
-            definition = definition.get(part, {})
-        return definition
-
     #Iterate through each path defined in the specification
     for path, operations in api_specification['paths'].items():
         if 'get' in operations:
@@ -157,7 +155,6 @@ def extract_response_properties(api_specification):
                             ref_schema = resolve_ref(schema['$ref'], api_specification)
                             extracted_props = extract_properties_from_schema(ref_schema)
                             response_details[path].update(extracted_props)
-
     return response_details
 
 
@@ -165,38 +162,6 @@ def extract_body_parameter_properties(api_specification):
     """Extract body parameter properties and their types from the OpenAPI specification."""
 
     body_param_details = {}
-
-    def extract_properties_from_schema(schema):
-        """Extract properties from a given schema."""
-        current_details = {}
-        if 'properties' in schema:
-            for prop, details in schema['properties'].items():
-                is_required = prop in schema.get('required', [])
-                if 'type' in details:
-                    # Standard property with a type
-                    current_details[prop] = {"type": details['type'], "required": is_required}
-                elif '$ref' in details:
-                    # Property refers to another schema via $ref
-                    ref_schema = resolve_ref(details['$ref'], api_specification)
-                    current_details[prop] = {
-                        "type": "object",  # since $ref refers to an object in OpenAPI spec
-                        "required": is_required,
-                        "properties": extract_properties_from_schema(ref_schema)
-                    }
-                else:
-                    current_details[prop] = {"type": 'unknown', "required": is_required}
-        return current_details
-
-    def resolve_ref(ref, spec):
-        """Resolve a $ref link to its actual schema definition."""
-        parts = ref.split('/')
-        definition = spec
-        for part in parts:
-            if part == '#':
-                continue  # Skip the root definition signifier
-            definition = definition.get(part, {})
-        return definition
-
     # Iterate through each path defined in the specification
     for path, operations in api_specification['paths'].items():
         for method, operation in operations.items():  # Adding this loop to check all methods, not just 'get'
@@ -218,18 +183,17 @@ def extract_body_parameter_properties(api_specification):
                             ref_schema = resolve_ref(schema['$ref'], api_specification)
                             extracted_props = extract_properties_from_schema(ref_schema)
                             body_param_details[path].update(extracted_props)
-
     return body_param_details
 
 
 
 def extract_api_elements(api_specification):
-    """Extract essential API components like endpoints, operations, parameters, request bodies, and responses 
-    from an OpenAPI specification.
     """
-    
-    endpoints = []
+        Extract essential API components like endpoints, operations, parameters, request bodies, and responses
+        from an OpenAPI specification.
+    """
 
+    endpoints = []
     for path, operations in api_specification['paths'].items():
         endpoint = Endpoint(path)
 
@@ -246,7 +210,7 @@ def extract_api_elements(api_specification):
                     description = parameter_details.get('description')
                     required = parameter_details.get('required')
                     ptype = parameter_details.get('type')
-                    schema = parameter_details.get('schema')  
+                    schema = parameter_details.get('schema')
                     parameter = Parameter(name, location, required, ptype, description, schema)
                     parameters.append(parameter)
 
@@ -261,22 +225,19 @@ def extract_api_elements(api_specification):
             if 'responses' in operation_details:
                 for status_code, response_details in operation_details['responses'].items():
                     description = response_details.get('description')
-                    response = Response(status_code, description) 
+                    response = Response(status_code, description)
                     responses.append(response)
 
             operation = Operation(operation_type, operationId, operationSummary, operationdDescription, parameters, requestBody, responses)
             endpoint.operations.append(operation)
 
         endpoints.append(endpoint)
-
     return endpoints
 
 
 def generate_intent_examples(model, tokenizer, operation_summary):
-    
-    """Generate human-like examples of how users might express an intent for a given operation summary.
-    """
-        
+    """Generate human-like examples of how users might express an intent for a given operation summary."""
+
     prompt_text = f"""
     I need diverse examples of how a user might express certain intents related to tasks they want to perform. The examples should be human-like, varied, and cover different ways the same intent might be expressed. Here are a few tasks:
 
@@ -317,7 +278,7 @@ def generate_intent_examples(model, tokenizer, operation_summary):
         max_length=500,
         temperature=0.7,
         do_sample=True,
-        num_return_sequences=1,  
+        num_return_sequences=1,
         pad_token_id=tokenizer.eos_token_id
     )
 
@@ -339,7 +300,7 @@ def create_name(operation_details, ending=None):
             return operation_details['operationId'] + "_" + ending
     else:
         doc = nlp(operation_details.get('description', ''))
-        
+
         #find verb-noun pairs in the description
         verb_noun_pairs = [(token.head.text, token) for token in doc if token.dep_ in ("dobj")]
 
@@ -357,11 +318,10 @@ def create_name(operation_details, ending=None):
 
         if ending:
             op_id += "_" + ending
-        
-        return op_id
-        
-def create_service(service_name, verb, host, port, path):
 
+        return op_id
+
+def create_service(service_name, verb, host, port, path):
     eservice_data = {
         "name": service_name,
         "verb": verb,
@@ -369,30 +329,28 @@ def create_service(service_name, verb, host, port, path):
         "port": port,
         "path": path
     }
-
     return eservice_data
 
 def create_trigger(trigger_name, operation_summary, trigger_type="Intent"):
 
     triggers = []
-
     if trigger_type == "Intent":
         phrases = generate_intent_examples(model, tokenizer, operation_summary)
         trigger = {
             "type": trigger_type,
-            "name": trigger_name,  
+            "name": trigger_name,
             "phrases": phrases
         }
     elif trigger_type == "Event":
         trigger = {
             "type": trigger_type,
-            "name": trigger_name,  
+            "name": trigger_name,
             "uri": f"bot/event/{trigger_name}"
         }
 
     triggers.append(trigger)
-
     return triggers
+
 
 def change_type_name(type_name):
     if type_name == "integer": return "int"
@@ -404,11 +362,8 @@ def change_type_name(type_name):
 
 
 def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_summary=""):
-    
-    """
-    Generate a human-like response for a given HTTP operation using a model.
-    """
-        
+    """Generate a human-like response for a given HTTP operation using a model."""
+
     prompt_text = f"""
     Generate a human-like response for the HTTP GET operation in a web service context. Use the given parameters, info slots, and the operation summary to craft a user-friendly message.
 
@@ -429,21 +384,21 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
     Example:
     Verb: POST
     Parameters: [bookId, bookTitle]
-    Slots: 
+    Slots:
     Operation Summary: Submit a new book with its ID and title.
     Response: Your book with ID {{bookId}} and title "{{bookTitle}}" has been added.
 
     Example:
     Verb: PUT
     Parameters: [orderId, quantity]
-    Slots: 
+    Slots:
     Operation Summary: Update the quantity of an order.
     Response: Your order {{orderId}} has been updated to a quantity of {{quantity}}.
 
     Example:
     Verb: DELETE
     Parameters: [photoId]
-    Slots: 
+    Slots:
     Operation Summary: Remove a photo based on its ID.
     Response: The photo with ID {{photoId}} has been deleted.
 
@@ -460,10 +415,10 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
 
     outputs = model.generate(
         inputs,
-        max_length=500, 
+        max_length=500,
         temperature=0.7,
         do_sample=True,
-        num_return_sequences=1,  
+        num_return_sequences=1,
         pad_token_id=tokenizer.eos_token_id
     )
 
@@ -475,14 +430,13 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
 
 
 def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path,operation_summary,api_specification, response_properties=None, body_properties = None):
-
     """
-    Generate a dialogue configuration for an API operation.
+        Generate a dialogue configuration for an API operation.
 
-    This function is designed to produce a structured representation of a dialogue
-    that can guide a chatbot in handling interactions related to a specific API call.
-    The dialogue contains trigger intents, response actions (like forms and action groups),
-    and service calls.
+        This function is designed to produce a structured representation of a dialogue
+        that can guide a chatbot in handling interactions related to a specific API call.
+        The dialogue contains trigger intents, response actions (like forms and action groups),
+        and service calls.
     """
 
     form_slots = []
@@ -545,7 +499,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     if form_slots:
         form_response = {
             "type": "Form",
-            "name": create_name({'operationId': dialogue_name}, "form"),
+            "name": create_name({'operationId': dialogue_name}, ending = "form"),
             "slots": form_slots
         }
         responses.append(form_response)
@@ -569,8 +523,8 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
             elif param.location == "body":
                 body_props = body_properties[current_path]
                 for prop_name, prop_data in body_props.items():
-                    if prop_data.get('required', False):  
-                        prop_called = f"{form_response['name']}.{prop_name}"  
+                    if prop_data.get('required', False):
+                        prop_called = f"{form_response['name']}.{prop_name}"
                         param_called_list.append(prop_called)
                         body_params.append(f"{prop_name}={prop_called}")
             # elif param.location == "formData":
@@ -586,7 +540,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         service_call += f"query=[{', '.join(query_params)}], "
     if header_params:
         service_call += f"header=[{', '.join(header_params)}], "
-    if body_params: 
+    if body_params:
         service_call += f"body=[{', '.join(body_params)}], "
     # if form_data_params:
     #     service_call += f"formData=[{', '.join(form_data_params)}], "
@@ -595,9 +549,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         service_call = service_call[:-2] + ",)"
     else:
         service_call += ")"
-
-
-    
 
     if verb == "GET":
         if response_properties and current_path in response_properties:
@@ -622,7 +573,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation_summary)
                 action_group_response = {
                     "type": "ActionGroup",
-                    "name": create_name({'operationId': dialogue_name}, "ag"),
+                    "name": create_name({'operationId': dialogue_name}, ending = "ag"),
                     "service_call": service_call,
                     "text": response_text
                 }
@@ -633,14 +584,14 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                 response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation_summary)
                 action_group_response = {
                     "type": "ActionGroup",
-                    "name": create_name({'operationId': dialogue_name}, "ag"),
+                    "name": create_name({'operationId': dialogue_name}, ending = "ag"),
                     "text": response_text
                 }
                 responses.append(action_group_response)
         else:
             action_group_response = {
                 "type": "ActionGroup",
-                "name": create_name({'operationId': dialogue_name}, "ag"),
+                "name": create_name({'operationId': dialogue_name}, ending = "ag"),
                 "service_call": service_call,
                 "text": response_text
             }
@@ -649,7 +600,7 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         response_text = create_response(model, tokenizer, verb, param_called_list, response_called_list, operation_summary)
         action_group_response = {
             "type": "ActionGroup",
-            "name": create_name({'operationId': dialogue_name}, "ag"),
+            "name": create_name({'operationId': dialogue_name}, ending = "ag"),
             "service_call": service_call,
             "text": response_text
         }
@@ -662,44 +613,90 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
         "triggers": [intent_name],
         "responses": responses
     }
-
     return dialogue
 
 
 def get_title(title):
     ignore_words = [
-        "Swagger", "API", "REST", "RESTful", "Service", "Services", 
+        "Swagger", "API", "REST", "RESTful", "Service", "Services",
         "Web", "WebAPI", "Endpoint", "Endpoints", "Server", "Application",
-        "System", "Interface", "Platform", "Protocol", "Database", "DB", 
+        "System", "Interface", "Platform", "Protocol", "Database", "DB",
         "Microservice", "Specification", "OpenAPI", "Resource", "Resources",
-        "Network", "Utility", "Utilities", "Toolkit", "Provider", "Hub", 
-        "Solution", "Solutions", "Package", "Library", "Framework", "Module", 
+        "Network", "Utility", "Utilities", "Toolkit", "Provider", "Hub",
+        "Solution", "Solutions", "Package", "Library", "Framework", "Module",
         "Unit", "Component", "Function", "Operation", "Method", "Gateway",
         "Proxy", "Service", "Repository", "Connector", "Plugin", "Add-on",
-        "Extension", "Handler", "Driver", "Layer", "Object", "Manager", 
-        "Runtime", "Session", "Client", "Middleware", "Adapter", "Model", 
-        "Engine", "Instance", "Protocol", "Suite", "Set", "Collection", 
+        "Extension", "Handler", "Driver", "Layer", "Object", "Manager",
+        "Runtime", "Session", "Client", "Middleware", "Adapter", "Model",
+        "Engine", "Instance", "Protocol", "Suite", "Set", "Collection",
         "Group", "Cluster", "Version", "Edition", "Build"
     ]
-    
     cleaned_title = " ".join([word for word in title.split() if word not in ignore_words])
-    
     return cleaned_title.lower().replace(" ", "_")
 
-def transform(api_path):
 
-    """
-    Transforms the given API specification into a set of eservices, triggers, and dialogues.
-    """
-     
+def transform(api_path):
+    """Transforms the given API specification into a set of eservices, triggers, and dialogues."""
+
     fetchedApi = fetch_specification(api_path)
     parsed_api = extract_api_elements(fetchedApi)
     response_properties = extract_response_properties(fetchedApi)
     body_properties = extract_body_parameter_properties(fetchedApi)
 
-    eservices = []  
-    all_triggers = []  
-    all_dialogues = []  
+    eservices = []
+    all_triggers = []
+    all_dialogues = []
+
+    for endpoint in parsed_api:
+        for operation in endpoint.operations:
+            if operation.type.upper() == "DELETE":
+                continue
+
+            triggersList = []
+
+            operation_details = {
+                'operationId': operation.operationId,
+                'description': operation.description
+            }
+
+            service_name = create_name(operation_details, ending = "svc")
+            intent_name = create_name(operation_details)
+            dialogue_name = create_name(operation_details, ending = "dlg")
+            verb = operation.type.upper()
+            host = "https://" + fetchedApi["host"]
+            port = fetchedApi.get("port", None)
+            path = endpoint.path
+
+            eservice_definition = create_service(service_name, verb, host, port, path)
+            triggers = create_trigger(intent_name,operation.description)
+            triggersList = triggers[0]['phrases']
+            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary,fetchedApi, response_properties, body_properties)
+
+            eservices.append(eservice_definition)
+            all_triggers.extend(triggers)
+            all_dialogues.append(dialogue)
+
+    output = template.render(eservices=eservices, triggers=all_triggers, dialogues=all_dialogues)
+
+    api_title = fetchedApi.get('info', {}).get('title', 'default_name')
+    title = get_title(api_title)
+    dflow_file_name = f"{title}.dflow"
+
+    with open(dflow_file_name, 'w') as file:
+        file.write(output)
+
+
+def test_transform(api_path):
+    """Transforms the given API specification into a set of eservices, triggers, and dialogues and also adds three basic scenarios."""
+
+    fetchedApi = fetch_specification(api_path)
+    parsed_api = extract_api_elements(fetchedApi)
+    response_properties = extract_response_properties(fetchedApi)
+    body_properties = extract_body_parameter_properties(fetchedApi)
+
+    eservices = []
+    all_triggers = []
+    all_dialogues = []
 
     basic_triggers = [{'type': 'Intent','name': 'greet','phrases': ["hey", "hello", "hi", "yo", "good morning", "evening", "moin", "hey there", "lets go", "good afternoon"]},
                     {'type': 'Intent','name': 'goodbye','phrases': ["goodbye", "bye", "see you later", "bb", "catch you later"]},
@@ -709,9 +706,7 @@ def transform(api_path):
                     {'name': 'goodbye_dialogue','triggers': ['goodbye'],'verb': 'GET','responses': [{'type': 'ActionGroup','name': 'goodbye_response','text': 'Goodbye! If you have more questions, feel free to ask.'}]},
                     {'name': 'bot_origin_dialogue','triggers': ['bot_origin'],'verb': 'GET','responses': [{'type': 'ActionGroup','name': 'origin_response','text': 'I am a bot, powered by dFlow and Rasa.'}]}]
 
-
-
-    all_triggers.extend(basic_triggers)  
+    all_triggers.extend(basic_triggers)
     all_dialogues.extend(basic_dialogues)
 
     for endpoint in parsed_api:
@@ -719,17 +714,17 @@ def transform(api_path):
             if operation.type.upper() == "DELETE":
                 continue
 
-            triggersList = []  
+            triggersList = []
 
             operation_details = {
                 'operationId': operation.operationId,
                 'description': operation.description
             }
 
-            service_name = create_name(operation_details, "svc")
+            service_name = create_name(operation_details, ending = "svc")
             intent_name = create_name(operation_details)
-            dialogue_name = create_name(operation_details, "dlg")
-            verb = operation.type.upper() 
+            dialogue_name = create_name(operation_details, ending = "dlg")
+            verb = operation.type.upper()
             host = "https://" + fetchedApi["host"]
             port = fetchedApi.get("port", None)
             path = endpoint.path
@@ -738,9 +733,9 @@ def transform(api_path):
             triggers = create_trigger(intent_name,operation.description)
             triggersList = triggers[0]['phrases']
             dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary,fetchedApi, response_properties, body_properties)
-            
+
             eservices.append(eservice_definition)
-            all_triggers.extend(triggers)  
+            all_triggers.extend(triggers)
             all_dialogues.append(dialogue)
 
     output = template.render(eservices=eservices, triggers=all_triggers, dialogues=all_dialogues)
@@ -748,7 +743,7 @@ def transform(api_path):
     api_title = fetchedApi.get('info', {}).get('title', 'default_name')
     title = get_title(api_title)
     dflow_file_name = f"{title}.dflow"
-    
+
     with open(dflow_file_name, 'w') as file:
         file.write(output)
 
