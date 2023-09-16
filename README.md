@@ -32,6 +32,24 @@ Platforms:
 
 # TOC
 
+- [Overview](#overview)
+- [User Guide](#user-guide)
+  - [Installation](#installation)
+  - [Model Generation](#model-generation)
+  - [Grammar](#grammar)
+    - [Entities](#entities)
+    - [Synonyms](#synonyms)
+    - [Services](#services)
+    - [Global Slots](#global-slots)
+    - [Triggers](#triggers)
+      - [Intents](#intents)
+      - [Events](#events)
+    - [Dialogues](#dialogues)
+      - [Actions](#actions)
+      - [Forms](#forms)
+  - [Examples](#examples)
+- [License](#license)
+
 # Overview
 
 # User Guide
