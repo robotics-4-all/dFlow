@@ -1,4 +1,4 @@
-# dflow
+# dFlow
 
 A Domain-Specific Language for Task-based dialogue flows suitable for Virtual Assistants in smart environments. It can generate complete [Rasa](https://rasa.com/) models.
 
