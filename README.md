@@ -492,3 +492,7 @@ EServiceParamSource: EServiceCallHTTP;
 ### Examples
 
 Several examples can be found [here](./examples/).
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
