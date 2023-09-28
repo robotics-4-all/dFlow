@@ -5,11 +5,11 @@
 #}
 {% macro actions_macro(act) -%}
 {% if act.type in ['SpeakAction', 'AskSlot'] %}
-{% for property in act.system_properties %}
+{% for property in act.system_properties %} 
 {{property}} = compute_system_properties("{{property}}")
-{% endfor %}
+{% endfor %} 
 dispatcher.utter_message(text = f"{{act.text}}")
-{% elif act.type == 'FireEventAction' %}
+{% elif act.type == 'FireEventAction' %} 
 ts = datetime.timestamp(datetime.now())
 event_data = {
     "id": "id",
@@ -18,24 +18,24 @@ event_data = {
     "payload": {"message": {{act.msg}}, "uri": f"{{act.uri}}" }
 }
 dispatcher.utter_message(json_message = event_data)
-{% elif act.type in ['SetGlobalSlot', 'SetFormSlot'] %}
-{% for property in act.system_properties %}
+{% elif act.type in ['SetGlobalSlot', 'SetFormSlot'] %} 
+{% for property in act.system_properties %} 
 {{property}} = compute_system_properties("{{property}}")
-{% endfor %}
+{% endfor %} 
 output.append(SlotSet("{{act.slot}}", {{act.value}}))
-{% elif act.type == 'EServiceCallHTTP' %}
-{% for property in act.system_properties %}
+{% elif act.type == 'EServiceCallHTTP' %} 
+{% for property in act.system_properties %} 
 {{property}} = compute_system_properties("{{property}}")
-{% endfor %}
-{% for key, value in act.path_params.items() %}
+{% endfor %} 
+{% for key, value in act.path_params.items() %} 
 {{key}} = "{{value}}"
-{% endfor %}
-{% if act.verb == 'get' %}
+{% endfor %} 
+{% if act.verb == 'get' %} 
 response = requests.{{act.verb}}(f"{{act.url}}",
     headers = {{act.header_params}},
     params = {{act.query_params}}
 )
-{% else %}
+{% else %} 
 response = requests.{{act.verb}}(f"{{act.url}}",
     headers = {{act.header_params}},
     data = {{act.body_params}},
@@ -149,7 +149,7 @@ class PolicyDecisionPoint():
 
     @staticmethod
     def read_user_role_policies_db() -> None:
-      """ Loads the user-role policies from database """
+        """ Loads the user-role policies from database """
 
         if not PolicyDecisionPoint._user_role_policies:
             with open('{{ac_misc.policy_path}}', 'r') as f:
