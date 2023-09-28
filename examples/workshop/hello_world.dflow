@@ -1,0 +1,43 @@
+triggers
+
+  Intent greet
+    "hey",
+    "hello",
+    "hi",
+    "hello there",
+    "good morning",
+    "good evening",
+    "moin",
+    "hey there",
+    "let's go",
+    "hey dude",
+    "goodmorning",
+    "goodevening",
+    "good afternoon"
+  end
+
+  Intent bot_challenge
+    "are you a bot?",
+    "are you a human?",
+    "am I talking to a bot?",
+    "am I talking to a human?"
+  end
+end
+
+dialogues
+  Dialogue greet_dialogue
+      on: greet
+      responses:
+        ActionGroup greet_back
+          Speak('Hello there!!!')
+        end
+  end
+
+  Dialogue bot_challenge_dialogue
+      on: bot_challenge
+      responses:
+        ActionGroup respond_iambot
+          Speak('I am a bot, powered by dFlow and Rasa.')
+        end
+  end
+end

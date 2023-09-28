@@ -1,0 +1,245 @@
+triggers
+
+  Intent greet
+    "hey",
+    "hello",
+    "hi",
+    "hello there",
+    "good morning",
+    "good evening",
+    "moin",
+    "hey there",
+    "let's go",
+    "hey dude",
+    "goodmorning",
+    "goodevening",
+    "good afternoon"
+  end
+
+  Intent goodbye
+    "cu",
+    "good by",
+    "cee you later",
+    "good night",
+    "bye",
+    "goodbye",
+    "have a nice day",
+    "see you around",
+    "bye bye",
+    "see you later"
+  end
+
+  Intent inform_name
+    "Hello I am" PE:PERSON['John', 'Nick'],
+    "Hi my name is" PE:PERSON['Alex'],
+    "I'm" PE:PERSON,
+    PE:PERSON,
+    "I am" PE:PERSON
+  end
+
+  Intent bot_challenge
+    "are you a bot?",
+    "are you a human?",
+    "am I talking to a bot?",
+    "am I talking to a human?"
+  end
+
+  Intent ask_weather
+    "Weather",
+    "Tell me the weather",
+    "Tell me about the weather",
+    "What is the weather like?",
+    "I want to know about the weather",
+    "Bot, what is the weather?"
+  end
+
+  Intent ask_weather_details
+    "Tell me more about the weather",
+    "I want more weather details",
+    "Tell me the weather details",
+    "Weather details",
+    "What about the humidity?"
+  end
+
+  Intent ask_rain
+    "What about the rain?",
+    "Rain",
+    "Any rain?",
+    "Is it going to rain?",
+    "Should I get an umbrella?",
+    "Will I need an umbrella?",
+    "Any chance of raining"
+  end
+
+  Intent system_parameters
+    "Parameters",
+    "Params",
+    "System params",
+    "System parameters"
+
+  end
+end
+
+dialogues
+
+  Dialogue get_name_dialogue
+      on: greet
+      responses:
+        Form form1
+          name_slot: str = HRI('What is your name?', [PE:PERSON])
+        end,
+        ActionGroup answer_back
+          Speak('Thanks' form1.name_slot '! I will remember that')
+        end
+  end
+      
+  Dialogue ask_weather_dialogue
+      on: ask_weather
+      responses:
+        ActionGroup inform_weather
+          Speak("The weather today will be cloudy!")
+        end
+  end
+
+  Dialogue ask_weather_details_dialogue
+      on: ask_weather_details
+      responses:
+        ActionGroup inform_weather_details
+          Speak('The average humidity will be 80%')[roles=user_paid, user_admin]
+          Speak('Weather details is a paid-only feature')[roles=user]
+        end
+  end
+
+  Dialogue ask_rain_dialogue
+      on: ask_rain
+      responses:
+        ActionGroup inform_rain
+          Speak("There is 78.5 percent chance of raining today, you might want to grab an umbrella!!")[roles= user_admin, user_paid]
+          Speak("It might rain today")[roles= user]
+        end
+  end
+
+  Dialogue goodbye_dialogue
+      on: goodbye
+      responses:
+        ActionGroup say_goodbye
+          Speak("Bye")
+        end
+  end
+
+  Dialogue bot_challenge_dialogue
+      on: bot_challenge
+      responses:
+        ActionGroup respond_iambot
+          Speak('I am a bot, powered by dFlow and Rasa.')
+          Speak('You have limited access to this sytem. Please register to access more functionalities.')[roles=user_unregistered]
+        end
+  end
+
+  Dialogue system_parameters_dialogue
+      on: system_parameters
+      responses:
+        ActionGroup say_system_parameters
+          Speak("System's HostName:" SYSTEM: HOSTNAME "\nSystem's public IP" SYSTEM: PUBLIC_IP)
+        end
+  end
+
+//  Dialogue template_dialogue
+//      on: Intent
+//      responses:
+//        ActionGroup test_action
+//          Speak(...)[roles= user, user_paid]
+//          weather_svc(...)[roles=user_paid]
+//          SetFSlot(...)[roles= ...]
+//          SetGSlot(...)[roles= ...]
+//          FireEvent(...)[roles= ...] 
+//  end
+end
+
+access_controls
+  Roles
+    user_admin,
+    user_paid,
+    user,
+    user_unregistered
+
+    default: 
+      user_unregistered
+  end
+
+  Users
+    user_admin:
+      admin@email.com
+
+    user_paid: 
+      user_paid@email.com
+
+    user:
+      user1@email.com,
+      user2@email.com
+  end
+
+  Policy inform_weather_policy
+    on:
+      inform_weather
+    roles:
+      user_paid,
+      user
+  end
+
+  Policy inform_weather_details_policy
+    on:
+      inform_weather_details
+    roles:
+      user_paid,
+      user
+  end
+
+  Policy inform_rain_policy
+    on:
+      inform_rain
+    roles:
+      user_paid,
+      user
+  end
+
+  Policy system_parameters_policy
+    on: 
+      say_system_parameters
+    roles: 
+      user_admin
+  end
+
+  Policy all_actions_policy
+    on: 
+      all_actions
+    roles: 
+      user_admin
+  end
+
+  Path
+    "/home/user/db/users/user_roles_policies.txt"
+  end
+
+  Authentication
+    //method: slot
+    //slot_name: name_slot
+    
+    method: slack
+    //attribute: email -> Feature for later
+  end
+end
+
+connectors
+  Connector slack
+    token: "xoxb-4883692765252-4884029447172-rH1b8v6PMj22OaTsaIQrtpfH"
+    channel: "your_bot"
+    signing_secret: "your_secret"
+  end
+
+//  Connector telegram
+//    token: "490161424:AAGlRxinBRtKGb21_rlOEMtDFZMXBl6EC0o"
+//    verify: "your_bot"
+//    webhook_url: "https://your_url.com/webhooks/telegram/webhook"
+//  end
+end
