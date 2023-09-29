@@ -114,7 +114,7 @@ dialogues
       on: ask_rain
       responses:
         ActionGroup inform_rain
-          Speak("There is 78.5 percent chance of raining today, you might wonna grab an umbrella!!")[roles= user_admin, user_paid]
+          Speak("There is 78.5 percent chance of raining today, you might want to grab an umbrella!!")[roles= user_admin, user_paid]
           Speak("It might rain today")[roles= user]
         end
   end
@@ -136,7 +136,7 @@ dialogues
         end
   end
 
-  Dialogue system_time_dialogue
+  Dialogue system_parameters_dialogue
       on: system_parameters
       responses:
         ActionGroup say_system_parameters
