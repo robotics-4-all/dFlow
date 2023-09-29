@@ -94,7 +94,7 @@ def fetch_specification(source):
             raise ValueError("Invalid URL type. Only JSON and YAML are supported.")
 
 
-def extract_properties_from_schema(schema):
+def extract_properties_from_schema(schema, api_specification):
     """Extract properties from a given schema."""
     current_details = {}
     if 'properties' in schema:
@@ -109,17 +109,17 @@ def extract_properties_from_schema(schema):
                 current_details[prop] = {
                     "type": "object",  # since $ref refers to an object in OpenAPI spec
                     "required": is_required,
-                    "properties": extract_properties_from_schema(ref_schema)
+                    "properties": extract_properties_from_schema(ref_schema,api_specification)
                 }
             else:
                 current_details[prop] = {"type": 'unknown', "required": is_required}
     return current_details
 
 
-def resolve_ref(ref, spec):
+def resolve_ref(ref, api_specification):
     """Resolve a $ref link to its actual schema definition."""
     parts = ref.split('/')
-    definition = spec
+    definition = api_specification
     for part in parts:
         if part == '#':
             continue  # Skip the root definition signifier
@@ -147,13 +147,13 @@ def extract_response_properties(api_specification):
                         if 'type' in schema and schema['type'] == 'array' and 'items' in schema:
                             schema = schema['items']
 
-                        extracted_props = extract_properties_from_schema(schema)
+                        extracted_props = extract_properties_from_schema(schema, api_specification)
                         response_details[path].update(extracted_props)
 
                         if '$ref' in schema:
                             #Handle schemas that refer to other definitions
                             ref_schema = resolve_ref(schema['$ref'], api_specification)
-                            extracted_props = extract_properties_from_schema(ref_schema)
+                            extracted_props = extract_properties_from_schema(ref_schema, api_specification)
                             response_details[path].update(extracted_props)
     return response_details
 
@@ -175,13 +175,13 @@ def extract_body_parameter_properties(api_specification):
                         if 'type' in schema and schema['type'] == 'array' and 'items' in schema:
                             schema = schema['items']
 
-                        extracted_props = extract_properties_from_schema(schema)
+                        extracted_props = extract_properties_from_schema(schema, api_specification)
                         body_param_details[path].update(extracted_props)
 
                         if '$ref' in schema:
                             # Handle schemas that refer to other definitions
                             ref_schema = resolve_ref(schema['$ref'], api_specification)
-                            extracted_props = extract_properties_from_schema(ref_schema)
+                            extracted_props = extract_properties_from_schema(ref_schema, api_specification)
                             body_param_details[path].update(extracted_props)
     return body_param_details
 
