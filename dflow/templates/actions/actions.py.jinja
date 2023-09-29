@@ -29,18 +29,21 @@ output.append(SlotSet("{{act.slot}}", {{act.value}}))
 {% endfor %} 
 {% for key, value in act.path_params.items() %} 
 {{key}} = "{{value}}"
-{% endfor %} 
-{% if act.verb == 'get' %} 
-response = requests.{{act.verb}}(f"{{act.url}}",
-    headers = {{act.header_params}},
-    params = {{act.query_params}}
-)
-{% else %} 
-response = requests.{{act.verb}}(f"{{act.url}}",
-    headers = {{act.header_params}},
-    data = {{act.body_params}},
-    params = {{act.query_params}}
-)
+{% endfor %}
+try:
+    response = requests.{{act.verb}}(f"{{act.url}}",
+        headers = {{act.header_params}},
+        {% if act.verb != 'get' %}
+        data = {{act.body_params}},
+        {% endif %}
+        params = {{act.query_params}}
+    )
+except:
+    print(f'Error retrieving response from {{act.url}} with code {response.status_code}.')
+    dispatcher.utter_message(text = "Apologies, something went wrong.")
+{% if act.response_filter is defined %} 
+{{act.response_slot}} = response.json(){{act.response_filter}}
+output.append(SlotSet('{{act.response_slot}}', {{act.response_slot}}))
 {% endif %}
 {% endif %}
 {% endmacro -%}
@@ -170,8 +173,24 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
     def {{slot.method}}(self, dispatcher, tracker, domain):
         output = {}
         requested_slot = tracker.get_slot('requested_slot')
+        {% if slot.data is defined %}
+        {% if slot.data.previous_slot is defined %}
+        {% if slot.data.previous_slot != None %}
+        {{slot.data.previous_slot}} = tracker.get_slot('{{slot.data.previous_slot}}')
+        {{slot.name}} = tracker.get_slot('{{slot.name}}')
+        if {{slot.data.previous_slot}} != None and {{slot.name}} == None:
+        {% else %}
+        {{slot.name}} = tracker.get_slot('{{slot.name}}')
+        if {{slot.name}} == None:
+        {% endif %}
+        {% else %}
         if requested_slot == "{{slot.name}}":
             {{slot.name}} = None
+        {% endif %}
+        {% else %}
+        if requested_slot == "{{slot.name}}":
+            {{slot.name}} = None
+        {% endif %}
             {% if slot.source_type == 'EServiceCallHTTP' %}
             {% for slot in slot.data.slots %}
             {{slot}} = tracker.get_slot('{{slot}}')
@@ -202,6 +221,7 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
                 output["{{slot.name}}"] = {{slot.name}}
             except:
                 print(f'Error retrieving response from {{slot.data.url}} with code {response.status_code}.')
+                dispatcher.utter_message(text = "Apologies, something went wrong.")
             {% elif slot.source_type == 'HRIParamSource' %}
             {% if slot.source_method is defined and slot.source_method == 'from_intent' %}
             intent = tracker.latest_message.get("intent", {}).get("name")
@@ -230,13 +250,23 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {% elif slot.type == 'float' %}
             numbers = re.findall("\d+\.\d+", text)
             {% else %}
-            return
+            {% if action.reset_slots is defined %}
+            {% for _slot in action.reset_slots %}
+            output["{{_slot}}"] = None
+            {% endfor %}
+            {% endif %}
+            return output
             {% endif %}
             if len(numbers):
                 {{slot.name}} = {{slot.type}}(numbers[0])
             output["{{slot.name}}"] = {{slot.name}}
             {% endif %}
             {% endif %}
+        {% if action.reset_slots is defined %}
+        {% for _slot in action.reset_slots %}
+        output["{{_slot}}"] = None
+        {% endfor %}
+        {% endif %}
         return output
 
 {% endfor %}
@@ -282,6 +312,11 @@ class {{action.name|replace("_","")|capitalize}}(Action):
         {% endif %}
         {% endif %}
         {% endfor %}
+        {% if action.reset_slots is defined %}
+        {% for _slot in action.reset_slots %}
+        output.append(SlotSet('{{_slot}}', None))
+        {% endfor %}
+        {% endif %}
         return output
 
 {% endif %}

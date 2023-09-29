@@ -1,0 +1,75 @@
+eservices
+    {%- for eservice in eservices %}
+    EServiceHTTP {{ eservice.name }}
+        verb: {{ eservice.verb }}
+        host: '{{ eservice.host }}'
+        {%- if eservice.port %}
+        port: {{ eservice.port }}
+        {%- endif %}
+        {%- if eservice.path %}
+        path: '{{ eservice.path }}'
+        {%- endif %}
+    end
+    {%- endfor %}
+end
+
+triggers
+{%- for trigger in triggers %}
+  {{ trigger.type }} {{ trigger.name }}
+  {%- if trigger.type == 'Intent' %}
+    {%- for phrase in trigger.phrases %}
+      '{{ phrase }}'{{ "," if not loop.last else "" }}
+    {%- endfor %}
+  {%- elif trigger.type == 'Event' %}
+    '{{ trigger.uri }}'
+  {%- endif %}
+  end
+{%- endfor %}
+end
+
+dialogues
+{%- for dialogue in dialogues %}
+    Dialogue {{ dialogue.name }}
+        on: {%- for trigger in dialogue.triggers %}{{ trigger }}{%- if not loop.last %}, {% endif %}{% endfor %}
+        responses:
+            {%- if dialogue.verb == "POST" or dialogue.verb == "PUT" or dialogue.verb == "DELETE" %}
+            {%- for response in dialogue.responses %}
+                {%- if response.type == "Form" %}
+                Form {{ response.name }}
+                    {%- for slot in response.slots %}
+                        {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% if not loop.last %}{% endif %}
+                    {%- endfor %}
+                    end,
+                {%- elif response.type == "ActionGroup" %}
+                ActionGroup {{ response.name }}
+                    {%- if response.service_call %}
+                    {%- set svc_call_parts = response.service_call.split('(') %}
+                    {{ svc_call_parts[0] }}({% if "[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip(")") }}{% endif %})
+                    {%- endif %}
+                    Speak('{{ response.text }}')
+                end
+                {%- endif %}
+            {%- endfor %}
+            {%- elif dialogue.verb == "GET" %}
+            {%- for response in dialogue.responses %}
+                {%- if response.type == "Form" %}
+                Form {{ response.name }}
+                    {%- for slot in response.slots %}
+                        {{ slot.name }}: {{ slot.type }} = {% if slot.service_call %}{{ slot.service_call }}{% else %}HRI('{{ slot.prompt }}'{% if slot.context %}, [{{ slot.context }}]{% endif %}){% endif %}{% if not loop.last %}{% endif %}
+                    {%- endfor %}
+                    end,    
+                {%- elif response.type == "ActionGroup" %}
+                ActionGroup {{ response.name }}
+                    {%- if response.service_call %}
+                    {%- set svc_call_parts = response.service_call.split('(') %}
+                    {{ svc_call_parts[0] }}({% if "[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip(")") }}{% endif %})
+                    {%- endif %}
+                    Speak('{{ response.text }}')
+                end
+                {%- endif %}
+            {%- endfor %}
+            {%- endif %}
+    end
+{%- endfor %}
+end
+

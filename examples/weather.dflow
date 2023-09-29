@@ -48,7 +48,7 @@ dialogues
           answer: str = weather_svc(query=[city=form1.city_slot, language="English"], header=[access_token="Q5eJZ8sSLEX6XNmOHyMlWagI"],)[description]
         end,
         ActionGroup answer_back
-          Speak('The weather is ' form1.answer)
+          Speak('The weather for' form1.city_slot ' is ' form1.answer)
         end
   end
 
@@ -67,4 +67,6 @@ dialogues
           Speak('I am a bot, powered by dFlow and Rasa.')
         end
   end
+
+
 end
