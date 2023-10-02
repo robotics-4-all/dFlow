@@ -215,16 +215,16 @@ def parse_model(model) -> TransformationDataModel:
                 for phrase in complex_phrase.phrases:
                     if phrase.__class__.__name__ == 'str':
                         text.append([phrase])
-                    elif phrase.__class__.__name__ == "IntentPhraseTE":
-                        name = phrase.trainable.name
+                    elif phrase.__class__.__name__ == "TrainableEntityRef":
+                        name = phrase.entity.name
                         words = entities_dictionary[name]
-                        entities_rasa_format = [f"[{ent}]({name})" for ent in words[0]]
+                        entities_rasa_format = [f"[{ent}]({name})" for ent in words]
                         text.append(entities_rasa_format)
                     elif phrase.__class__.__name__ == "IntentPhraseSynonym":
                         name = phrase.synonym.name
                         words = synonyms_dictionary[name]
-                        synonym = words[0][0]
-                        text.append([synonym])
+                        synonym = words[0]
+                        text.append([f"[{synonym}]({name})"])
                     elif phrase.__class__.__name__ == "PretrainedEntityRef":
                         name = phrase.entity
                         if pretrained_entities_examples[name] != []:
