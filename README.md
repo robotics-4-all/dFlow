@@ -507,6 +507,33 @@ ExtractFromEntity: TrainableEntityRef | PretrainedEntityRef;
 EServiceParamSource: EServiceCallHTTP;
 ```
 
+### Connectors
+Connectors enable the connection of the generated virtual assistants with external channels, thus allowing users to communicate with the assistant via a variety of interfaces. Until now support is provided for Slack and Telegram. Implementing a connector is the first step to establish a connection with an external channel, but further modification may be required:
+- For Slack integrations [Rasa Slack connector](https://rasa.com/docs/rasa/connectors/slack) instructions must be followed. Keep in mind that **credentials.yml** is generated automatically and further modification is optional.
+- For Telegram integrations [Rasa Telegram connector](https://rasa.com/docs/rasa/connectors/telegram) instructions must be followed. Keep in mind that **credentials.yml** is generated automatically and further modification is optional.
+
+```
+Connector: Slack | Telegram;
+
+Slack:
+    ('Connector' name='slack'
+        'token:' token=STRING
+        'channel:' channel=STRING
+        'signing_secret:' signing_secret=STRING
+    'end')?
+;
+
+Telegram:
+    ('Connector' name='telegram'
+        'token:' token=STRING
+        'verify:' verify=STRING
+        'webhook_url:' webhook_url=STRING
+    'end')?
+;
+```
+
+### Access Control
+
 ### Examples
 
 Several examples can be found [here](./examples/).
