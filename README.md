@@ -47,6 +47,14 @@ Platforms:
     - [Dialogues](#dialogues)
       - [Actions](#actions)
       - [Forms](#forms)
+    - [Connectors](#connectors)
+    - [Access Control](access-control)
+      - [Roles](#roles)
+      - [Users](#users)
+      - [Policies](#policies)
+      - [Authentication](#authentication)
+      - [Path](#path)
+
   - [Examples](#examples)
 - [License](#license)
 
@@ -508,7 +516,7 @@ EServiceParamSource: EServiceCallHTTP;
 ```
 
 ### Connectors
-Connectors enable the connection of the generated virtual assistants with external channels, thus allowing users to communicate with the assistant via a variety of interfaces. Until now support is provided for Slack and Telegram. Implementing a connector is the first step to establish a connection with an external channel, but further modification may be required:
+Connectors enable the connection of the generated virtual assistants with external channels, thus allowing users to communicate with the assistant via a variety of interfaces. Until now support is provided for Slack and Telegram. Implementing a connector is the first step to establish a connection with an external channel, but further modification, specific to each vendor, may be required:
 - For Slack integrations [Rasa Slack connector](https://rasa.com/docs/rasa/connectors/slack) instructions must be followed. Keep in mind that **credentials.yml** is generated automatically and further modification is optional.
 - For Telegram integrations [Rasa Telegram connector](https://rasa.com/docs/rasa/connectors/telegram) instructions must be followed. Keep in mind that **credentials.yml** is generated automatically and further modification is optional.
 
@@ -532,7 +540,124 @@ Telegram:
 ;
 ```
 
+##### Example
+```
+connectors
+  Connector slack
+    token: "xoxb-XXX"
+    channel: "your-channel"
+    signing_secret: "YYY"
+  end
+end
+```
+
 ### Access Control
+DFlow is the first DSL to support a fully functional user access control mechanism integrated into the generated bots. Using a Role-Based Access Control methodology, the bot's developer can create roles with different permissions for executing the bot's actions and assign them to users. In this way, dFlow enables the enforcement of the least privilege principle by allowing the separation of user access levels to the bot's resources. It also empowers the development of complex dialogue flows, providing the means to differentiate the bot's behavior according to the user's role.
+
+```
+AccessControlDef:
+    (
+    roles=Roles
+    policies*=Policy
+    path=Path
+    (users=Users)?
+    authentication=Authentication
+    )#
+;
+```
+
+#### Roles
+Roles are granted permissions for accessing bot's actions. Each user can have one or multiple roles, inheriting all of their permissions. When defining the available roles, a **default** role should be provided, which is the role an unidentified/unauthenticated user will acquire.
+
+```
+Roles:
+    'Roles'
+        words+=Words[',']
+        'default:'
+            default=Words
+    'end'
+;
+```
+
+#### Users
+Each role can be assigned to one or many authenticated users. Users are dinstinguished by their unique id such as their email. To see the supported identifiers check the [authentication](#authentication) section.
+
+```
+Users:
+    'Users'
+        roles+=UserRoles
+    'end'
+;
+```
+
+Users entity can be skipped if loading the user-role mappings from a file or a database is needed. This file should be specified using a [path](#path) entity. DFlow supports user-role mappings imported from text files that conform with the following JSON format:
+
+```
+{
+	"role1": ["user1_identifier"],
+	"role2": ["user2_identifier", "user3_identifier"],
+}
+```
+
+#### Policies
+Access control policies serve as the basic layer of access control. They function to enforce a permit/deny access control on ActionGroups, ensuring that only the roles explicitly declared within the policy can execute the associated ActionGroup. It's important to note that each policy is dedicated to a single ActionGroup. In cases where there is no policy assigned to a particular ActionGroup, all roles gain the ability to execute it.
+
+```
+Policy:
+    'Policy' name=ID
+        'on:' actions+=Words[',']
+        'roles:' roles+=Words[',']
+    'end'
+;
+```
+
+##### Inline Policies
+To enable enhanced access control capabilities, dFlow also supports inline policies. These enable the developer to control the flow of the conversation and differentiate the executed [actions](#actions) within an ActionGroup.
+
+An inline policy example within a Dialogue is shown below:
+
+```
+ 
+ActionGroup inform_system_parameters
+    Speak("System's HostName:" SYSTEM: HOSTNAME "\nSystem's public IP" SYSTEM: PUBLIC_IP)[roles=user_admin]
+    Speak("Sorry, only admins are allowed to perform this action")[roles=user_paid]
+end
+
+```
+
+Keep in mind that for the inline action policies to work, the user must first have access to the associated ActionGroup.
+
+#### Authentication
+For an authorization and access control mechanism to function properly, the physical users must first be assosciated with their digital identity. This is usually achieved via authentication. DFlow supports two different types of authentication schemes:
+
+- **Third party authentication:** This allows a third party [connector](#connector) to authenticate users. The default attribute used for user identification is their **emails**, fetched from the connector's channel.
+ 
+- **Slot authentication:** This allows the user to be authenticated using the content of a slot, which is filled during the conversation with the user, enabling the utilization of voice passwords.
+
+> [!WARNING] 
+> While slot authentication provides a quick solution ideal for debugging, third-party authentication is more suitable for bots intended for production environments.
+
+```
+Authentication:
+    'Authentication'
+        'method:' method=AuthMethods
+        (
+        'slot_name:' slot_name=Words
+        )?
+    'end'
+;
+```
+
+#### Path
+User-role mappings are stored inside the file provided in the path entity. If no [users](#users) entity is provided, dFlow will assume that the mappings already exist within this file and attempt to load them. If, on the other hand, the file doesn't exist it will be automatically generated.
+
+```
+Path:
+    'Path'
+        path=STRING
+    'end'
+;
+```
 
 ### Examples
 
