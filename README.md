@@ -48,7 +48,7 @@ Platforms:
       - [Actions](#actions)
       - [Forms](#forms)
     - [Connectors](#connectors)
-    - [Access Control](access-control)
+    - [Access Control](#access-control)
       - [Roles](#roles)
       - [Users](#users)
       - [Policies](#policies)
@@ -649,7 +649,7 @@ Authentication:
 ```
 
 #### Path
-User-role mappings are stored inside the file provided in the path entity. If no [users](#users) entity is provided, dFlow will assume that the mappings already exist within this file and attempt to load them. If, on the other hand, the file doesn't exist it will be automatically generated.
+User-role mappings are stored inside the file provided in the path entity. If the file doesn't exist it will be automatically generated. If no [users](#users) entity is provided, dFlow will assume that the user-role mappings already exist within this file and attempt to load them. 
 
 ```
 Path:
