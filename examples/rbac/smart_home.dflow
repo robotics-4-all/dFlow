@@ -161,7 +161,7 @@ access_controls
         end
 
     Path
-        "/home/dcnatsos/Workspace/dFlow/gen/user_roles_policies.txt"
+        "/home/Workspace/dFlow/gen/user_roles_policies.txt"
     end
 
     Authentication
