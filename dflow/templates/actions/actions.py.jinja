@@ -41,7 +41,7 @@ try:
 except:
     print(f'Error retrieving response from {{act.url}} with code {response.status_code}.')
     dispatcher.utter_message(text = "Apologies, something went wrong.")
-{% if act.response_filter is defined %} 
+{% if act.response_filter is defined and act.response_filter != None %} 
 {{act.response_slot}} = response.json(){{act.response_filter}}
 output.append(SlotSet('{{act.response_slot}}', {{act.response_slot}}))
 {% endif %}

@@ -117,10 +117,10 @@ dialogues
             end,
             ActionGroup play_audiobook
                 Speak('Playing the full book,' AF1.audiobook_slot)[roles=user_paid]
-                //full_book_svc(query=[audiobook=AF1.audiobook_slot],)[roles=user_paid]
+                full_book_svc(query=[audiobook=AF1.audiobook_slot],)[roles=user_paid]
 
                 Speak('Playing a sample of,' AF1.audiobook_slot)[roles=user_free]
-                //sample_book_svc(query=[audiobook=AF1.audiobook_slot],)[roles=user_free]
+                sample_book_svc(query=[audiobook=AF1.audiobook_slot],)[roles=user_free]
             end
     end
 
@@ -161,7 +161,7 @@ access_controls
     end
 
     Path
-        "/home/Workspace/dFlow/gen/user_roles_policies.txt"
+        "/home/nmalamas/github/dflow/dflow/user_roles_policies.txt"
     end
 
     Authentication
