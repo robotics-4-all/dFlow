@@ -135,7 +135,7 @@ dialogues
             end,
             ActionGroup change_nar
                 Speak('Changing narrator voice to' AF2.narrator_slot)[roles=user_paid]
-                //change_narrator_svc(body=[narrator=AF2.narrator_slot],)[roles=user_paid]
+                change_narrator_svc(body=[narrator=AF2.narrator_slot],)[roles=user_paid]
 
                 Speak('You need a paid plan to perform this action')[roles=user_free]
             end
@@ -161,7 +161,7 @@ access_controls
     end
 
     Path
-        "/home/nmalamas/github/dflow/dflow/user_roles_policies.txt"
+        "/home/user_roles_policies.txt"
     end
 
     Authentication
