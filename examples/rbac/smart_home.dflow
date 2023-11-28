@@ -120,8 +120,8 @@ dialogues
                 address_slot: str = HRI('Where should they be shipped?', [TE:ADDRESS])
             end,
             ActionGroup inform_purchase
-                Speak('Ok buying items and shipping them to' BIDF2.address_slot)[roles=user_parent]
-                FireEvent('/purchase_basket', {address: BIDF2.address_slot})[roles=user_parent]
+                Speak('Ok buying items and shipping them to' BIDF2.address_slot)
+                FireEvent('/purchase_basket', {address: BIDF2.address_slot})
             end
     end
 end
@@ -161,7 +161,7 @@ access_controls
         end
 
     Path
-        "/home/Workspace/dFlow/gen/user_roles_policies.txt"
+        "/home/dcnatsos/Workspace/dFlow/gen/user_roles_policies.txt"
     end
 
     Authentication
