@@ -647,12 +647,27 @@ def transform(api_path):
             intent_name = create_name(operation_details)
             dialogue_name = create_name(operation_details, ending = "dlg")
             verb = operation.type.upper()
-            host = "https://" + fetchedApi["host"]
+            
+            # Give priority to https than http 
+            scheme = fetchedApi.get('schemes', ['http'])
+            if len(scheme) == 1:
+                scheme = scheme[0]
+            elif len(scheme):
+                if 'https' in scheme:
+                    scheme = 'https'
+                elif 'http' in scheme:
+                    scheme = 'http'
+                else:
+                    scheme = scheme[0]
+            
+            host = f"{scheme}://" + fetchedApi["host"] # check schema, don't use https by default
             port = fetchedApi.get("port", None)
             path = endpoint.path
 
             eservice_definition = create_service(service_name, verb, host, port, path)
-            triggers = create_trigger(intent_name,operation.description)
+            triggers = create_trigger(intent_name, operation.description)
+            if triggers == []:
+                continue
             triggersList = triggers[0]['phrases']
             dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary,fetchedApi, response_properties, body_properties)
 
