@@ -31,6 +31,7 @@ class Endpoint:
         self.path = path
         self.operations = []
 
+
 class Operation:
     def __init__(self, type, operationId=None, summary=None, description=None, parameters=None, requestBody=None, responses=None):
         self.type = type
@@ -442,18 +443,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
     form_slots = []
     responses = []
     response_text = ""
-
-    entities = []
-    for phrase in triggers:
-        doc = nlp(phrase)
-        for ent in doc.ents:
-            if ent.label_ in PRETRAINED_ENTITIES:
-                entities.append(ent.label_)
-
-    entity_counts = Counter(entities)
-    dominant_entity, _ = entity_counts.most_common(1)[0] if entity_counts else (None, None)
-    context = "PE:" + dominant_entity if dominant_entity else None
-
     path_params = []
     query_params = []
     header_params = []
@@ -476,8 +465,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                             "prompt": prompt_text
                         }
 
-                        if context:
-                            slot["context"] = context
                         form_slots.append(slot)
 
             else:
@@ -491,9 +478,6 @@ def create_dialogue(dialogue_name, intent_name, service_name, parameters, trigge
                     "type": param_type,
                     "prompt": prompt_text
                 }
-
-                if context:
-                    slot["context"] = context
                 form_slots.append(slot)
 
     if form_slots:
