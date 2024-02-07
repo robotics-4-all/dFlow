@@ -196,7 +196,7 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {{slot}} = tracker.get_slot('{{slot}}')
             {% endfor %}
             {% for key, value in slot.data.path_params.items() %}
-            {{key}} = "{{value}}"
+            {{key}} = f"{{value}}"
             {% endfor %}
             {% for property in slot.data.system_properties %}
             {{property}} = compute_system_properties("{{property}}")
