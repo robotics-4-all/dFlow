@@ -28,7 +28,7 @@ output.append(SlotSet("{{act.slot}}", {{act.value}}))
 {{property}} = compute_system_properties("{{property}}")
 {% endfor %} 
 {% for key, value in act.path_params.items() %} 
-{{key}} = "{{value}}"
+{{key}} = f"{{value}}"
 {% endfor %}
 try:
     response = requests.{{act.verb}}(f"{{act.url}}",

@@ -322,7 +322,18 @@ def create_name(operation_details, ending=None):
 
         return op_id
 
-def create_service(service_name, verb, host, port, path):
+def create_service(service_name, verb, host, port, path, api_specification):
+    mime = []
+    if verb == "GET":
+        if 'produces' in api_specification['paths'][path][verb.lower()]:
+            mime = api_specification['paths'][path][verb.lower()]['produces']
+        elif 'produces' in api_specification:
+            mime = api_specification['produces']
+    else:
+        if 'consumes' in api_specification['paths'][path][verb.lower()]:
+            mime = api_specification['paths'][path][verb.lower()]['consumes']
+        elif 'consumes' in api_specification:
+            mime = api_specification['consumes']
     eservice_data = {
         "name": service_name,
         "verb": verb,
@@ -330,6 +341,10 @@ def create_service(service_name, verb, host, port, path):
         "port": port,
         "path": path
     }
+
+    if mime:
+        eservice_data['mime'] = mime
+    
     return eservice_data
 
 def create_trigger(trigger_name, operation_summary, trigger_type="Intent"):
@@ -430,7 +445,18 @@ def create_response(model, tokenizer, verb, parameters=[], slots=[], operation_s
     return response
 
 
-def create_dialogue(dialogue_name, intent_name, service_name, parameters, triggers, verb, current_path,operation_summary,api_specification, response_properties=None, body_properties = None):
+def create_dialogue(
+        dialogue_name, 
+        intent_name, 
+        service_name, 
+        parameters, 
+        verb, 
+        current_path, 
+        operation_summary, 
+        api_specification, 
+        response_properties=None, 
+        body_properties = None
+    ):
     """
         Generate a dialogue configuration for an API operation.
 
@@ -636,8 +662,6 @@ def transform(api_path):
             if operation.type.upper() == "DELETE":
                 continue
 
-            triggersList = []
-
             operation_details = {
                 'operationId': operation.operationId,
                 'description': operation.description
@@ -664,12 +688,11 @@ def transform(api_path):
             port = fetchedApi.get("port", None)
             path = endpoint.path
 
-            eservice_definition = create_service(service_name, verb, host, port, path)
+            eservice_definition = create_service(service_name, verb, host, port, path, fetchedApi)
             triggers = create_trigger(intent_name, operation.description)
             if triggers == []:
                 continue
-            triggersList = triggers[0]['phrases']
-            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary,fetchedApi, response_properties, body_properties)
+            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, verb, path, operation.summary,fetchedApi, response_properties, body_properties)
 
             eservices.append(eservice_definition)
             all_triggers.extend(triggers)
@@ -713,8 +736,6 @@ def test_transform(api_path):
             if operation.type.upper() == "DELETE":
                 continue
 
-            triggersList = []
-
             operation_details = {
                 'operationId': operation.operationId,
                 'description': operation.description
@@ -728,10 +749,9 @@ def test_transform(api_path):
             port = fetchedApi.get("port", None)
             path = endpoint.path
 
-            eservice_definition = create_service(service_name, verb, host, port, path)
+            eservice_definition = create_service(service_name, verb, host, port, path, fetchedApi)
             triggers = create_trigger(intent_name,operation.description)
-            triggersList = triggers[0]['phrases']
-            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, triggersList, verb, path, operation.summary,fetchedApi, response_properties, body_properties)
+            dialogue = create_dialogue(dialogue_name, intent_name, service_name, operation.parameters, verb, path, operation.summary,fetchedApi, response_properties, body_properties)
 
             eservices.append(eservice_definition)
             all_triggers.extend(triggers)

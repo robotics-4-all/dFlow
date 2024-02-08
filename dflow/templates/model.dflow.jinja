@@ -9,6 +9,9 @@ eservices
         {%- if eservice.path %}
         path: '{{ eservice.path }}'
         {%- endif %}
+        {%- if eservice.mime %}
+        mime: {% for mime in eservice.mime %}'{{ mime }}'{%- if not loop.last %}, {% endif %}{% endfor %}
+        {%- endif %}
     end
     {%- endfor %}
 end
