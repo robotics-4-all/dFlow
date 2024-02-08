@@ -657,6 +657,7 @@ def transform(api_path):
     all_triggers = []
     all_dialogues = []
 
+    i = 1
     for endpoint in parsed_api:
         for operation in endpoint.operations:
             if operation.type.upper() == "DELETE":
@@ -667,9 +668,9 @@ def transform(api_path):
                 'description': operation.description
             }
 
-            service_name = create_name(operation_details, ending = "svc")
-            intent_name = create_name(operation_details)
-            dialogue_name = create_name(operation_details, ending = "dlg")
+            service_name = create_name(operation_details, ending = f"svc_{i}")
+            intent_name = create_name(operation_details, ending = f"{i}")
+            dialogue_name = create_name(operation_details, ending = f"dlg_{i}")
             verb = operation.type.upper()
             
             # Give priority to https than http 
@@ -697,6 +698,7 @@ def transform(api_path):
             eservices.append(eservice_definition)
             all_triggers.extend(triggers)
             all_dialogues.append(dialogue)
+            i += 1
 
     output = template.render(eservices=eservices, triggers=all_triggers, dialogues=all_dialogues)
 
