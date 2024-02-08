@@ -63,6 +63,7 @@ EServiceDefHTTP:
           'host:' host=STRING
           ('port:' port=INT)?
           ('path:' path=STRING)?
+          ('mime:' mime*=STRING[','])?
         )#
     'end'
 ;
