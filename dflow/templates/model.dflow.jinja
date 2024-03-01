@@ -35,30 +35,11 @@ dialogues
     Dialogue {{ dialogue.name }}
         on: {%- for trigger in dialogue.triggers %}{{ trigger }}{%- if not loop.last %}, {% endif %}{% endfor %}
         responses:
-            {%- if dialogue.verb == "POST" or dialogue.verb == "PUT" or dialogue.verb == "DELETE" %}
             {%- for response in dialogue.responses %}
                 {%- if response.type == "Form" %}
                 Form {{ response.name }}
                     {%- for slot in response.slots %}
-                        {{ slot.name }}: {{ slot.type }} = HRI('{{ slot.prompt }}')
-                    {%- endfor %}
-                    end,
-                {%- elif response.type == "ActionGroup" %}
-                ActionGroup {{ response.name }}
-                    {%- if response.service_call %}
-                    {%- set svc_call_parts = response.service_call.split('(') %}
-                    {{ svc_call_parts[0] }}({% if "[]" not in svc_call_parts[1] %}{{ svc_call_parts[1].strip(")") }}{% endif %})
-                    {%- endif %}
-                    Speak('{{ response.text }}')
-                end
-                {%- endif %}
-            {%- endfor %}
-            {%- elif dialogue.verb == "GET" %}
-            {%- for response in dialogue.responses %}
-                {%- if response.type == "Form" %}
-                Form {{ response.name }}
-                    {%- for slot in response.slots %}
-                        {{ slot.name }}: {{ slot.type }} = {% if slot.service_call %}{{ slot.service_call }}{% else %}HRI('{{ slot.prompt }}'){% endif %}
+                        {{ slot.name }}: {{ slot.type }} = {% if slot.service_call %}{{ slot.service_call }}[{{ slot.name }}]{% else %}HRI('{{ slot.prompt }}'){% endif %}
                     {%- endfor %}
                     end,    
                 {%- elif response.type == "ActionGroup" %}
@@ -71,7 +52,6 @@ dialogues
                 end
                 {%- endif %}
             {%- endfor %}
-            {%- endif %}
     end
 {%- endfor %}
 end
