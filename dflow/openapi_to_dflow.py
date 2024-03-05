@@ -9,7 +9,7 @@ import re
 import argparse
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-NLP = spacy.load("en_core_web_sm")
+NLP = spacy.load("en_core_web_md")
 
 _THIS_DIR = path.abspath(path.dirname(__file__))
 
