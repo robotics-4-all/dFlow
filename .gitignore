@@ -115,3 +115,4 @@ srcgen/
 # Rasa generation scripts
 /gen/*
 /dflow/gen/*
+/gen_test/*

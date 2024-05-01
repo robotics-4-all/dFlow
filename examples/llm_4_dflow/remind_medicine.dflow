@@ -1,0 +1,38 @@
+triggers
+  Intent notify_medication
+    "what pills i have to take",
+    "what to do i have to do today",
+    "remind me my medicine",
+    "which medicines should I take",
+    "medicine list",
+    "notify medicine",
+    "drugs list",
+    "drugs of today",
+    "reminder of my medication",
+    "pill intakes",
+    "treatment plan",
+    "what is in my perscription",
+    "tell me my treatment plan"
+  end
+end
+
+eservices
+    EServiceHTTP medication_service
+        verb: GET
+        host: 'https://health.com'
+        path: '/profile/medication_list'
+    end
+end
+
+dialogues
+  Dialogue notify_medication_dialogue
+      on: notify_medication
+      responses:
+        Form form_meds
+          meds: str = medication_service()[medication]
+        end,
+        ActionGroup notify_medication_action
+          Speak('Today you have to take ' form_meds.meds)
+        end
+  end
+end

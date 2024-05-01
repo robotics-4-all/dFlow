@@ -1,0 +1,23 @@
+triggers
+  Intent greet
+    "hey",
+    "hello",
+    "hi",
+    "hello there",
+    "good morning",
+    "good evening",
+    "moring",
+    "hey there",
+    "good afternoon"
+  end
+end
+
+dialogues
+  Dialogue greet_dialogue
+      on: greet
+      responses:
+        ActionGroup greet_back
+          Speak('Hello there!')
+        end
+  end
+end

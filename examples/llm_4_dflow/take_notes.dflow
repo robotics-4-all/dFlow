@@ -1,0 +1,36 @@
+triggers
+  Intent take_notes
+    "I need to jot down a quick note",
+    "Could you help me make a note of something important",
+    "I want to write down a note for later",
+    "Can you assist me in taking a note",
+    "I'd like to make a quick note, can you help",
+    "Could you remind me to take a note of this?",
+    "I need to remember this, let's take a note.",
+    "I want to jot something down before I forget",
+    "Can you help me create a note for this?",
+    "I need to make a note for future reference."
+  end
+end
+
+eservices
+    EServiceHTTP notes_service
+        verb: POST
+        host: 'https://services.issel.auth.gr'
+        path: '/profile/notes'
+    end
+end
+
+dialogues
+  Dialogue take_notes_dlg
+      on: take_notes
+      responses:
+        Form notes_form
+          note: str = HRI('What do you want me to save?')
+        end,
+        ActionGroup action_take_notes
+          notes_service(body=[note=notes_form.note],)
+          Speak('OK, noted!')
+        end
+  end
+end

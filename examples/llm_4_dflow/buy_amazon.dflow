@@ -1,0 +1,77 @@
+triggers
+    Intent buy_amazon
+        "I'd like to purchase a " TE:product " from Amazon.",
+        "Could you help me buy a pack of " TE:product " on Amazon?",
+        "Can you assist me in ordering a " TE:product " from Amazon?",
+        "I'm interested in buying a set of " TE:product " online, can you guide me through the process on Amazon",
+        "I want to make a purchase of a " TE:product " from Amazon, could you help me with that",
+        "Could you please help me add a " TE:product " bottle to my cart on Amazon",
+        "I'm ready to buy a set of " TE:product " from Amazon, can you assist me in completing the purchase?",
+        "Can you guide me through the steps to purchase a pair of " TE:product " on Amazon",
+        "I'd like to place an order for a " TE:product " on Amazon, could you help me with the checkout process?",
+        "Please help me find and buy a " TE:product " from Amazon."
+    end
+end
+
+entities
+    Entity product
+        Kindle Paperwhite,
+        AA batteries,
+        LEGO Star Wars set,
+        resistance bands,
+        Nintendo Switch game,
+        stainless steel water,
+        kitchen knives,
+        wireless earbuds,
+        yoga mat,
+        smart thermostat
+    end
+end
+
+
+eservices
+    EServiceHTTP amazon_buy_svc
+        verb: POST
+        host: 'https://api.amazon.com'
+        path: '/products/buy'
+    end
+end
+
+dialogues
+  Dialogue buy_amazon_dialogue
+      on: buy_amazon
+      responses:
+        Form buy_amazon_form
+          product_slot: str = HRI('What product do you want to buy?', [TE:product])
+        end,
+        ActionGroup action_retrieve_steps
+            amazon_buy_svc(body=[product=buy_amazon_form.product_slot],)[roles=parent]
+            Speak('I bought the product from Amazon.')[roles=parent]
+            Speak('Ask your parents for that please')[roles=child]
+        end
+  end
+end
+
+
+gslots
+    username: str = ""
+end
+
+access_controls
+    Roles
+        parent,
+        child
+        
+        default:
+            child
+    end
+    
+    Authentication
+        method: slot
+        slot_name: username    
+    end
+
+    Path
+        "/home/Desktop/users.txt"
+    end
+end
