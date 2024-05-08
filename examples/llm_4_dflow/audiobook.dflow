@@ -1,0 +1,134 @@
+eservices
+    EServiceHTTP full_book_svc
+        verb: GET
+        host: 'localhost'
+        port: 7777
+        path: '/full_book'
+    end
+
+    EServiceHTTP sample_book_svc
+        verb: GET
+        host: 'localhost'
+        port: 7777
+        path: '/sample_book'
+    end
+
+    EServiceHTTP change_narrator_svc
+        verb: PUT
+        host: 'localhost'
+        port: 7777
+        path: '/change_narrator'
+    end
+end
+
+entities
+    Entity NARRATOR
+        female,
+        male
+    end
+
+    Entity AUDIOBOOK
+        Silmarilion by Tolkien,
+        Silmarilion,
+        Dune by Frank Herbert
+    end
+
+end
+
+
+triggers
+
+    Intent greet
+        "hey",
+        "hello",
+        "hi",
+        "hello there",
+        "good morning",
+        "good evening",
+        "moin",
+        "hey there",
+        "let's go",
+        "hey dude",
+        "goodmorning",
+        "goodevening",
+        "good afternoon"
+    end
+
+    Intent change_narrator
+        "I want to change narrator",
+        "Please change narrator's voice",
+        "Change narrator's voice"
+    end
+
+    Intent inform_narrator
+        TE:NARRATOR "voice please",
+        TE:NARRATOR
+    end
+
+    Intent listen_audiobook
+        "Yes I want to listen to" TE:AUDIOBOOK,
+        "Please play" TE:AUDIOBOOK,
+        "Play" TE:AUDIOBOOK,
+        "Yes play" TE:AUDIOBOOK
+    end
+
+end
+
+dialogues
+    Dialogue AudiobookDialogue
+        on: greet
+        responses:
+            Form AF1
+                audiobook_slot: str = HRI('Hi, would you like to listen to an audiobook?', [TE:AUDIOBOOK])
+            end,
+            ActionGroup play_audiobook
+                Speak('Playing the full book,' AF1.audiobook_slot)[roles=user_paid]
+                full_book_svc(query=[audiobook=AF1.audiobook_slot],)[roles=user_paid]
+
+                Speak('Playing a sample of,' AF1.audiobook_slot)[roles=user_free]
+                sample_book_svc(query=[audiobook=AF1.audiobook_slot],)[roles=user_free]
+            end
+    end
+
+    Dialogue ChangeNarratorDialogue
+        on: change_narrator
+        responses:
+            Form AF2
+                narrator_slot: str = HRI('Would you like female or male voice?', [TE:NARRATOR])
+            end,
+            ActionGroup change_nar
+                Speak('Changing narrator voice to' AF2.narrator_slot)[roles=user_paid]
+                change_narrator_svc(body=[narrator=AF2.narrator_slot],)[roles=user_paid]
+
+                Speak('You need a paid plan to perform this action')[roles=user_free]
+            end
+    end
+    
+end
+
+access_controls
+    Roles
+        user_paid,
+        user_free
+        
+        default: 
+            user_free
+    end
+
+    Path
+        "/home/Desktop/users.txt"
+    end
+
+    Authentication
+        method: slack        
+    end
+
+end
+
+connectors
+    Connector slack
+        token: "xoxb-4883692765252-4884029447172-rH1b8v6PMj22OaTsaIQrtpfH"
+        channel: "audiobook_assistant"
+        signing_secret: "123456798"
+    end
+end

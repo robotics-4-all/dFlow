@@ -1,0 +1,73 @@
+triggers
+  Intent ask_weather
+    "I want to tell me the weather",
+    "Tell me the weather please",
+    "I want to tell me the weather for" PE:GPE['Thessaloniki', 'Athens'],
+    "Tell me the weather please for today",
+    "Tell me the weather today for"  PE:GPE['Thessaloniki', 'Athens'],
+    "weather for " PE:GPE['London'],
+    "yes for " PE:GPE['Paris']
+    "Paris",
+    "is it sunny in London"
+  end
+end
+
+eservices
+    EServiceHTTP weather_svc
+        verb: GET
+        host: 'http://services.issel.ee.auth.gr'
+        path: '/general_information/weather_openweather'
+    end
+end
+
+dialogues
+  Dialogue weather_dialogue
+      on: ask_weather
+      responses:
+        Form form1
+          city_slot: str = HRI('For which city?', [PE:GPE])
+          temp: str = weather_svc(query=[city=form1.city_slot],)[temp]
+        end,
+        ActionGroup answer_back
+          Speak('The weather forecast will be ' form1.temp  ' for ' form1.city_slot)
+        end
+  end
+end
+
+gslots
+    username: str = ""
+end
+
+access_controls
+  Roles
+    user_paid,
+    user
+
+    default:
+      user
+  end
+
+  Users
+    user_paid:
+      username1
+
+    user: 
+      username2
+  end
+
+  Policy answer_back_policy
+    on:
+      answer_back
+    roles:
+      user_paid
+  end
+
+  Path
+    "/home/Desktop/users.txt"
+  end
+
+  Authentication
+    method: slot
+    slot_name: username
+  end
+end
