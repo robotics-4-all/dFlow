@@ -77,6 +77,7 @@ def codegen(model_fillepath,
     return generate(metamodel, model, output_path,
                     overwrite, debug, **custom_args)
 
+
 @generator('dflow', 'rasa')
 def dflow_generate_rasa(metamodel,
                         model,
@@ -120,24 +121,25 @@ def generate(metamodel,
         out_file = path.join(out_dir, gen_file_name)
         template = jinja_env.get_template(file)
         with open(path.join(out_file), 'w') as f:
-            f.write(template.render(intents=data.intents,
-                                    synonyms=data.synonyms,
-                                    pretrained_entities=data.pretrained_entities,
-                                    entities=data.entities,
-                                    events=data.events,
-                                    eservices=data.eservices,
-                                    stories=data.stories,
-                                    actions=data.actions,
-                                    rules=data.rules,
-                                    slots=data.slots,
-                                    forms=data.forms,
-                                    responses=data.responses,
-                                    connectors=data.connectors,
-                                    roles=data.roles,
-                                    policies=data.policies,
-                                    ac_misc=data.ac_misc
-                                    )
+            f.write(template.render(
+                intents=data.intents,
+                synonyms=data.synonyms,
+                pretrained_entities=data.pretrained_entities,
+                entities=data.entities,
+                events=data.events,
+                eservices=data.eservices,
+                stories=data.stories,
+                actions=data.actions,
+                rules=data.rules,
+                slots=data.slots,
+                forms=data.forms,
+                responses=data.responses,
+                connectors=data.connectors,
+                roles=data.roles,
+                policies=data.policies,
+                ac_misc=data.ac_misc
             )
+        )
         chmod(out_file, 509)
 
     for file in STATIC_TEMPLATES:
