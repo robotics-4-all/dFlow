@@ -1,22 +1,28 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import sys
+#!/usr/bin/env python
+
+"""The setup script."""
+
 import os
-from setuptools import setup
+import sys
+from setuptools import setup, find_packages
 
-this_dir = os.path.abspath(os.path.dirname(__file__))
+THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
-VERSIONFILE = os.path.join(this_dir, "dflow", "__init__.py")
+VERSIONFILE = os.path.join(THIS_DIR, "dflow", "__init__.py")
 VERSION = None
 for line in open(VERSIONFILE, "r").readlines():
-    if line.startswith('__version__'):
+    if line.startswith("__version__"):
         VERSION = line.split('"')[1]
 
 if not VERSION:
-    raise RuntimeError('No version defined in dflow.__init__.py')
+    raise RuntimeError("No version defined in dflow.__init__.py")
 
 
-if sys.argv[-1].startswith('publish'):
+with open("requirements.txt") as f:
+    required = f.read().splitlines()
+
+
+if sys.argv[-1].startswith("publish"):
     if os.system("pip list | grep wheel"):
         print("wheel not installed.\nUse `pip install wheel`.\nExiting.")
         sys.exit()
@@ -24,7 +30,7 @@ if sys.argv[-1].startswith('publish'):
         print("twine not installed.\nUse `pip install twine`.\nExiting.")
         sys.exit()
     os.system("python setup.py sdist bdist_wheel")
-    if sys.argv[-1] == 'publishtest':
+    if sys.argv[-1] == "publishtest":
         os.system("twine upload -r test dist/*")
     else:
         os.system("twine upload dist/*")
@@ -34,8 +40,36 @@ if sys.argv[-1].startswith('publish'):
     sys.exit()
 
 
+with open("README.md") as readme_file:
+    readme = readme_file.read()
+
+
 setup(
+    author="Konstantinos Panayiotou",
+    author_email="klpanagi@gmail.com",
+    python_requires=">=3.5",
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+    ],
+    description="",
+    license="MIT license",
+    long_description=readme,
+    package_data={"": ["*.tx"]},
+    keywords="dflow",
+    name="dflow",
+    packages=find_packages(include=["dflow", "dflow.*"]),
+    install_requires=required,
+    test_suite="tests",
+    url="https://github.com/robotics-4-all/dflow",
     version=VERSION,
-    include_package_data=True,
-    package_data={'': ['*.tx', '*.jinja', '*.yml']},
+    zip_safe=False,
 )

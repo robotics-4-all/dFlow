@@ -4,4 +4,3 @@ rich==13.4.2
 jinja2
 fastapi>=0.100.0
 python-multipart
-uvicorn==0.2.0
