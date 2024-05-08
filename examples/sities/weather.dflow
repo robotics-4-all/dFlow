@@ -3,7 +3,7 @@ triggers
     "I want to tell me the weather",
     "Tell me the weather please",
     "I want to tell me the weather for" PE:LOC['Thessaloniki', 'Athens'],
-    "Tell me the weather please for" PE:LOC,
+    "Tell me the weather please for" PE:LOC
   end
 end
 

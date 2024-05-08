@@ -1,0 +1,50 @@
+triggers
+    Intent open_window
+        "Could you please open the living room window?",
+        "Can you open the window in the kitchen?",
+        "I'd like you to open the bedroom window, please.",
+        "Would you mind opening the window in the guest room?",
+        "Could you open the window in the study?",
+        "Can you open the window in the dining area",
+        "Please open the window in the bathroom.",
+        "Could you open the window in the nursery",
+        "I'd like you to open the window in the home office.",
+        "Would you mind opening the window in the basement"
+    end
+end
+
+dialogues
+    Dialogue get_name_dialogue
+        on: open_window
+        responses:
+            ActionGroup open_action
+                FireEvent('/window', 'open')[roles=user_parent]
+                Speak('Sure, I am opening it right now')[roles=user_parent]
+                Speak('I am sorry, you are not authorized')[roles=user_child]
+            end
+    end
+end
+
+gslots
+    username: str = ""
+end
+
+access_controls
+    Roles
+        user_parent,
+        user_child
+        
+        default:
+            user_child
+    end
+    
+    Authentication
+        method: slot
+        slot_name: username    
+    end
+
+    Path
+        "/home/Desktop/ac_policies.txt"
+    end
+
+end

@@ -1,0 +1,181 @@
+gslots
+    name: str = ""
+end
+
+eservices
+    EServiceHTTP full_book_svc
+        verb: GET
+        host: 'localhost'
+        port: 7777
+        path: '/full_book'
+    end
+
+    EServiceHTTP sample_book_svc
+        verb: GET
+        host: 'localhost'
+        port: 7777
+        path: '/sample_book'
+    end
+
+    EServiceHTTP change_narrator_svc
+        verb: PUT
+        host: 'localhost'
+        port: 7777
+        path: '/change_narrator'
+    end
+end
+
+entities
+    Entity NARRATOR
+        female,
+        male
+    end
+
+    Entity AUDIOBOOK
+        Silmarilion by Tolkien,
+        Silmarilion,
+        Dune by Frank Herbert
+    end
+
+end
+
+
+triggers
+
+    Intent greet
+        "hey",
+        "hello",
+        "hi",
+        "hello there",
+        "good morning",
+        "good evening",
+        "moin",
+        "hey there",
+        "let's go",
+        "hey dude",
+        "goodmorning",
+        "goodevening",
+        "good afternoon"
+    end
+
+    Intent change_narrator
+        "I want to change narrator",
+        "Please change narrator's voice",
+        "Change narrator's voice"
+    end
+
+    Intent inform_narrator
+        TE:NARRATOR "voice please",
+        TE:NARRATOR
+    end
+
+    Intent listen_audiobook
+        "Yes I want to listen to" TE:AUDIOBOOK,
+        "Please play" TE:AUDIOBOOK,
+        "Play" TE:AUDIOBOOK,
+        "Yes play" TE:AUDIOBOOK
+    end
+
+
+    Intent bazinga
+        "bazinga",
+        "bazingaaaaaa",
+        "baz",
+        "Bazinga"
+    end
+
+    Intent inform_name
+        "Hello I am" PE:PERSON['John', 'Nick'],
+        "Hi my name is" PE:PERSON['Nick'],
+        "I'm" PE:PERSON,
+        PE:PERSON,
+        "I am" PE:PERSON
+    end
+end
+
+dialogues
+    // This is a demonstration on how slot authentication can be used for debbuging or ease of use.
+    // In production, IDs should be acquired from third party Auths like Slack.
+    
+    Dialogue get_name_dialogue
+        on: bazinga
+        responses:
+            Form form1
+                name_slot: str = HRI('What is your name?', [PE:PERSON])
+            end,
+            ActionGroup answer_back
+                SetGSlot(name, form1.name_slot)
+                Speak('Thanks' form1.name_slot '! I will remember that')
+            end
+    end
+
+    Dialogue AudiobookDialogue
+        on: greet
+        responses:
+            Form AF1
+                audiobook_slot: str = HRI('Hi, would you like to listen to an audiobook?', [TE:AUDIOBOOK])
+            end,
+            ActionGroup play_audiobook
+                Speak('Playing the full book,' AF1.audiobook_slot)[roles=user_paid]
+                full_book_svc(query=[audiobook=AF1.audiobook_slot],)[roles=user_paid]
+
+                Speak('Playing a sample of,' AF1.audiobook_slot)[roles=user_free]
+                sample_book_svc(query=[audiobook=AF1.audiobook_slot],)[roles=user_free]
+            end
+    end
+
+    Dialogue ChangeNarratorDialogue
+        on: change_narrator
+        responses:
+            ActionGroup change_nar_auth
+                SetFSlot(AF2.narrator_slot, "unauthorized")[roles=user_free]
+            end,
+            Form AF2
+                narrator_slot: str = HRI('Would you like female or male voice?', [TE:NARRATOR])
+            end,
+            ActionGroup change_nar
+                Speak('Changing narrator voice to' AF2.narrator_slot)[roles=user_paid]
+                change_narrator_svc(body=[narrator=AF2.narrator_slot],)[roles=user_paid]
+
+                Speak('You need a paid plan to perform this action')[roles=user_free]
+            end
+    end
+    
+end
+
+access_controls
+    Roles
+        user_paid,
+        user_free
+        
+        default: 
+            user_free
+    end
+
+    Users
+        user_paid:
+            John
+
+        user_free:
+            Nick
+    end
+
+    Path
+        "/home/user_roles_policies.txt"
+    end
+
+    Authentication
+        method: slot
+        slot_name: name
+        
+    end
+
+end
+
+connectors
+  Connector slack
+    token: "slack-token"
+    channel: "audiobook-bot"
+    signing_secret: "signing-secret"
+  end
+end

@@ -28,7 +28,7 @@ output.append(SlotSet("{{act.slot}}", {{act.value}}))
 {{property}} = compute_system_properties("{{property}}")
 {% endfor %} 
 {% for key, value in act.path_params.items() %} 
-{{key}} = "{{value}}"
+{{key}} = f"{{value}}"
 {% endfor %}
 try:
     response = requests.{{act.verb}}(f"{{act.url}}",
@@ -41,7 +41,7 @@ try:
 except:
     print(f'Error retrieving response from {{act.url}} with code {response.status_code}.')
     dispatcher.utter_message(text = "Apologies, something went wrong.")
-{% if act.response_filter is defined %} 
+{% if act.response_filter is defined and act.response_filter != None %} 
 {{act.response_slot}} = response.json(){{act.response_filter}}
 output.append(SlotSet('{{act.response_slot}}', {{act.response_slot}}))
 {% endif %}
@@ -196,7 +196,7 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {{slot}} = tracker.get_slot('{{slot}}')
             {% endfor %}
             {% for key, value in slot.data.path_params.items() %}
-            {{key}} = "{{value}}"
+            {{key}} = f"{{value}}"
             {% endfor %}
             {% for property in slot.data.system_properties %}
             {{property}} = compute_system_properties("{{property}}")

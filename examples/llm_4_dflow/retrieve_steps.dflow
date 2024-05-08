@@ -1,0 +1,35 @@
+triggers
+  Intent retrieve_steps
+    "How many steps have I taken today",
+    "What's my step count for today",
+    "Can you tell me how many steps I've walked today",
+    "Do you know my step count for today",
+    "What's the number of steps I've taken so far today",
+    "Could you check and tell me my step count for today",
+    "I'm curious, how many steps have I logged today",
+    "Can you provide me with my step count for today",
+    "Do you have my daily step count available",
+    "What's the tally of steps I've walked"
+  end
+end
+
+eservices
+    EServiceHTTP steps_svc
+        verb: GET
+        host: 'https://health.com'
+        path: '/profile/steps'
+    end
+end
+
+dialogues
+  Dialogue retrieve_steps_dialogue
+      on: retrieve_steps
+      responses:
+        Form steps_form
+          steps: str = steps_svc()[steps]
+        end,
+        ActionGroup action_retrieve_steps
+          Speak('Today you have done ' steps_form.steps ' steps so far.')
+        end
+  end
+end

@@ -1,0 +1,37 @@
+triggers
+  Intent meal_log
+    "I want to record the details of my meal.",
+    "Could you help me log what I just ate?",
+    "I need to jot down the meal I just had.",
+    "Can you assist me in logging my meal",
+    "I'd like to make a note of the food I consumed",
+    "Could you remind me to log my meal",
+    "I need to remember what I ate, let's log it",
+    "I want to jot down the details of this meal",
+    "Can you help me create a log entry for this meal?",
+    "I need to make a record of this meal for tracking purposes."
+  end
+end
+
+eservices
+    EServiceHTTP meal_svc
+        verb: POST
+        host: 'https://services.issel.auth.gr'
+        path: '/profile/meal'
+    end
+end
+
+dialogues
+  Dialogue meal_log_dlg
+      on: meal_log
+      responses:
+        Form meal_form
+          dish: str = HRI('What dish did you eat?')
+          volume: str = HRI('How much of this did you eat?')
+        end,
+        ActionGroup action_take_notes
+          meal_svc(body=[dish=meal_form.dish, volume=meal_form.volume],)
+          Speak('Thanks for letting me know!')
+        end
+  end
+end

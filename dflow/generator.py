@@ -202,6 +202,16 @@ def parse_model(model) -> TransformationDataModel:
         else:
             service_info['port'] = ''
             port = ''
+        
+        service_info['mime'] = ''
+        if service.mime:
+            if service.verb.lower() == 'get':
+                for mime in service.mime:
+                    service_info['mime'] += f"'Accept': '{mime}', "
+            else:
+                for mime in service.mime:
+                    service_info['mime'] += f"'Content-Type': '{mime}', "
+            
         service_info['path'] = service.path
         service_info['url'] = f"{service_info['host']}{port}{service_info['path']}"
         data.eservices[service.name] = service_info
@@ -328,6 +338,9 @@ def parse_model(model) -> TransformationDataModel:
                         actions_slots.extend(path_slots + query_slots + header_slots + body_slots)
                         actions_user_properties.extend(path_user_properties+query_user_properties+header_user_properties+body_user_properties)
 
+                        if data.eservices[action.eserviceRef.name]['mime']:
+                            header_params = merge_header_mimes(header_params, data.eservices[action.eserviceRef.name]['mime'])
+                        
                         actions.append({
                             'type': action.__class__.__name__,
                             'verb': action.eserviceRef.verb.lower(),
@@ -398,6 +411,10 @@ def parse_model(model) -> TransformationDataModel:
                         header_params, header_slots, header_user_properties, header_system_properties = process_eservice_params(slot.source.header_params)
                         body_params, body_slots, body_user_properties, body_system_properties = process_eservice_params(slot.source.body_params)
                         validation = validate_path_params(data.eservices[slot.source.eserviceRef.name]['url'], path_params)
+                        
+                        if data.eservices[slot.source.eserviceRef.name]['mime']:
+                            header_params = merge_header_mimes(header_params, data.eservices[slot.source.eserviceRef.name]['mime'])
+                        
                         if not validation:
                             raise Exception('Service path and path params do not match.')
                         previous_slot_list = []
@@ -811,6 +828,12 @@ def process_eservice_params_as_dict(params):
             results[param.name] = param.value
     return results, list(set(slots)), list(set(user_properties)), list(set(system_properties))
 
+def merge_header_mimes(header_params, mimes):
+    if header_params != '{}':
+        header_params = header_params[:-1] + ',' + mimes + '}'
+    else:
+        header_params = header_params[:-1] + mimes + '}'
+    return header_params
 
 def process_response_filter(text):
     """ Convert response filtering to template-ready string. """
