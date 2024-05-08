@@ -631,7 +631,9 @@ Keep in mind that for the inline action policies to work, the user must first ha
 For an authorization and access control mechanism to function properly, the physical users must first be assosciated with their digital identity. This is usually achieved via authentication. DFlow supports two different types of authentication schemes:
 
 - **Third party authentication:** This allows a third party [connector](#connector) to authenticate users. The default attribute used for user identification is their **emails**, fetched from the connector's channel.
- 
+
+- **User ID authentication:** This allows the user to be authenticated by utilizing the _sender_id_ variable of the RASA API.
+
 - **Slot authentication:** This allows the user to be authenticated using the content of a slot, which is filled during the conversation with the user, enabling the utilization of voice passwords.
 
 > [!WARNING] 
@@ -646,6 +648,8 @@ Authentication:
         )?
     'end'
 ;
+
+AuthMethods: 'slot' | 'user_id' | 'slack' | 'telegram';
 ```
 
 #### Path
