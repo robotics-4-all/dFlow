@@ -1,0 +1,61 @@
+triggers
+    Intent start_engine
+        "Start engine",
+        "Start car's engine",
+        "Engine on"
+    end
+
+    Intent play_music
+        "Play music",
+        "Radio on",
+        "Please play some music",
+        "Music"
+    end
+end
+
+dialogues
+    Dialogue EngineDialogue
+        on: start_engine
+        responses:
+            ActionGroup action_start_engine
+                Speak('Starting engine')
+                FireEvent('/engine', 'on')
+            end
+    end
+
+    Dialogue MusicDialogue
+    on: play_music
+    responses:
+        ActionGroup action_play_music
+            Speak('Ok, playing some music')
+            FireEvent('/radio', 'on')
+        end
+    end
+end
+
+
+access_controls
+    Roles
+        driver,
+        passenger
+        
+        default: 
+            passenger
+    end
+
+    Policy start_engine_policy
+        on:
+            action_start_engine
+        roles:
+            driver
+    end
+
+    Path
+        "/home/Desktop/passengers.txt"
+    end
+
+    Authentication
+        method: user_id        
+    end
+
+end

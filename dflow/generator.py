@@ -4,7 +4,6 @@ import jinja2, argparse, itertools, shutil, re
 from itertools import groupby
 from operator import itemgetter
 
-from textxjinja import textx_jinja_generator
 import textx.scoping.providers as scoping_providers
 from rich import print
 from pydantic import BaseModel
@@ -77,6 +76,7 @@ def codegen(model_fillepath,
     return generate(metamodel, model, output_path,
                     overwrite, debug, **custom_args)
 
+
 @generator('dflow', 'rasa')
 def dflow_generate_rasa(metamodel,
                         model,
@@ -120,24 +120,25 @@ def generate(metamodel,
         out_file = path.join(out_dir, gen_file_name)
         template = jinja_env.get_template(file)
         with open(path.join(out_file), 'w') as f:
-            f.write(template.render(intents=data.intents,
-                                    synonyms=data.synonyms,
-                                    pretrained_entities=data.pretrained_entities,
-                                    entities=data.entities,
-                                    events=data.events,
-                                    eservices=data.eservices,
-                                    stories=data.stories,
-                                    actions=data.actions,
-                                    rules=data.rules,
-                                    slots=data.slots,
-                                    forms=data.forms,
-                                    responses=data.responses,
-                                    connectors=data.connectors,
-                                    roles=data.roles,
-                                    policies=data.policies,
-                                    ac_misc=data.ac_misc
-                                    )
+            f.write(template.render(
+                intents=data.intents,
+                synonyms=data.synonyms,
+                pretrained_entities=data.pretrained_entities,
+                entities=data.entities,
+                events=data.events,
+                eservices=data.eservices,
+                stories=data.stories,
+                actions=data.actions,
+                rules=data.rules,
+                slots=data.slots,
+                forms=data.forms,
+                responses=data.responses,
+                connectors=data.connectors,
+                roles=data.roles,
+                policies=data.policies,
+                ac_misc=data.ac_misc
             )
+        )
         chmod(out_file, 509)
 
     for file in STATIC_TEMPLATES:
@@ -911,7 +912,7 @@ def validate_access_control(data: TransformationDataModel, model) -> Transformat
                 raise Exception(f"Authentication slot {data.ac_misc.authentication['slot_name']} not defined in Dialogues")
 
         # Check if third-party authentication is required, but no third-party connector is defined
-        if data.ac_misc.authentication['method'] != 'slot':
+        if data.ac_misc.authentication['method'] not in ['slot', 'user_id']:
             connector_names = [connector['name'] for connector in data.connectors]
             if data.ac_misc.authentication['method'] not in connector_names:
                 raise Exception(f"You need to define a '{data.ac_misc.authentication['method']}' connector to use this authentication method")
