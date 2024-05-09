@@ -34,10 +34,6 @@ dialogues
   end
 end
 
-gslots
-    username: str = ""
-end
-
 access_controls
   Roles
     user_paid,
@@ -66,8 +62,7 @@ access_controls
     "/home/Desktop/users.txt"
   end
 
-  Authentication
-    method: slot
-    slot_name: username
-  end
+    Authentication
+      method: user_id        
+    end
 end
