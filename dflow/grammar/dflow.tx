@@ -324,12 +324,5 @@ ListElement:
     NUMBER | STRING | BOOL | List | Dict | FormParamIndex | GlobalSlotIndex
 ;
 
-Word:
-    /[-\w ]*\b/
-;
-
-WordExt:
-    /[-\.\@\w ]*\b/
-;
 
 Text: STRING | EnvPropertyDef | FormParamIndex | GlobalSlotIndex;
