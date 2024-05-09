@@ -123,6 +123,8 @@ class PolicyDecisionPoint():
         {% if ac_misc.authentication.method == 'slot' %}
         # Get user's details via slot
         user_identifier = self.tracker.get_slot('{{ac_misc.authentication.slot_name}}')
+        {% elif ac_misc.authentication.method == 'user_id' %}
+        user_identifier = self.tracker.sender_id
         {% else %}
         # Get user's details via slack API
           {% for connector in connectors %}

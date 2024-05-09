@@ -913,7 +913,7 @@ def validate_access_control(data: TransformationDataModel, model) -> Transformat
                 raise Exception(f"Authentication slot {data.ac_misc.authentication['slot_name']} not defined in Dialogues")
 
         # Check if third-party authentication is required, but no third-party connector is defined
-        if data.ac_misc.authentication['method'] != 'slot':
+        if data.ac_misc.authentication['method'] not in ['slot', 'user_id']:
             connector_names = [connector['name'] for connector in data.connectors]
             if data.ac_misc.authentication['method'] not in connector_names:
                 raise Exception(f"You need to define a '{data.ac_misc.authentication['method']}' connector to use this authentication method")

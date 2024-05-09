@@ -1,0 +1,57 @@
+triggers
+  Intent fill_profile
+    "I want to fill my profile",
+    "Profile",
+    "fill data",
+    "fill my data",
+    "lets get to know us",
+    "Hello I am" PE:PERSON['John', 'Nick'],
+    "Hi my name is" PE:PERSON,
+    "I am 30 years old",
+    "I'm" PE:PERSON "and I am 20 years old"
+  end
+end
+
+eservices
+    EServiceHTTP register_user
+        verb: POST
+        host: 'https://platform.health.gr'
+        path: '/user/register'
+    end
+end
+
+dialogues
+  Dialogue dialogue_profile
+        on: fill_profile
+        responses:
+          Form form_profile
+            name: str = HRI('What\'s your name?', [PE:PERSON])
+            age: int = HRI('How old are you?')
+          end,
+          ActionGroup answer_action
+            register_user(query=[name=form_profile.name, age=form_profile.age],)[roles=user_unregistered]
+            Speak('Glad to meet you' form_profile.name)[roles=user_unregistered]
+            Speak('It is nice seeing you again' form_profile.name)[roles=user_registered]
+          end
+  end
+end
+
+access_controls
+  Roles
+    user_registered,
+    user_unregistered
+
+    default: 
+      user_unregistered
+  end
+
+  Path
+    "/home/Desktop/registered_users_db.txt"
+  end
+
+  Authentication
+    method: slot
+    slot_name: name
+  end
+
+end
