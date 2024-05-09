@@ -4,6 +4,7 @@ from rich import print, pretty
 import json
 
 from dflow.language import build_model, report_model_info
+from dflow.generator import codegen as rasa_generator
 
 pretty.install()
 
@@ -39,11 +40,8 @@ def generate(ctx, model_path, generator):
         return
     if generator == "rasa":
         model = build_model(model_path)
-        _model = rasa_generator(model)
-        filepath = f"dflow-{model.metadata.name}.json"
-        with open(filepath, "w") as fp:
-            json.dump(_model, fp)
-    print(f"[*] M2T finished. Output: {filepath}")
+        out_path = rasa_generator(model)
+    print(f"[*] M2T finished. Output: {out_path}")
 
 
 def main():
