@@ -1,0 +1,17 @@
+// FQN: ID('.'ID)*;
+ADDRESS_ID: /([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}/;
+
+FQN: ID+['.'];
+FQNI: ID+['.']('.*')?;
+// Import: 'import' importURI=FQNI ('as' name=ID)?;
+NID: /(.*?)\n/;
+NIDREF: NID+['.']('.*')?;
+Import: 'import' name=STRING;
+
+// Comments
+Comment: CommentLine | CommentBlock ;
+CommentLine: /\/\/.*?$/;
+CommentBlock: /\/\*(.|\n)*?\*\//;
+
+Word: /[-\w ]*\b/;
+WordExt: /[-\.\@\w ]*\b/;

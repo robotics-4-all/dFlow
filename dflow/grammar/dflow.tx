@@ -18,9 +18,12 @@
 /*
     dFlow Language
 */
+import utils
+import connector
+import auth
 
 dFlow:
-    (
+(
     ('entities'
         entities*=TrainableEntity
     'end')?
@@ -50,9 +53,9 @@ dFlow:
     'end')?
 
     ('connectors'
-        connectors+=Connector
+        connectors*=Connector
     'end')?
-    )#
+)#
 ;
 
 EServiceDef: EServiceDefHTTP;
@@ -74,7 +77,7 @@ Entity: TrainableEntity | PretrainedEntity;
 
 TrainableEntity:
     'Entity' name=ID
-        words+=Words[',']
+        words+=Word[',']
     'end'
 ;
 
@@ -103,7 +106,7 @@ PretrainedEntity:
 
 Synonym:
     'Synonym' name=ID
-        words+=Words[',']
+        words+=Word[',']
     'end'
 ;
 
@@ -188,7 +191,7 @@ EServiceCallHTTP:
         ('path=' '[' path_params*=EServiceParam[','] ']' ',')?
         ('body=' '[' body_params*=EServiceParam[','] ']' ',')?
         )#
-    ')' ('[' response_filter=EServiceResponseFilter ']')? ('[' 'roles' '=' roles+=Words[','] ']')?
+    ')' ('[' response_filter=EServiceResponseFilter ']')? ('[' 'roles' '=' roles+=Word[','] ']')?
 ;
 
 EServiceParam: name=ID '=' value=ParameterValue;
@@ -247,100 +250,24 @@ Action:
 ;
 
 SpeakAction:
-    'Speak' '(' text+=Text ')' ('[' 'roles' '=' roles+=Words[','] ']')?
+    'Speak' '(' text+=Text ')' ('[' 'roles' '=' roles+=Word[','] ']')?
 ;
 
 SetFormSlot:
-    'SetFSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')' ('[' 'roles' '=' roles+=Words[','] ']')?
+    'SetFSlot' '(' slotRef=FormParamRef ',' value=ParameterValue ')' ('[' 'roles' '=' roles+=Word[','] ']')?
 ;
 
 SetGlobalSlot:
-    'SetGSlot' '(' slotRef=GlobalSlotRef ',' value=ParameterValue ')' ('[' 'roles' '=' roles+=Words[','] ']')?
+    'SetGSlot' '(' slotRef=GlobalSlotRef ',' value=ParameterValue ')' ('[' 'roles' '=' roles+=Word[','] ']')?
 ;
 
 FireEventAction:
-    'FireEvent' '(' uri+=Text ',' msg=ParameterValue ')' ('[' 'roles' '=' roles+=Words[','] ']')?
+    'FireEvent' '(' uri+=Text ',' msg=ParameterValue ')' ('[' 'roles' '=' roles+=Word[','] ']')?
 ;
 
 RESTCallAction: EServiceCallHTTP;
 // ----------------------------------------------------------------------
 
-// CONNECTORS -----------------------------------------------
-// ----------------------------------------------------------------------
-
-Connector: Slack | Telegram;
-
-Slack:
-    ('Connector' name='slack'
-        'token:' token=STRING
-        'channel:' channel=STRING
-        'signing_secret:' signing_secret=STRING
-    'end')?
-;
-
-Telegram:
-    ('Connector' name='telegram'
-        'token:' token=STRING
-        'verify:' verify=STRING
-        'webhook_url:' webhook_url=STRING
-    'end')?
-;
-
-
-// ----------------------------------------------------------------------
-
-// ACCESS_CONTROL -------------------------------------------------------
-// ----------------------------------------------------------------------
-
-AccessControlDef:
-    (
-    roles=Roles
-    policies*=Policy
-    path=Path
-    (users=Users)?
-    authentication=Authentication
-    )#
-;
-
-Roles:
-    'Roles'
-        words+=Words[',']
-        'default:'
-            default=Words
-    'end'
-;
-
-Policy:
-    'Policy' name=ID
-        'on:' actions+=Words[',']
-        'roles:' roles+=Words[',']
-    'end'
-;
-
-Path:
-    'Path'
-        path=STRING
-    'end'
-;
-
-Users:
-    'Users'
-        roles+=UserRoles
-    'end'
-;
-
-Authentication:
-    'Authentication'
-        'method:' method=AuthMethods
-        (
-        'slot_name:' slot_name=Words
-        )?
-    'end'
-;
-
-UserRoles: role=Words ':' users+=Words_ext[','];
-
-AuthMethods: 'slot' | 'slack' | 'telegram';
 
 // ----------------------------------------------------------------------
 
@@ -351,38 +278,6 @@ HTTPVerb:
     'POST'  |
     'PUT'
 ;
-
-DictItem:
-    name=ID ':' value=DictTypes
-;
-
-DictTypes:
-    NUMBER | STRING | BOOL | Dict | List | FormParamIndex | GlobalSlotIndex
-;
-
-Dict:
-    '{' items*=DictItem[','] '}'
-;
-
-List:
-    '[' items*=ListElements[','] ']'
-;
-
-ListElements:
-    NUMBER | STRING | BOOL | List | Dict | FormParamIndex | GlobalSlotIndex
-;
-
-Words:
-    /[-\w ]*\b/
-;
-
-Words_ext:
-    /[-\.\@\w ]*\b/
-;
-
-Text: TextStr | EnvPropertyDef | FormParamIndex | GlobalSlotIndex;
-
-TextStr: STRING;
 
 EnvPropertyDef: UserPropertyDef | SystemPropertyDef;
 UserPropertyDef: 'USER:' property=[UserProperty|FQN];
@@ -407,14 +302,34 @@ SystemProperty:
     'PUBLIC_IP'
 ;
 
-// ----------------------------------------------------------------------
-// ----------------------------------------------------------------------
+// TYPES
 
-// === Fully Qualified Names Rule ===
-FQN: ID('.'ID)*;
-
-// special rule for comments.
-Comment:
-    /\/\/.*$/
+DictItem:
+    name=ID ':' value=DictType
 ;
-// ----------------------------------------------------------------------
+
+DictType:
+    NUMBER | STRING | BOOL | Dict | List | FormParamIndex | GlobalSlotIndex
+;
+
+Dict:
+    '{' items*=DictItem[','] '}'
+;
+
+List:
+    '[' items*=ListElement[','] ']'
+;
+
+ListElement:
+    NUMBER | STRING | BOOL | List | Dict | FormParamIndex | GlobalSlotIndex
+;
+
+Word:
+    /[-\w ]*\b/
+;
+
+WordExt:
+    /[-\.\@\w ]*\b/
+;
+
+Text: STRING | EnvPropertyDef | FormParamIndex | GlobalSlotIndex;

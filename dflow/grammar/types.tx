@@ -1,0 +1,30 @@
+// Types
+
+Time:
+    hour=INT ':' minute=INT (':' second=INT)?
+;
+
+Date: month=INT ':' day=INT ':' year=INT;
+
+// Hours: /[0-2]?[0-9]?/;
+// Minutes: /[0-5][0-9]/;
+
+List:
+    '[' items*=ListItem[','] ']'
+;
+
+ListItem:
+    NUMBER | STRING | BOOL | List | Dict | OBJECT
+;
+
+Dict:
+    '{' items*=DictItem[','] '}'
+;
+
+DictItem:
+    name=STRING ':' value=DictType
+;
+
+DictType:
+    NUMBER | STRING | BOOL | Dict | List | OBJECT
+;

@@ -1,0 +1,51 @@
+import utils
+
+AccessControlDef:
+    (
+    roles=Roles
+    policies*=Policy
+    path=Path
+    (users=Users)?
+    authentication=Authentication
+    )#
+;
+
+Roles:
+    'Roles'
+        words+=Word[',']
+        'default:'
+            default=Word
+    'end'
+;
+
+Policy:
+    'Policy' name=ID
+        'on:' actions+=Word[',']
+        'roles:' roles+=Word[',']
+    'end'
+;
+
+Path:
+    'Path'
+        path=STRING
+    'end'
+;
+
+Users:
+    'Users'
+        roles+=UserRoles
+    'end'
+;
+
+Authentication:
+    'Authentication'
+        'method:' method=AuthMethods
+        (
+        'slot_name:' slot_name=Word
+        )?
+    'end'
+;
+
+UserRoles: role=Word ':' users+=WordExt[','];
+
+AuthMethods: 'slot' | 'slack' | 'telegram';
