@@ -138,7 +138,7 @@ async def validate_b64(base64_model: str, api_key: str = Security(get_api_key)):
 
 
 @api.post("/merge")
-async def merge(models: list[UploadFile]) -> FileResponse:
+async def merge(models: list[UploadFile], api_key: str = Security(get_api_key)) -> FileResponse:
     if not len(models):
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
@@ -161,8 +161,9 @@ async def merge(models: list[UploadFile]) -> FileResponse:
         print(f"Exception while merging dflow models\n{e}")
         raise HTTPException(status_code=400, detail=f"Codegen error: {e}")
 
-@api.post("/codegen/file")
-async def gen_from_file(model_file: UploadFile = File(...)):
+@api.post("/generate/file")
+async def gen_from_file(model_file: UploadFile = File(...),
+                        api_key: str = Security(get_api_key)):
     try:
         fd = model_file.file
         uid = uuid.uuid4().hex[0:8]
@@ -187,6 +188,65 @@ async def gen_from_file(model_file: UploadFile = File(...)):
     except Exception as e:
         print(f"Exception while generating rasa sources\n{e}")
         raise HTTPException(status_code=400, detail=f"Codegen error: {e}")
+
+
+@api.post("/generate/b64")
+async def gen_model_b64(fenc: str = '', api_key: str = Security(get_api_key)):
+    model_dec = base64.b64decode(fenc)
+    try:
+        uid = uuid.uuid4().hex[0:8]
+        fpath = os.path.join(
+            CONSTANTS.TMP_DIR,
+            f"model_for_codegen-{uid}.dflow"
+        )
+        with open(fpath, 'w') as f:
+            f.write(model_dec)
+        out_path = rasa_generator(
+            fpath,
+            output_path=os.path.join(CONSTANTS.TMP_DIR, f'codegen-{uid}')
+        )
+        tarball_path = os.path.join(
+            CONSTANTS.TMP_DIR,
+            f'codegen-{uid}.tar.gz'
+        )
+        make_tarball(out_path, tarball_path)
+        return FileResponse(tarball_path,
+                    filename=os.path.basename(tarball_path),
+                    media_type='application/x-tar')
+    except Exception as e:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail=f"{str(e)}",
+        )
+
+@api.post("/generate")
+async def gen_model_b64(input_model: TransformationModel = Body(...),
+                        api_key: str = Security(get_api_key)):
+    try:
+        uid = uuid.uuid4().hex[0:8]
+        fpath = os.path.join(
+            CONSTANTS.TMP_DIR,
+            f"model_for_codegen-{uid}.dflow"
+        )
+        with open(fpath, 'w') as f:
+            f.write(input_model.model)
+        out_path = rasa_generator(
+            fpath,
+            output_path=os.path.join(CONSTANTS.TMP_DIR, f'codegen-{uid}')
+        )
+        tarball_path = os.path.join(
+            CONSTANTS.TMP_DIR,
+            f'codegen-{uid}.tar.gz'
+        )
+        make_tarball(out_path, tarball_path)
+        return FileResponse(tarball_path,
+                    filename=os.path.basename(tarball_path),
+                    media_type='application/x-tar')
+    except Exception as e:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail=f"{str(e)}",
+        )
 
 
 def make_tarball(source_dir, out_path):
