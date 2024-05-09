@@ -39,8 +39,7 @@ def generate(ctx, model_path, generator):
         print(f"[*] Generator {generator} not supported")
         return
     if generator == "rasa":
-        model = build_model(model_path)
-        out_path = rasa_generator(model)
+        out_path = rasa_generator(model_path)
     print(f"[*] M2T finished. Output: {out_path}")
 
 

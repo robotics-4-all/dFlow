@@ -63,7 +63,7 @@ def get_metamodel(debug: bool = False, global_repo: bool = False):
         debug=debug,
     )
 
-    metamodel.register_scope_providers(get_scode_providers())
+    # metamodel.register_scope_providers(get_scode_providers())
     metamodel.register_model_processor(model_proc)
     metamodel.register_obj_processors(obj_processors)
     return metamodel
