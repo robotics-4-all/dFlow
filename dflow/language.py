@@ -2,7 +2,8 @@ import json
 import os
 import pathlib
 from os.path import join
-from typing import Any
+from typing import Any, List
+import uuid
 
 import textx.scoping.providers as scoping_providers
 from rich import pretty, print
@@ -15,7 +16,7 @@ from textx import (
 )
 from textx.scoping import GlobalModelRepository, ModelRepository
 
-from dflow.definitions import THIS_DIR, MODEL_REPO_PATH, BUILTIN_MODELS
+import dflow.definitions as CONSTANTS
 
 pretty.install()
 
@@ -54,7 +55,7 @@ obj_processors = {
 
 def get_metamodel(debug: bool = False, global_repo: bool = False):
     metamodel = metamodel_from_file(
-        join(THIS_DIR, 'grammar', 'dflow.tx'),
+        join(CONSTANTS.THIS_DIR, 'grammar', 'dflow.tx'),
         classes=class_provider,
         auto_init_attributes=True,
         textx_tools_support=True,
@@ -71,14 +72,14 @@ def get_metamodel(debug: bool = False, global_repo: bool = False):
 
 def get_scode_providers():
     sp = {"*.*": scoping_providers.FQNImportURI(importAs=True)}
-    if BUILTIN_MODELS:
+    if CONSTANTS.BUILTIN_MODELS:
         sp["brokers*"] = scoping_providers.FQNGlobalRepo(
-            join(BUILTIN_MODELS, "broker", "*.dflow"))
+            join(CONSTANTS.BUILTIN_MODELS, "broker", "*.dflow"))
         # sp["entities*"] = scoping_providers.FQNGlobalRepo(
         #     join(BUILTIN_MODELS, "entity", "*.dflow"))
-    if MODEL_REPO_PATH:
+    if CONSTANTS.MODEL_REPO_PATH:
         sp["brokers*"] = scoping_providers.FQNGlobalRepo(
-            join(MODEL_REPO_PATH, "broker", "*.dflow"))
+            join(CONSTANTS.MODEL_REPO_PATH, "broker", "*.dflow"))
         # sp["entities*"] = scoping_providers.FQNGlobalRepo(
         #     join(MODEL_REPO_PATH, "entity", "*.dflow"))
     return sp
@@ -117,3 +118,54 @@ def dflow_language():
     "DFlow DSL for building intent-based Virtual Assistants (VAs)"
     mm = get_metamodel()
     return mm
+
+
+def merge_models(models: List[Any], output: bool = False):
+    sections = [
+        'entities',
+        'synonyms',
+        'gslots',
+        'triggers',
+        'dialogues',
+        'eservices'
+    ]
+    merged_strings = {k: '' for k in sections}
+
+    for model in models:
+        # Use list os sections to find keywords in file
+        indexes = []
+        for section in sections:
+            i = model.find(section)
+            indexes.append(i)
+        # Sort sections based on appearance in file
+        indexes, sections = zip(*sorted(zip(indexes, sections)))
+
+        # Extract each section in reverse order
+        for i in reversed(range(len(indexes))):
+            ind = indexes[i]
+            # ind == -1 if keyword doesn't exist in model
+            if ind >= 0:
+                part = model[ind:]
+                model = model[:ind]
+                end_i = part.rfind('end')
+                merged_strings[sections[i]] += part[len(sections[i]):end_i]
+
+    # Add section name the begining and 'end' in the end of each section
+    for section in merged_strings:
+        merged_strings[section] = section + merged_strings[section] + '\nend'
+    merged_str = '\n\n'.join([
+        merged_strings['gslots'],
+        merged_strings['entities'],
+        merged_strings['synonyms'],
+        merged_strings['triggers'],
+        merged_strings['eservices'],
+        merged_strings['dialogues'],
+    ])
+
+    if output:
+        gen_path = os.path.join(CONSTANTS.TMP_DIR,
+                                f'model-merged-{uuid.uuid4().hex[0:8]}.dflow')
+        with open(gen_path, 'w') as f:
+            f.write(merged_str)
+        return gen_path
+    return merged_str
