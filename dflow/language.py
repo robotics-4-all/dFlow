@@ -24,33 +24,8 @@ CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 GLOBAL_REPO = GlobalModelRepository()
 
 
-def verify_component_names(model):
-    _ids = []
-    components = model.components
-    for b in components:
-        if b.name in _ids:
-            raise TextXSemanticError(
-                f"Component with name <{b.name}> already exists", **get_location(b)
-            )
-        _ids.append(b.name)
-
-
-def verify_broker_names(model):
-    _ids = []
-    brokers = get_children_of_type("MQTTBroker", model)
-    brokers += get_children_of_type("AMQPBroker", model)
-    brokers += get_children_of_type("RedisBroker", model)
-    for b in brokers:
-        if b.name in _ids:
-            raise TextXSemanticError(
-                f"Broker with name <{b.name}> already exists", **get_location(b)
-            )
-        _ids.append(b.name)
-
-
 def model_proc(model, metamodel):
-    verify_broker_names(model)
-    verify_component_names(model)
+    pass
 
 
 CUSTOM_CLASSES = [

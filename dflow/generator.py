@@ -4,7 +4,6 @@ import jinja2, argparse, itertools, shutil, re
 from itertools import groupby
 from operator import itemgetter
 
-from textxjinja import textx_jinja_generator
 import textx.scoping.providers as scoping_providers
 from rich import print
 from pydantic import BaseModel
