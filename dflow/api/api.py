@@ -144,12 +144,8 @@ async def merge(models: list[UploadFile]) -> FileResponse:
             status_code=HTTP_400_BAD_REQUEST,
             detail="Model storage is empty!",
         )
-    model_filenames = [file.filename for file in models]
     model_content = [(await file.read()).decode("utf-8") for file in models]
-    # print(model_filenames)
-    # print(model_content)
     merged_model = merge_models(model_content)
-    merged_filename = "merged.dflow"
     merged_model_path = os.path.join(
         CONSTANTS.TMP_DIR,
         f'merged-{uuid.uuid4().hex[0:8]}.dflow'
@@ -158,5 +154,5 @@ async def merge(models: list[UploadFile]) -> FileResponse:
         f.write(merged_model)
     return FileResponse(
         merged_model_path,
-        filename=os.path.basename(merged_filename)
+        filename=os.path.basename(merged_model_path)
     )
