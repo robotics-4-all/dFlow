@@ -91,6 +91,27 @@ def build_model(model_path: str, debug: bool = False):
     return model
 
 
+def report_model_info(model):
+    entities = get_children_of_type("TrainableEntity", model)
+    synonyms = get_children_of_type("Synonym", model)
+    gslots = get_children_of_type("GlobalSlot", model)
+    intents = get_children_of_type("Intent", model)
+    events = get_children_of_type("Event", model)
+    eservices = get_children_of_type("EServiceDefHTTP", model)
+    dialogues = get_children_of_type("Dialogue", model)
+    access_control = get_children_of_type("AccessControlDef", model)
+    connectors = get_children_of_type("Slack", model) + get_children_of_type("Telegram", model)
+    print(f"Trainable Entities: {[e.name for e in entities]}")
+    print(f"Synonyms: {[s.name for s in synonyms]}")
+    print(f"Global Slots: {[gs.name for gs in gslots]}")
+    print(f"Intents: {[i.name for i in intents]}")
+    print(f"Events: {[e.name for e in events]}")
+    print(f"External Services: {[e.name for e in eservices]}")
+    print(f"Dialogues: {[d.name for d in dialogues]}")
+    print(f"Access Control: {True if access_control else False}")
+    print(f"Connectors: {[c.name for c in connectors]}")
+
+
 @language("dflow", "*.dflow")
 def dflow_language():
     "DFlow DSL for building intent-based Virtual Assistants (VAs)"

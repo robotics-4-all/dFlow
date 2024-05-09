@@ -24,6 +24,8 @@ import auth
 
 dFlow:
 (
+    (metadata=Metadata)?
+
     ('entities'
         entities*=TrainableEntity
     'end')?
@@ -58,16 +60,14 @@ dFlow:
 )#
 ;
 
-EServiceDef: EServiceDefHTTP;
-
-EServiceDefHTTP:
-    'EServiceHTTP' name=ID
-        (  'verb:' verb=HTTPVerb
-          'host:' host=STRING
-          ('port:' port=INT)?
-          ('path:' path=STRING)?
-          ('mime:' mime*=STRING[','])?
-        )#
+Metadata:
+    'Metadata'
+    (
+        ('name:' name=STRING)
+        ('description:' description=STRING)?
+        ('author:' author=STRING)?
+        ('email:' email=STRING)?
+    )#
     'end'
 ;
 
@@ -180,6 +180,21 @@ ExtractFromIntent: intent=[Trigger|FQN|^triggers*] ':' value=ParameterValue;
 /* ExtractFromEntity: entity=[Entity|FQN|^entities*]; */
 ExtractFromEntity: TrainableEntityRef | PretrainedEntityRef;
 
+// EService -------------------------------------------------------------
+// ----------------------------------------------------------------------
+
+EServiceDef: EServiceDefHTTP;
+
+EServiceDefHTTP:
+    'EServiceHTTP' name=ID
+        (  'verb:' verb=HTTPVerb
+          'host:' host=STRING
+          ('port:' port=INT)?
+          ('path:' path=STRING)?
+          ('mime:' mime*=STRING[','])?
+        )#
+    'end'
+;
 
 EServiceParamSource: EServiceCallHTTP;
 
