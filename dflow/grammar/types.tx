@@ -9,6 +9,7 @@ Date: month=INT ':' day=INT ':' year=INT;
 // Hours: /[0-2]?[0-9]?/;
 // Minutes: /[0-5][0-9]/;
 
+/*
 List:
     '[' items*=ListItem[','] ']'
 ;
@@ -28,3 +29,4 @@ DictItem:
 DictType:
     NUMBER | STRING | BOOL | Dict | List | OBJECT
 ;
+*/
