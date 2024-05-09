@@ -76,7 +76,6 @@ def codegen(model_fillepath,
              **custom_args):
     metamodel = get_mm()
     model, _ = build_model(model_fillepath)
-    print(model)
     return generate(metamodel, model, output_path,
                     overwrite, debug, **custom_args)
 

@@ -22,6 +22,8 @@ from starlette.status import (
 )
 
 from dflow.language import build_model, merge_models
+from dflow.generator import codegen as rasa_generator
+
 from dflow import definitions as CONSTANTS
 
 API_KEY = os.getenv("API_KEY", "123")
@@ -50,11 +52,9 @@ api.add_middleware(
     allow_headers=["*"],
 )
 
-TMP_DIR = "/tmp/dflow"
 
-
-if not os.path.exists(TMP_DIR):
-    os.mkdir(TMP_DIR)
+if not os.path.exists(CONSTANTS.TMP_DIR):
+    os.mkdir(CONSTANTS.TMP_DIR)
 
 
 class ValidationModel(BaseModel):
@@ -75,7 +75,7 @@ async def validate(model: ValidationModel, api_key: str = Security(get_api_key))
         return 404
     resp = {"status": 200, "message": ""}
     u_id = uuid.uuid4().hex[0:8]
-    fpath = os.path.join(TMP_DIR, f"model_for_validation-{u_id}.dflow")
+    fpath = os.path.join(CONSTANTS.TMP_DIR, f"model_for_validation-{u_id}.dflow")
     with open(fpath, "w") as f:
         f.write(text)
     try:
@@ -100,7 +100,7 @@ async def validate_file(
     resp = {"status": 200, "message": ""}
     fd = file.file
     u_id = uuid.uuid4().hex[0:8]
-    fpath = os.path.join(TMP_DIR, f"model_for_validation-{u_id}.dflow")
+    fpath = os.path.join(CONSTANTS.TMP_DIR, f"model_for_validation-{u_id}.dflow")
     with open(fpath, "w") as f:
         f.write(fd.read().decode("utf8"))
     try:
@@ -122,7 +122,7 @@ async def validate_b64(base64_model: str, api_key: str = Security(get_api_key)):
     resp = {"status": 200, "message": ""}
     fdec = base64.b64decode(base64_model)
     u_id = uuid.uuid4().hex[0:8]
-    fpath = os.path.join(TMP_DIR, f"model_for_validation-{u_id}.dflow")
+    fpath = os.path.join(CONSTANTS.TMP_DIR, f"model_for_validation-{u_id}.dflow")
     with open(fpath, "wb") as f:
         f.write(fdec)
     try:
@@ -144,15 +144,51 @@ async def merge(models: list[UploadFile]) -> FileResponse:
             status_code=HTTP_400_BAD_REQUEST,
             detail="Model storage is empty!",
         )
-    model_content = [(await file.read()).decode("utf-8") for file in models]
-    merged_model = merge_models(model_content)
-    merged_model_path = os.path.join(
-        CONSTANTS.TMP_DIR,
-        f'merged-{uuid.uuid4().hex[0:8]}.dflow'
-    )
-    with open(merged_model_path, "w") as f:
-        f.write(merged_model)
-    return FileResponse(
-        merged_model_path,
-        filename=os.path.basename(merged_model_path)
-    )
+    try:
+        model_content = [(await file.read()).decode("utf-8") for file in models]
+        merged_model = merge_models(model_content)
+        merged_model_path = os.path.join(
+            CONSTANTS.TMP_DIR,
+            f'merged-{uuid.uuid4().hex[0:8]}.dflow'
+        )
+        with open(merged_model_path, "w") as f:
+            f.write(merged_model)
+        return FileResponse(
+            merged_model_path,
+            filename=os.path.basename(merged_model_path)
+        )
+    except Exception as e:
+        print(f"Exception while merging dflow models\n{e}")
+        raise HTTPException(status_code=400, detail=f"Codegen error: {e}")
+
+@api.post("/codegen/file")
+async def gen_from_file(model_file: UploadFile = File(...)):
+    try:
+        fd = model_file.file
+        uid = uuid.uuid4().hex[0:8]
+        fpath = os.path.join(
+            CONSTANTS.TMP_DIR,
+            f"model_for_codegen-{uid}.dflow"
+        )
+        with open(fpath, "wb") as f:
+            f.write(fd.read())
+        out_path = rasa_generator(
+            fpath,
+            output_path=os.path.join(CONSTANTS.TMP_DIR, f'codegen-{uid}')
+        )
+        tarball_path = os.path.join(
+            CONSTANTS.TMP_DIR,
+            f'codegen-{uid}.tar.gz'
+        )
+        make_tarball(out_path, tarball_path)
+        return FileResponse(tarball_path,
+                            filename=os.path.basename(tarball_path),
+                            media_type='application/x-tar')
+    except Exception as e:
+        print(f"Exception while generating rasa sources\n{e}")
+        raise HTTPException(status_code=400, detail=f"Codegen error: {e}")
+
+
+def make_tarball(source_dir, out_path):
+    with tarfile.open(out_path, "w:gz") as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))
