@@ -38,6 +38,7 @@ STATIC_TEMPLATES = [
     'endpoints.yml'
 ]
 
+
 class AccessControlMisc():
     policy_path: str = ''
     default_role: str = ''
@@ -45,6 +46,7 @@ class AccessControlMisc():
     authentication: Dict[str, Any] = {}
     global_ac: bool = False # True if global(actionGroup) access control is defined
     local_ac: bool = False # True if local(action) access control is defined
+
 
 class TransformationDataModel(BaseModel):
     synonyms: List[Dict[str, Any]] = []
@@ -62,8 +64,10 @@ class TransformationDataModel(BaseModel):
     responses: List[Dict[str, Any]] = []
     roles: List[str] = []
     policies: Dict[str, set] = {}
-    ac_misc = AccessControlMisc
+    ac_misc: AccessControlMisc = AccessControlMisc()
 
+    class Config:
+            arbitrary_types_allowed = True
 
 def codegen(model_fillepath,
             output_path=None,

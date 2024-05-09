@@ -48,4 +48,4 @@ Authentication:
 
 UserRoles: role=Word ':' users+=WordExt[','];
 
-AuthMethods: 'slot' | 'slack' | 'telegram';
+AuthMethods: 'slot' | 'user_id' | 'slack' | 'telegram';
