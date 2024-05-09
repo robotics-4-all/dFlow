@@ -25,10 +25,6 @@ dialogues
     end
 end
 
-gslots
-    username: str = ""
-end
-
 access_controls
     Roles
         user_parent,
@@ -39,8 +35,7 @@ access_controls
     end
     
     Authentication
-        method: slot
-        slot_name: username    
+        method: user_id        
     end
 
     Path

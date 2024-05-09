@@ -1,0 +1,75 @@
+triggers
+  Intent book_appointment
+    "I want to book a doctor appointment",
+    "I want to book a doctor appointment with DR. " PE:PERSON['Johnson', 'Smith'],
+    " an appointment for next Tuesday",
+    "a doctor visit tomorrow at 12.00",
+    "I want an exam",
+    "when can a doctor examine me",
+    "doctor appointment",
+    "new appointment",
+    "request for doc exam"
+  end
+end
+
+eservices
+    EServiceHTTP appointment_service
+        verb: POST
+        host: 'https://health.com'
+        path: '/medical/book_appointment'
+    end
+end
+
+dialogues
+  Dialogue book_appointment_dialogue
+      on: book_appointment
+      responses:
+        Form form1
+          doctor: str = HRI('What is the name of your doctor?', [PE:PERSON])
+          date: str = HRI('What day do you want to visit the doctor?')
+          time: str = HRI('At what time?')
+          end,
+        ActionGroup book_appointment_action
+          appointment_service(query=[doctor=form1.doctor, date=form1.date, time=form1.time],)
+          Speak('Doctor ' form1.doctor ' is waiting for you at ' form1.date ',' form1.time '.')
+          Speak('If you want the appointment to be covered by your insurance, please upgrade your plan.')[roles=registered]
+          Speak('This appointment will be covered by your insurance')[roles=registered_paid]
+        end
+  end
+end
+
+
+access_controls
+  Roles
+    registered_paid,
+    registered,
+    unregistered
+
+    default: 
+      unregistered
+  end
+
+  Policy book_appointment_action_policy
+    on:
+      book_appointment_action
+    roles:
+      registered_paid,
+      registered
+  end
+
+  Path
+    "/home/Desktop/users_db.txt"
+  end
+
+  Authentication   
+    method: slack
+  end
+end
+
+connectors
+  Connector slack
+    token: "xoxb-4883692765252-4884029447172-rH1b8v6PMj22OaTsaIQrtpfH"
+    channel: "doctor_assistant"
+    signing_secret: "123456798"
+  end
+end
