@@ -132,6 +132,7 @@ def merge_models(models: List[Any], output: bool = False):
     merged_strings = {k: '' for k in sections}
 
     for model in models:
+        print(model)
         # Use list os sections to find keywords in file
         indexes = []
         for section in sections:

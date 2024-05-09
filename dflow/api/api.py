@@ -1,3 +1,4 @@
+from typing import List
 import uuid
 import os
 import base64
@@ -11,9 +12,19 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
-from dflow.language import build_model
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_404_NOT_FOUND,
+    HTTP_422_UNPROCESSABLE_ENTITY
+)
 
-API_KEY = os.getenv("API_KEY", "API_KEY")
+from dflow.language import build_model, merge_models
+from dflow import definitions as CONSTANTS
+
+API_KEY = os.getenv("API_KEY", "123")
 
 api_keys = [API_KEY]
 
@@ -124,3 +135,28 @@ async def validate_b64(base64_model: str, api_key: str = Security(get_api_key)):
         resp["message"] = str(e)
         raise HTTPException(status_code=400, detail=f"Validation error: {e}")
     return resp
+
+
+@api.post("/merge")
+async def merge(models: list[UploadFile]) -> FileResponse:
+    if not len(models):
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="Model storage is empty!",
+        )
+    model_filenames = [file.filename for file in models]
+    model_content = [(await file.read()).decode("utf-8") for file in models]
+    # print(model_filenames)
+    # print(model_content)
+    merged_model = merge_models(model_content)
+    merged_filename = "merged.dflow"
+    merged_model_path = os.path.join(
+        CONSTANTS.TMP_DIR,
+        f'merged-{uuid.uuid4().hex[0:8]}.dflow'
+    )
+    with open(merged_model_path, "w") as f:
+        f.write(merged_model)
+    return FileResponse(
+        merged_model_path,
+        filename=os.path.basename(merged_filename)
+    )
