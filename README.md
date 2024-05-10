@@ -559,7 +559,7 @@ AccessControlDef:
     (
     roles=Roles
     policies*=Policy
-    path=Path
+    (path=Path)?
     (users=Users)?
     authentication=Authentication
     )#
@@ -588,6 +588,7 @@ Users:
         roles+=UserRoles
     'end'
 ;
+UserRoles: role=Word ':' users+=WordExt[','];
 ```
 
 Users entity can be skipped if loading the user-role mappings from a file or a database is needed. This file should be specified using a [path](#path) entity. DFlow supports user-role mappings imported from text files that conform with the following JSON format:
@@ -653,7 +654,7 @@ AuthMethods: 'slot' | 'user_id' | 'slack' | 'telegram';
 ```
 
 #### Path
-User-role mappings are stored inside the file provided in the path entity. If the file doesn't exist it will be automatically generated. If no [users](#users) entity is provided, dFlow will assume that the user-role mappings already exist within this file and attempt to load them. 
+Optional. User-role mappings are stored inside the file provided in the path entity. If the file doesn't exist it will be automatically generated. If no [users](#users) entity is provided, dFlow will assume that the user-role mappings already exist within this file and attempt to load them. 
 
 ```
 Path:
