@@ -59,7 +59,7 @@ access_controls
   end
 
   Path
-    "/home/Desktop/users.txt"
+    "users.txt"
   end
 
     Authentication
