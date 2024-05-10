@@ -588,7 +588,10 @@ def parse_model(model, out_dir) -> TransformationDataModel:
         data.policies = process_policies_dict(data.policies)
 
         # Extract Path
-        data.ac_misc.policy_path = model.access_control.path.path
+        if model.access_control.path:
+            data.ac_misc.policy_path = model.access_control.path.path
+        else:
+            data.ac_misc.policy_path = None
 
         # Extract Role-Users Policies
         if model.access_control.users:
@@ -598,20 +601,26 @@ def parse_model(model, out_dir) -> TransformationDataModel:
                 data.ac_misc.role_users[role.role] = role.users
 
             # Write Role-User Policies in the file. The file is created if not found.
-            if not path.isabs(data.ac_misc.policy_path):
-                data.ac_misc.policy_path = path.normpath(path.join(out_dir, data.ac_misc.policy_path))
+            if data.ac_misc.policy_path:    
+                if not path.isabs(data.ac_misc.policy_path):
+                    data.ac_misc.policy_path = path.normpath(path.join(out_dir, data.ac_misc.policy_path))
+                
                 directory = path.dirname(data.ac_misc.policy_path)
-
                 if not path.exists(directory):
                     os.makedirs(directory)
+            else:
+                data.ac_misc.policy_path = path.normpath(path.join(out_dir, 'user_role_mappings.txt'))
 
             with open(data.ac_misc.policy_path, 'w') as f:
                 json.dump(data.ac_misc.role_users, f)
         else:
-            if not path.isabs(data.ac_misc.policy_path):
-                data.ac_misc.policy_path = path.normpath(path.join(out_dir, data.ac_misc.policy_path))
-            if not os.path.isfile(data.ac_misc.policy_path):
-                raise Exception(f'File not found: {data.ac_misc.policy_path}')
+            if data.ac_misc.policy_path:
+                if not path.isabs(data.ac_misc.policy_path):
+                    data.ac_misc.policy_path = path.normpath(path.join(out_dir, data.ac_misc.policy_path))
+                if not os.path.isfile(data.ac_misc.policy_path):
+                    raise Exception(f'File not found: {data.ac_misc.policy_path}')
+            else:
+                raise Exception(f"Both 'Users' and 'Path' were not defined")
 
         # Extract Authentication method
         if model.access_control.authentication.method == 'slot':
