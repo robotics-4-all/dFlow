@@ -96,7 +96,6 @@ def generate(metamodel,
              overwrite,
              debug,
              **custom_args) -> None:
-    data = parse_model(model)
 
     # Prepare generating file directory
     if output_path is None:
@@ -115,6 +114,8 @@ def generate(metamodel,
 
     if not path.exists(path.join(out_dir, 'models')):
         mkdir(path.join(out_dir, 'models'))
+
+    data = parse_model(model, out_dir)
 
     # Generate
     for file in TEMPLATES:
@@ -153,7 +154,7 @@ def generate(metamodel,
     return out_dir
 
 
-def parse_model(model) -> TransformationDataModel:
+def parse_model(model, out_dir) -> TransformationDataModel:
     data = TransformationDataModel()
 
     # Extract synonyms
@@ -597,9 +598,18 @@ def parse_model(model) -> TransformationDataModel:
                 data.ac_misc.role_users[role.role] = role.users
 
             # Write Role-User Policies in the file. The file is created if not found.
+            if not path.isabs(data.ac_misc.policy_path):
+                data.ac_misc.policy_path = path.normpath(path.join(out_dir, data.ac_misc.policy_path))
+                directory = path.dirname(data.ac_misc.policy_path)
+
+                if not path.exists(directory):
+                    os.makedirs(directory)
+
             with open(data.ac_misc.policy_path, 'w') as f:
                 json.dump(data.ac_misc.role_users, f)
         else:
+            if not path.isabs(data.ac_misc.policy_path):
+                data.ac_misc.policy_path = path.normpath(path.join(out_dir, data.ac_misc.policy_path))
             if not os.path.isfile(data.ac_misc.policy_path):
                 raise Exception(f'File not found: {data.ac_misc.policy_path}')
 
