@@ -58,10 +58,6 @@ access_controls
       user_paid
   end
 
-  Path
-    "users.txt"
-  end
-
     Authentication
       method: user_id        
     end

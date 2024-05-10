@@ -4,7 +4,7 @@ AccessControlDef:
     (
     roles=Roles
     policies*=Policy
-    path=Path
+    (path=Path)?
     (users=Users)?
     authentication=Authentication
     )#
