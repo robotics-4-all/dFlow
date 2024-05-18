@@ -133,6 +133,8 @@ Words:
 ;
 ```
 
+**Important!! - Avoid special characters, such as `[".", "/", "\", ",", "$"]` in TrainableEntities (Entity definitions)!! Use only Latin characters!! Special characters are not supported for Synonym definitions by the language**
+
 ##### Example
 
 ```
@@ -156,6 +158,8 @@ Synonym:
     'end'
 ;
 ```
+
+**Important!! - Avoid special characters, such as `[".", "/", "\", ",", "$", "*", "+"]` in Synonyms!! Use only Latin characters!! Special characters are not supported for Synonym definitions by the language**
 
 ##### Example
 
