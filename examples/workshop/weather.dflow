@@ -34,7 +34,7 @@ end
 eservices
     EServiceHTTP weather_svc
         verb: GET
-        host: 'http://services.issel.ee.auth.gr'
+        host: 'https://services.issel.ee.auth.gr'
         path: '/general_information/weather_openweather'
     end
 end
