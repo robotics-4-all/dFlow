@@ -21,7 +21,7 @@ triggers
   {{ trigger.type }} {{ trigger.name }}
   {%- if trigger.type == 'Intent' %}
     {%- for phrase in trigger.phrases %}
-      '{{ phrase }}'{{ "," if not loop.last else "" }}
+      "{{ phrase }}"{{ "," if not loop.last else "" }}
     {%- endfor %}
   {%- elif trigger.type == 'Event' %}
     '{{ trigger.uri }}'
