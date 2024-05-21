@@ -83,7 +83,7 @@ textx generate metamodel.dflow --target rasa -o output_path (Default: ./gen/)
 
 ## Grammar
 
-The grammar of the language has the following five attributes:
+The grammar of the language has the following six main attributes:
 
 - Entities
 - Synonyms
@@ -91,6 +91,15 @@ The grammar of the language has the following five attributes:
 - Global Slots
 - Triggers
 - Dialogues
+
+There are also the following attributes for achieving security and dialogue flow access control:
+
+- Connectors
+- Roles
+- Users
+- Policies
+- Path
+- Authentication
 
 ### Entities
 
@@ -312,8 +321,10 @@ Event:
 ##### Example
 
 ```
-Event external_1
+triggers
+  Event external_1
     "bot/event/external_1"
+  end
 end
 ```
 
@@ -569,6 +580,46 @@ AccessControlDef:
     )#
 ;
 ```
+
+##### Example
+
+A complete example is the following.
+
+```
+access_controls
+  Roles
+    role1,
+    role2
+
+    default: 
+      role2
+  end
+
+  Users
+    role1:
+      role1@email.com
+
+    role2: 
+      role2@email.com
+  end
+
+  Policy all_actions_policy
+    on: 
+      all_actions
+    roles: 
+      role1
+  end
+
+  Path
+    "/home/user/db/users/user_roles_policies.txt"
+  end
+
+  Authentication
+    method: user_id
+  end
+end
+```
+
 
 #### Roles
 Roles are granted permissions for accessing bot's actions. Each user can have one or multiple roles, inheriting all of their permissions. When defining the available roles, a **default** role should be provided, which is the role an unidentified/unauthenticated user will acquire.
