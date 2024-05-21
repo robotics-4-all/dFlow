@@ -84,11 +84,19 @@ def get_scode_providers():
         #     join(MODEL_REPO_PATH, "entity", "*.dflow"))
     return sp
 
+def _validate_model(model):
+    """ Runs semantic validation on the provided model and raises Errors. """
+    intents = get_children_of_type("Intent", model)
+    if len(intents) < 2:
+        raise TextXSemanticError("There must be at least 2 Intents provided!")
+    return
+
 
 def build_model(model_path: str, debug: bool = False):
     # Parse model
     mm = get_metamodel(debug=debug)
     model = mm.model_from_file(model_path)
+    _validate_model(model)
     return model
 
 

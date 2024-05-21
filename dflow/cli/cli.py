@@ -25,7 +25,7 @@ def cli(ctx):
 @click.pass_context
 @click.argument("model_path")
 def validate(ctx, model_path):
-    model = build_model(model_path, type=click.Path(exists=True))
+    model = build_model(model_path)
     print("[*] Model validation success!!")
     report_model_info(model)
 
