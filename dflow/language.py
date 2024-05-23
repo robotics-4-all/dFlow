@@ -87,7 +87,7 @@ def get_scode_providers():
 def _validate_model(model):
     """ Runs semantic validation on the provided model and raises Errors. """
     intents = get_children_of_type("Intent", model)
-    if len(intents) < 2:
+    if len(intents) < 1:
         raise TextXSemanticError("There must be at least 2 Intents provided!")
     dialogues = get_children_of_type("Dialogue", model)
     if not len(dialogues):
