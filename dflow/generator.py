@@ -154,8 +154,58 @@ def generate(metamodel,
     return out_dir
 
 
+def add_static_scenario(data: TransformationDataModel) -> TransformationDataModel:
+    """ Adds a vanilla bot challenge scenario (intent and dialogue) to a provided model. """
+
+    # Add intent with examples
+    _intent_name = 'bot_challenge'
+    _examples = [
+        'who are you?',
+        'what are you',
+        'are you human or bot',
+        'are you a bot',
+        'tell me your name',
+        'tell me about yourself',
+        'what exactly are you',
+        'what about you',
+        'what\'s your name'
+    ]
+    data.intents.append({'name': _intent_name, 'examples': _examples})
+
+    # Add action with message
+    _message = "I am a bot developed by dFlow and Rasa."
+    _actions = []
+    _actions.append({
+                        'type': 'SpeakAction',
+                        'text': _message,
+                        'system_properties': [],
+                        'roles': []
+                    })
+    data.actions.append({
+                        "name": f"action_{_intent_name}",
+                        "actions": _actions,
+                        "slots": [],
+                        "user_properties": [],
+                        "entities": [],
+                        "local_ac": False
+                        })
+    
+    # Add dialogue
+    dialogue_responses = []
+    dialogue_responses.append({"name": f"action_{_intent_name}", "form": False})
+    
+    data.stories.append({
+        'name': f"system_dialogue - {_intent_name}",
+        'intent': _intent_name,
+        'responses': dialogue_responses
+    })
+    
+    return data
+
 def parse_model(model, out_dir) -> TransformationDataModel:
     data = TransformationDataModel()
+    
+    data = add_static_scenario(data)
 
     # Extract synonyms
     synonyms_dictionary = {}
