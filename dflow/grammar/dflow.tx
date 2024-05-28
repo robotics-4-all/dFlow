@@ -233,7 +233,9 @@ ParameterTypeDef:
     'dict'
 ;
 
-EServiceResponseFilter: ID('.'ID)*;
+EServiceResponseFilter: EServiceResponseElement('.'EServiceResponseElement)*;
+
+EServiceResponseElement: ID | INT;
 // ----------------------------------------------------------------------
 
 // Global Slots ---------------------------------------------------------
