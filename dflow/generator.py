@@ -659,7 +659,7 @@ def parse_model(model, out_dir) -> TransformationDataModel:
                 if not path.exists(directory):
                     os.makedirs(directory)
             else:
-                data.ac_misc.policy_path = path.normpath(path.join(out_dir, 'user_role_mappings.txt'))
+                data.ac_misc.policy_path = 'user_role_mappings.txt'
 
             with open(data.ac_misc.policy_path, 'w') as f:
                 json.dump(data.ac_misc.role_users, f)
