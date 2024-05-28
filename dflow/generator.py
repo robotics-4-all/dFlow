@@ -661,7 +661,7 @@ def parse_model(model, out_dir) -> TransformationDataModel:
             else:
                 data.ac_misc.policy_path = 'user_role_mappings.txt'
 
-            with open(data.ac_misc.policy_path, 'w') as f:
+            with open(path.join(out_dir, data.ac_misc.policy_path), 'w') as f:
                 json.dump(data.ac_misc.role_users, f)
         else:
             if data.ac_misc.policy_path:
