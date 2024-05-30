@@ -349,9 +349,11 @@ Response: ActionGroup | Form;
 dialogues
     Dialogue DialA
         on: external_1
-        responses: answers
-          Speak('Hello')
-          Speak('Hey there')
+        responses:
+            ActionGroup hey_answers
+              Speak('Hello')
+	      Speak('Hey there!!')
+            end
     end
 
     Dialogue DialB
