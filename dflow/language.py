@@ -84,20 +84,79 @@ def get_scode_providers():
         #     join(MODEL_REPO_PATH, "entity", "*.dflow"))
     return sp
 
+
+def has_duplicates(input_list):
+    seen = set()
+    for item in input_list:
+        if item in seen:
+            return True
+        seen.add(item)
+    return False
+
+
 def _validate_model(model):
     """ Runs semantic validation on the provided model and raises Errors. """
+
+    all_concept_names = []
     intents = get_children_of_type("Intent", model)
     if len(intents) < 1:
         raise TextXSemanticError("There must be at least 1 Intent provided!")
-    
+    intents_names = [i.name for i in intents]
+    if has_duplicates(intents_names):
+        raise TextXSemanticError("Intents IDs have duplicate values!")
+    all_concept_names.extend(intents_names)
+
     # Validate for at least 2 examples per intent
     for intent in intents:
         if len(intent.phrases) < 2:
             raise TextXSemanticError(f'Only {len(intent.phrases)} given in intent {intent}! At least 2 are needed!')
-    
+
+    entities = get_children_of_type("TrainableEntity", model)
+    entities_names = [e.name for e in entities]
+    if has_duplicates(entities_names):
+        raise TextXSemanticError("Entities IDs have duplicate values!")
+    all_concept_names.extend(entities_names)
+
+    synonyms = get_children_of_type("Synonym", model)
+    synonyms_names = [s.names for s in synonyms]
+    if has_duplicates(synonyms_names):
+        raise TextXSemanticError("Synonyms IDs have duplicate values!")
+    all_concept_names.extend(synonyms_names)
+
     dialogues = get_children_of_type("Dialogue", model)
     if not len(dialogues):
         raise TextXSemanticError("There must be at least 1 Dialogue!")
+
+    dialogues_names = [d.name for d in dialogues]
+    if has_duplicates(dialogues_names):
+        raise TextXSemanticError("Dialogues IDs have duplicate values!")
+    all_concept_names.extend(dialogues_names)
+
+    responses_names = [resp.name for d in dialogues for resp in d.responses]
+    if has_duplicates(responses_names):
+        raise TextXSemanticError("Responses IDs have duplicate values!")
+    all_concept_names.extend(responses_names)
+
+    gslots = get_children_of_type("GlobalSlot", model)
+    gslots_names = [gs.name for gs in gslots]
+    if has_duplicates(gslots_names):
+        raise TextXSemanticError("GSlots IDs have duplicate values!")
+    all_concept_names.extend(gslots_names)
+
+    events = get_children_of_type("Event", model)
+    events_names = [e.name for e in events]
+    if has_duplicates(events_names):
+        raise TextXSemanticError("Events IDs have duplicate values!")
+    all_concept_names.extend(events_names)
+
+    eservices = get_children_of_type("EServiceDefHTTP", model)
+    eservices_names = [e.name for e in eservices]
+    if has_duplicates(eservices_names):
+        raise TextXSemanticError("EService IDs have duplicate values!")
+    all_concept_names.extend(eservices_names)
+
+    if has_duplicates(all_concept_names):
+        raise TextXSemanticError("IDs among different concepts have duplicate values!")
     return
 
 
