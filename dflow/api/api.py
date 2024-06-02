@@ -54,7 +54,10 @@ api.add_middleware(
 
 
 if not os.path.exists(CONSTANTS.TMP_DIR):
-    os.mkdir(CONSTANTS.TMP_DIR)
+    try:
+        os.mkdir(CONSTANTS.TMP_DIR)
+    except Exception as e:
+        print(e)
 
 
 class ValidationModel(BaseModel):
@@ -80,12 +83,14 @@ async def validate(model: ValidationModel, api_key: str = Security(get_api_key))
         f.write(text)
     try:
         build_model(fpath)
+        out_path = rasa_generator(
+            fpath,
+            output_path=os.path.join(CONSTANTS.TMP_DIR, f'codegen-{u_id}')
+        )
         print("Model validation success!!")
         resp["message"] = "Model validation success"
     except Exception as e:
-        print(f"Exception while validating model\n{e}")
-        resp["status"] = 404
-        resp["message"] = str(e)
+        print(f"Exception while validating model: {e}")
         raise HTTPException(status_code=400, detail=f"Validation error: {e}")
     return resp
 
@@ -220,8 +225,8 @@ async def gen_model_b64(fenc: str = '', api_key: str = Security(get_api_key)):
         )
 
 @api.post("/generate")
-async def gen_model_b64(input_model: TransformationModel = Body(...),
-                        api_key: str = Security(get_api_key)):
+async def gen_model(input_model: TransformationModel = Body(...),
+                    api_key: str = Security(get_api_key)):
     try:
         uid = uuid.uuid4().hex[0:8]
         fpath = os.path.join(
@@ -243,6 +248,7 @@ async def gen_model_b64(input_model: TransformationModel = Body(...),
                     filename=os.path.basename(tarball_path),
                     media_type='application/x-tar')
     except Exception as e:
+        print(f"Exception thrown in /generate: {e}")
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"{str(e)}",
