@@ -83,10 +83,6 @@ async def validate(model: ValidationModel, api_key: str = Security(get_api_key))
         f.write(text)
     try:
         build_model(fpath)
-        out_path = rasa_generator(
-            fpath,
-            output_path=os.path.join(CONSTANTS.TMP_DIR, f'codegen-{u_id}')
-        )
         print("Model validation success!!")
         resp["message"] = "Model validation success"
     except Exception as e:
