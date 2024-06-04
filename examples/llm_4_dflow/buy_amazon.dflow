@@ -15,16 +15,16 @@ end
 
 entities
     Entity product
-        Kindle Paperwhite,
-        AA batteries,
-        LEGO Star Wars set,
-        resistance bands,
-        Nintendo Switch game,
-        stainless steel water,
-        kitchen knives,
-        wireless earbuds,
-        yoga mat,
-        smart thermostat
+        "Kindle Paperwhite",
+        "AA batteries",
+        "LEGO Star Wars set",
+        "resistance bands",
+        "Nintendo Switch game",
+        "stainless steel water",
+        "kitchen knives",
+        "wireless earbuds",
+        "yoga mat",
+        "smart thermostat"
     end
 end
 
@@ -56,13 +56,13 @@ access_controls
     Roles
         parent,
         child
-        
+
         default:
             child
     end
-    
+
     Authentication
-        method: user_id 
+        method: user_id
     end
 
     Path

@@ -1,18 +1,18 @@
 entities
     Entity Doctor
-        Kardiologos,
-        Odontiatros,
-        good doc
+        "Kardiologos",
+        "Odontiatros",
+        "good doc"
     end
 end
 
 synonyms
     Synonym date_period
-        mera,
-        evdomada,
-        mina,
-        aurio,
-        some day
+        "mera",
+        "evdomada",
+        "mina",
+        "aurio",
+        "some day"
     end
 end
 

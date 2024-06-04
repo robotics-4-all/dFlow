@@ -4,15 +4,15 @@ end
 
 entities
     Entity ITEM
-        new kPhone,
-        new smart TV,
-        new samung galaxy,
-        diamond necklace
+        "new kPhone",
+        "new smart TV",
+        "new samung galaxy",
+        "diamond necklace"
     end
 
     Entity ADDRESS
-        West 136th St Austin Texas,
-        North St 1052 LA California
+        "West 136th St Austin Texas",
+        "North St 1052 LA California"
     end
 end
 
@@ -132,8 +132,8 @@ access_controls
         user_parent,
         user_kid,
         user_unauthorized
-        
-        default: 
+
+        default:
             user_unauthorized
     end
 
@@ -167,7 +167,7 @@ access_controls
     Authentication
         method: slot
         slot_name: name
-        
+
     end
 end
 

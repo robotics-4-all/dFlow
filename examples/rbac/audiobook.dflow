@@ -27,14 +27,14 @@ end
 
 entities
     Entity NARRATOR
-        female,
-        male
+        "female",
+        "male"
     end
 
     Entity AUDIOBOOK
-        Silmarilion by Tolkien,
-        Silmarilion,
-        Dune by Frank Herbert
+        "Silmarilion by Tolkien",
+        "Silmarilion",
+        "Dune by Frank Herbert"
     end
 
 end
@@ -96,7 +96,7 @@ end
 dialogues
     // This is a demonstration on how slot authentication can be used for debbuging or ease of use.
     // In production, IDs should be acquired from third party Auths like Slack.
-    
+
     Dialogue get_name_dialogue
         on: bazinga
         responses:
@@ -140,15 +140,15 @@ dialogues
                 Speak('You need a paid plan to perform this action')[roles=user_free]
             end
     end
-    
+
 end
 
 access_controls
     Roles
         user_paid,
         user_free
-        
-        default: 
+
+        default:
             user_free
     end
 
@@ -161,13 +161,13 @@ access_controls
     end
 
     Path
-        "/home/user_roles_policies.txt"
+        "/home/nmalamas/github/dflow/dflow/user_roles_policies.txt"
     end
 
     Authentication
         method: slot
         slot_name: name
-        
+
     end
 
 end

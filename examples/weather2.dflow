@@ -1,8 +1,8 @@
 entities
     Entity Doctor
-        cardiologist,
-        dentist,
-        doc
+        "cardiologist",
+        "dentist",
+        "doc"
     end
 end
 

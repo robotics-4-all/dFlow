@@ -77,7 +77,7 @@ Entity: TrainableEntity | PretrainedEntity;
 
 TrainableEntity:
     'Entity' name=ID
-        words+=Word[',']
+        words+=STRING[',']
     'end'
 ;
 
@@ -106,7 +106,7 @@ PretrainedEntity:
 
 Synonym:
     'Synonym' name=ID
-        words+=Word[',']
+        words+=STRING[',']
     'end'
 ;
 
