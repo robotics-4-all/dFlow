@@ -236,10 +236,16 @@ def _validate_model(model):
         raise TextXSemanticError(f"Responses ID `{_response}` is used multiple times!")
     all_concept_names.extend(responses_names)
 
+    action_groups_names = []
+    slot_names = []
+    inline_policies_roles = []
     for dialogue in dialogues:
         for response in dialogue.responses:
             if response.__class__.__name__ == 'ActionGroup':
+                action_groups_names.append(response.name)
                 for action in response.actions:
+                    if action.roles:
+                        inline_policies_roles.extend(action.roles)
                     if action.__class__.__name__ == 'EServiceCallHTTP':
                         path_params, _, _, _ = process_eservice_params_as_dict(action.path_params)
                         validation = validate_path_params(eservices_info[action.eserviceRef.name]['url'], path_params)
@@ -247,6 +253,7 @@ def _validate_model(model):
                             raise Exception(f'Service `{action.eserviceRef.name}` path and path params do not match when called in `{response.name}`.')
             else:
                 for slot in response.params:
+                    slot_names.append(slot.name)
                     if slot.source.__class__.__name__ == 'EServiceCallHTTP':
                         path_params, _, _, _ = process_eservice_params_as_dict(slot.source.path_params)
                         validation = validate_path_params(eservices_info[slot.source.eserviceRef.name]['url'], path_params)
@@ -261,6 +268,8 @@ def _validate_model(model):
         raise TextXSemanticError(f"GSlots ID `{_gslot}` is used multiple times!")
     all_concept_names.extend(gslots_names)
 
+    slot_names.extend(gslots_names)
+
     # Validate Events
     events = get_children_of_type("Event", model)
     events_names = [e.name for e in events]
@@ -268,6 +277,50 @@ def _validate_model(model):
     if check:
         raise TextXSemanticError(f"Events ID `{_event}` is used multiple times!")
     all_concept_names.extend(events_names)
+
+    # Validate Access Control
+    access_control = get_children_of_type("AccessControlDef", model)
+    if access_control:
+        roles = access_control[0].roles.words
+        check, _role = has_duplicates(roles)
+        if check:
+            raise TextXSemanticError(f"Duplicate role ID `{_role}`!")
+
+        if not access_control[0].roles.default:
+            raise TextXSemanticError(f"Default role is not defined under Roles!")
+
+        path = access_control[0].path
+        if path and not os.path.isfile(path.path):
+            raise TextXSemanticError(f'File not found: {path.path}')
+
+        users = access_control[0].users.roles
+        if not (path or users):
+            raise TextXSemanticError(f"Both 'Users' and 'Path' were not defined")
+
+        _role_users = {}
+        for role in access_control[0].users.roles:
+            if role.role in _role_users.keys():
+                raise TextXSemanticError(f"Duplicate role `{role.role}` in 'Users.")
+            _role_users[role.role] = role.users
+
+        policies = access_control[0].policies
+        for policy in policies:
+            for role in policy.roles:
+                if role not in roles:
+                    raise TextXSemanticError(f"Role `{role}` is not defined under Roles!")
+            for action in policy.actions:
+                if action not in action_groups_names:
+                    raise TextXSemanticError(f"Action: `{action}` in Policy `{policy.name}` is not a defined ActionGroup")
+
+        if access_control[0].authentication.method == 'slot':
+            if not access_control[0].authentication.slot_name:
+                raise TextXSemanticError("You need to provide a 'slot_name' for this authentication method")
+            if access_control[0].authentication.slot_name not in slot_names:
+                raise TextXSemanticError(f"Authentication slot `{access_control[0].authentication.slot_name}` not defined!")
+
+        for role in inline_policies_roles:
+            if role not in roles:
+                raise TextXSemanticError(f"Role `{role}` defined in an inline policy is not defined under Roles!")
 
     # Check duplicates among all IDs
     check, _attributes = has_duplicates(all_concept_names)
