@@ -29,9 +29,9 @@ end
 ```
 entity
   Entity doctor
-    cardiologist,
-    dentist,
-    neurologist
+    "cardiologist",
+    "dentist",
+    "neurologist"
   end
 end
 ```
@@ -58,10 +58,10 @@ end
 ```
 synonyms
     Synonym date_period
-        day,
-        week,
-        month,
-        tomorrow,
+        "day",
+        "week",
+        "month",
+        "tomorrow",
         now
     end
 end
