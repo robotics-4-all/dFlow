@@ -6,6 +6,9 @@ import subprocess
 import shutil
 import tarfile
 from pydantic import BaseModel
+import yaml
+import json
+from openapi_spec_validator import openapi_v3_spec_validator
 
 from fastapi import FastAPI, File, UploadFile, status, HTTPException, Security, Body
 from fastapi.responses import FileResponse, JSONResponse
@@ -25,6 +28,7 @@ from dflow.language import build_model, merge_models
 from dflow.generator import codegen as rasa_generator
 
 from dflow import definitions as CONSTANTS
+from dflow.m2m import openapi_to_dflow
 
 API_KEY = os.getenv("API_KEY", "123")
 
@@ -250,6 +254,77 @@ async def gen_model(input_model: TransformationModel = Body(...),
             detail=f"{str(e)}",
         )
 
+@api.post("/openapi2dflow")
+async def openapi2dflow(model: str = Body(...),
+                       api_key: str = Security(get_api_key)):
+    resp = {
+        'status': 200,
+        'message': '',
+        'model_str': ''
+    }
+    if len(model) == 0:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="No model provided!",
+        )
+    try:
+        openapi_v3_spec_validator.validate(model)
+    except Exception as e:
+        print('Exception while validating OpenAPI model')
+        print(e)
+        raise HTTPException(status_code=400, detail=f"Invalid OpenAPI model: {e}")
+
+    try:
+        dflow_model_str = openapi_to_dflow(model)
+        resp['message'] = 'OpenAPI-To-dFlow Model Transformation success'
+        resp['model_str'] = dflow_model_str
+        return resp
+    except Exception as e:
+        print('Exception while performing transformation')
+        print(e)
+        raise HTTPException(status_code=400, detail=f"Transformation Failed: {e}")
+
+@api.post("/openapi2dflow/file")
+async def openapi2dflow_file(model_file: UploadFile = File(...),
+                            api_key: str = Security(get_api_key)):
+    resp = {
+        'status': 200,
+        'message': '',
+        'model_str': ''
+    }
+    file_extension = model_file.filename.split('.')[-1].lower()
+    with open(model_file, 'r') as f:
+        if file_extension in ['yaml', 'yml']:
+            model = yaml.safe_load(f)
+        elif file_extension == 'json':
+            model = json.load(f)
+        else:
+            raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST,
+                detail="Invalid file type. Only JSON and YAML are supported!",
+            )
+
+    if len(model) == 0:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="No model provided!",
+        )
+    try:
+        openapi_v3_spec_validator.validate(model)
+    except Exception as e:
+        print('Exception while validating OpenAPI model')
+        print(e)
+        raise HTTPException(status_code=400, detail=f"Invalid OpenAPI model: {e}")
+
+    try:
+        dflow_model_str = openapi_to_dflow(model)
+        resp['message'] = 'OpenAPI-To-dFlow Model Transformation success'
+        resp['model_str'] = dflow_model_str
+        return resp
+    except Exception as e:
+        print('Exception while performing transformation')
+        print(e)
+        raise HTTPException(status_code=400, detail=f"Transformation Failed: {e}")
 
 def make_tarball(source_dir, out_path):
     with tarfile.open(out_path, "w:gz") as tar:
