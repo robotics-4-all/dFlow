@@ -146,75 +146,86 @@ def resolve_reference(ref: str, model: dict) -> Union[dict, None]:
     return resolved_schema
 
 def extract_request_params(params: list, param_location: str, model: dict) -> list[Parameter]:
-    # """
-    # Extracts request parameters from the given list based on the specified location, 
-    # handling complex types like objects and arrays.
-
-    # :param params: The list of parameters to extract from.
-    # :param param_location: The location to filter parameters by (e.g., "query", "header").
-    # :param model: The entire OpenAPI model for reference resolution.
-    # :return: A list of extracted Parameter objects or None if none found.
-    # """
+    """
+    Extracts the request parameters for a specific location (e.g., query, path, header).
+    
+    :param params: A list of parameters from the OpenAPI specification.
+    :param param_location: The location of the parameters (query, path, header, etc.).
+    :param model: The entire OpenAPI model for resolving references.
+    :return: A list of Parameter objects.
+    """
     extracted_params = []
-    # for param in params:
-    #     if param['in'] == param_location:
-    #         if '$ref' in param.get('schema', {}):
-    #             resolved_schema = resolve_reference(param['schema']['$ref'], model)
-    #             param_type = resolved_schema.get('type', 'object')
-    #             if param_type == 'object':
-    #                 properties = resolved_schema.get('properties', {})
-    #                 for prop_name, prop_schema in properties.items():
-    #                     extracted_params.append(Parameter(
-    #                         name=prop_name,
-    #                         description=prop_schema.get('description'),
-    #                         location=param_location,
-    #                         required=prop_schema.get('required', False),
-    #                         ptype=prop_schema.get('type', 'object'),
-    #                         schema=prop_schema.get('$ref')
-    #                     ))
-    #             elif param_type == 'array':
-    #                 item_schema = resolved_schema.get('items', {})
-    #                 if '$ref' in item_schema:
-    #                     resolved_item = resolve_reference(item_schema['$ref'], model)
-    #                     extracted_params.append(Parameter(
-    #                         name=param['name'],
-    #                         description=param.get('description'),
-    #                         location=param_location,
-    #                         required=param.get('required', False),
-    #                         ptype='array',
-    #                         schema=item_schema['$ref']
-    #                     ))
-    #                 else:
-    #                     extracted_params.append(Parameter(
-    #                         name=param['name'],
-    #                         description=param.get('description'),
-    #                         location=param_location,
-    #                         required=param.get('required', False),
-    #                         ptype='array',
-    #                         schema=None
-    #                     ))
-    #         else:
-    #             extracted_params.append(Parameter(
-    #                 name=param['name'],
-    #                 description=param.get('description'),
-    #                 location=param_location,
-    #                 required=param.get('required', False),
-    #                 ptype=param.get('schema', {}).get('type', 'string'),
-    #                 schema=None
-    #             ))
-    return extracted_params if extracted_params else None
+    for param in params:
+        if param.get('in') == param_location:
+            schema = param.get('schema', {})
+            param_name = param.get('name')
+            param_required = param.get('required', False)
+            if '$ref' in schema:
+                resolved_schema = resolve_reference(schema['$ref'], model)
+                properties = extract_properties_from_schema(resolved_schema, model)
+            else:
+                properties = extract_properties_from_schema(schema, model)
 
-def extract_request_body(request_body, model):
-    if request_body:
-        content = request_body.get('content', {})
-        return [Parameter(
-            name='body',
-            description=request_body.get('description'),
-            location='body',
-            required=True,  # This can be checked more precisely
-            ptype='object',
-            schema=list(content.keys())[0] if content else None
-        )]
+            if properties:
+                for prop in properties:
+                    extracted_params.append(
+                        Parameter(
+                            name=prop['name'] if prop['name'] else param_name,
+                            description=prop.get('description', param.get('description')),
+                            location=param_location,
+                            required=prop['required'] if 'required' in prop else param_required,
+                            ptype=prop['type'],
+                            schema=prop['schema']
+                        )
+                    )
+            else:
+                extracted_params.append(
+                    Parameter(
+                        name=param_name,
+                        description=param.get('description'),
+                        location=param_location,
+                        required=param_required,
+                        ptype=schema.get('type', 'string'),
+                        schema=None
+                    )
+                )
+    return extracted_params if extracted_params else []
+
+def extract_request_body(request_body: dict, model: dict) -> Union[Parameter, None]:
+    """
+    Extracts the request body from the OpenAPI request body section.
+    
+    :param request_body: The OpenAPI requestBody section as a dictionary.
+    :param model: The entire OpenAPI model for resolving references.
+    :return: A Parameter object for the request body, or None if not found.
+    """
+    if not request_body:
+        return None
+    content = request_body.get('content', {})
+    parameters = []
+    for content_type, content_details in content.items():
+        schema = content_details.get('schema', {})        
+        if schema.get('type') == 'array' and 'items' in schema:
+            schema = schema['items']
+        if '$ref' in schema:
+            resolved_schema = resolve_reference(schema['$ref'], model)
+            properties = extract_properties_from_schema(resolved_schema, model)
+        else:
+            properties = extract_properties_from_schema(schema, model)
+        for prop in properties:
+            parameters.append(
+                Parameter(
+                    name=prop['name'],
+                    description=prop.get('description'),
+                    location="body",
+                    required=prop['required'],
+                    ptype=prop['type'],
+                    schema=prop['schema'],
+                    media_type=content_type
+                )
+            )
+    if parameters:
+        return parameters
     return None
 
 def extract_response(responses: dict, model: dict) -> Union[Response, None]:
@@ -306,14 +317,17 @@ def create_service(
     name: str, 
     service: ExtEService, 
 ) -> EService:
-    # TODO find mime from response or request params...
     mime = None
     if service.verb == RestVerb.get:
         if service.response.parameters:
-            mime = [parameter.media_type for parameter in service.response.parameters if parameter.media_type and parameter.media_type]
+            mime = [parameter.media_type for parameter in service.response.parameters if parameter.media_type]
             mime = list(set(mime))
     else:
-        ...
+        if service.bodyParams:
+            mime = [parameter.media_type for parameter in service.bodyParams if parameter.media_type]
+            mime = list(set(mime))
+    
+    if not mime: mime=None
     eservice = EService(
         name=name,
         verb=service.verb,
