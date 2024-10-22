@@ -17,6 +17,7 @@ class RestVerb(str, Enum):
     put = 'PUT'
     delete = 'DELETE'
     update = 'UPDATE'
+    patch = 'PATCH'
 
 def is_supported_verb(verb: str) -> bool:
     return verb.upper() in RestVerb._value2member_map_
@@ -28,6 +29,7 @@ class Parameter(BaseModel):
     required: bool
     ptype: str
     schema: Union[str,None] = None
+    media_type: Union[str,None] = None
 
 class Response(BaseModel):
     statusCode: int
@@ -53,6 +55,14 @@ class ExtEService(BaseModel):
 class RequestBody(BaseModel):
     description: Union[str,None] = None
     content: Union[str,None] = None
+
+class EService(BaseModel):
+    name: str
+    verb: str
+    host: str
+    port: Union[int,None] = None
+    path: Union[str,None] = None
+    mime: Union[list,None] = None
 
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'templates')
@@ -239,7 +249,8 @@ def extract_response(responses: dict, model: dict) -> Union[Response, None]:
                         location='response',
                         required=True,
                         ptype=parameter['type'],
-                        schema=parameter['schema']
+                        schema=parameter['schema'],
+                        media_type=content_type
                     )
                 )
     if not successful_response:
@@ -290,8 +301,28 @@ def create_name(service: ExtEService, ending=None):
     else:
         return service.name + "_" + ending    
 
-def create_service(name, verb, url, port, path, model):
-    return ''
+def create_service(
+    model: dict,
+    name: str, 
+    service: ExtEService, 
+) -> EService:
+    # TODO find mime from response or request params...
+    mime = None
+    if service.verb == RestVerb.get:
+        if service.response.parameters:
+            mime = [parameter.media_type for parameter in service.response.parameters if parameter.media_type and parameter.media_type]
+            mime = list(set(mime))
+    else:
+        ...
+    eservice = EService(
+        name=name,
+        verb=service.verb,
+        host=service.baseURL,
+        port=service.port,
+        path=service.path,
+        mime=mime
+    )
+    return eservice
 
 def create_trigger(name, description, summary, trigger_type="Intent"):
     return []
@@ -325,12 +356,9 @@ def openapi_to_dflow(model: dict):
         dialogue_name = create_name(service, ending = f"dlg_{i}")
         
         eservice_definition = create_service(
+            model=model,
             name=service_name, 
-            verb=service.verb, 
-            url=service.baseURL, 
-            port=service.port, 
-            path=service.path,
-            model=model
+            service=service
         )
 
         triggers = create_trigger(
