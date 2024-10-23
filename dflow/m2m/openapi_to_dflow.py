@@ -64,6 +64,10 @@ class EService(BaseModel):
     path: Union[str,None] = None
     mime: Union[list,None] = None
 
+class Trigger(BaseModel):
+    type: str = "Intent" 
+    name: str
+    phrases: list[str]
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'templates')
 
@@ -338,8 +342,14 @@ def create_service(
     )
     return eservice
 
-def create_trigger(name, description, summary, trigger_type="Intent"):
-    return []
+def generate_intent_examples(description: Optional[str], summary: Optional[str]):
+    return ['test']*10
+
+def create_trigger(name, description, summary) -> Trigger:
+    return Trigger(
+        name=name,
+        phrases=generate_intent_examples(description, summary)
+    )
 
 def create_dialogue(
     model,
@@ -398,7 +408,7 @@ def openapi_to_dflow(model: dict):
         )
 
         dflow_eservices.append(eservice_definition)
-        dflow_triggers.extend(triggers)
+        dflow_triggers.append(triggers)
         dflow_dialogues.append(dialogue)
         i += 1
 
