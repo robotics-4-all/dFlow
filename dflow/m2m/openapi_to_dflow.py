@@ -69,6 +69,26 @@ class Trigger(BaseModel):
     name: str
     phrases: list[str]
 
+class Slot(BaseModel):
+    type: str
+    name: str
+    prompt: Optional[str] = None
+    service_call: Optional[str] = None
+    response_filter: Optional[str] = None
+
+class DflowResponse(BaseModel):
+    type: str
+    name: str
+    slots: Optional[list[Slot]] = None
+    service_call: Optional[str] = None
+    text: Optional[str] = None
+
+class Dialogue(BaseModel):
+    name: str
+    verb: str
+    triggers: list[str]
+    responses: list[DflowResponse]
+
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'templates')
 
 jinja_env = jinja2.Environment(
@@ -83,7 +103,7 @@ def extract_properties_from_schema(schema, model, parent_path="") -> dict:
     if 'properties' in schema:
         for prop, details in schema['properties'].items():
             is_required = prop in schema.get('required', [])
-            current_path = f"{parent_path}" if parent_path else ''
+            current_path = f"{parent_path}.{prop}" if parent_path else str(prop)
 
             prop_details = {
                 "name": prop,
@@ -309,12 +329,12 @@ def transform_to_ext_eservices(model: dict) -> list[ExtEService]:
             services.append(ext_service)
     return services
 
-def create_name(service: ExtEService, ending=None):
+def create_name(name: str, ending=None):
     """ Merges service name with provided ending """
     if ending is None:
-        return service.name
+        return name
     else:
-        return service.name + "_" + ending    
+        return name + "_" + ending    
 
 def create_service(
     model: dict,
@@ -351,6 +371,9 @@ def create_trigger(name, description, summary) -> Trigger:
         phrases=generate_intent_examples(description, summary)
     )
 
+def create_response(verb, request_params, response_params, summary):
+    return ''
+
 def create_dialogue(
     model,
     dialogue_name: str, 
@@ -364,8 +387,120 @@ def create_dialogue(
     queryParams: Union[list[Parameter],None] = None,
     pathParams: Union[list[Parameter],None] = None,
     bodyParams: Union[list[Parameter],None] = None
-):
-    return ''
+) -> Dialogue:
+    """
+    Generate a dialogue configuration for an API operation.
+
+    This function is designed to produce a structured representation of a dialogue
+    that can guide a chatbot in handling interactions related to a specific API call.
+    The dialogue contains trigger intents, response actions (like forms and action groups),
+    and service calls.
+    """
+
+    form_slots = []
+    responses = []
+    parameters = []
+    if headerParams:
+        parameters.extend(headerParams)
+    if queryParams:
+        parameters.extend(queryParams)
+    if pathParams:
+        parameters.extend(pathParams)
+    if bodyParams:
+        parameters.extend(bodyParams)
+    path_params = []
+    query_params = []
+    header_params = []
+    body_params = []
+    request_params = []
+    form_data_params = []
+    response_params = []
+    form_response_name = create_name(dialogue_name, ending = "collect_request_params_form")
+
+    for param in parameters:
+        if not param.required or not param.location:
+            continue
+        param_type = change_type_name(param.ptype)
+        if param_type is None:
+            continue
+        # Gather required HRI-collected params/slots to call API 
+        form_slots.append(Slot(
+            name=param.name,
+            type=param_type,
+            prompt=f"Please provide the {param.name}"
+        ))
+
+        # Craft API call params
+        param_called = f"{form_response_name}.{param.name}"
+        request_params.append(param_called)    
+        if param.location == "path":
+            path_params.append(f"{param.name}={param_called}")
+        elif param.location == "query":
+            query_params.append(f"{param.name}={param_called}")
+        elif param.location == "header":
+            header_params.append(f"{param.name}={param_called}")
+        elif param.location == "body":
+            body_params.append(f"{param.name}={param_called}")
+  
+    # Craft API call
+    service_call = service_name + "("
+    if path_params:
+        service_call += f"path=[{', '.join(path_params)}], "
+    if query_params:
+        service_call += f"query=[{', '.join(query_params)}], "
+    if header_params:
+        service_call += f"header=[{', '.join(header_params)}], "
+    if body_params:
+        service_call += f"body=[{', '.join(body_params)}], "
+    if service_call.endswith(", "):
+        service_call = service_call[:-2] + ",)"
+    else:
+        service_call += ")"
+
+    if response.parameters:
+        for param in response.parameters:
+            slot_type = change_type_name(param.ptype)
+            if slot_type:
+                form_slots.append(Slot(
+                    name=param.name,
+                    type=slot_type,
+                    service_call=service_call,
+                    response_filter=param.schema if param.schema else None
+                ))
+                
+        if form_slots:
+            responses.append(DflowResponse(
+                type="Form",
+                name=form_response_name,
+                slots=form_slots
+            ))            
+        response_called = ','.join([f"{form_response_name}.{slot.name}" for slot in form_slots if slot.prompt])
+        response_params = response_called.split(',')
+        responses.append(DflowResponse(
+            type="ActionGroup",
+            name=create_name(dialogue_name, ending = "response_msg_action"),
+            text=create_response(verb, request_params, response_params, summary)
+        ))
+    else:
+        if form_slots:
+            responses.append(DflowResponse(
+                type="Form",
+                name=form_response_name,
+                slots=form_slots
+            ))
+        responses.append(DflowResponse(
+            type="ActionGroup",
+            name=create_name(dialogue_name, ending = "call_api_response_msg_action"),
+            service_call=service_call,
+            text=create_response(verb, request_params, response_params, summary)
+        ))
+
+    return Dialogue(
+        name=dialogue_name,
+        verb=verb,
+        triggers=[intent_name],
+        responses=responses
+    )
 
 def openapi_to_dflow(model: dict):
     "Transforms OpenAPI model to dFlow"
@@ -375,9 +510,9 @@ def openapi_to_dflow(model: dict):
     dflow_triggers = []
     dflow_dialogues = []
     for service in services:
-        service_name = create_name(service, ending = f"svc_{i}")
-        intent_name = create_name(service, ending = f"{i}")
-        dialogue_name = create_name(service, ending = f"dlg_{i}")
+        service_name = create_name(service.name, ending = f"svc_{i}")
+        intent_name = create_name(service.name, ending = f"{i}")
+        dialogue_name = create_name(service.name, ending = f"dlg_{i}")
         
         eservice_definition = create_service(
             model=model,
@@ -422,8 +557,6 @@ def change_type_name(type_name):
     elif type_name == "boolean": return "bool"
     elif type_name == "array": return "list"
     elif type_name == "object": return "dict"
-
-
 
 def get_title(title):
     ignore_words = [
