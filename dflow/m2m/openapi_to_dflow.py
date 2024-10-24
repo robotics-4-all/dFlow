@@ -383,8 +383,36 @@ def create_trigger(name, description, summary) -> Trigger:
         phrases=generate_intent_examples(description, summary)
     )
 
-def create_response(verb, request_params, response_params, summary):
-    return ''
+def create_response(verb: str, request_params: list, response_params: list, summary: str):
+
+    system_prompt = """You are an NLP engineer expert assisting users to create VAs. Each VA scenario calls a specific API and returns its result to the user depending on its summary or description. Your task is to read the API verb, summary, list of request parameters (Parameters) and list of response parameters (Slots) and to create a response message for the user that contains any existing response parameters (Slots). All Slots must be presented to the user. The Slot names must be inside double {{ }} symbols. Return only the requested text. Avoid any other text or preamble. Check the following examples.
+Example:
+Verb: POST
+Parameters: [form1.bookId, form1.bookTitle]
+Slots: 
+Summary: Submit a new book with its ID and title.
+Response: Your book with ID {{form1.bookId}} and title {{form1.bookTitle}} has been added.
+
+Example:
+Verb: GET
+Parameters: [weather_form.city]
+Slots: [weather_form.temperature, weather_form.forecast]
+Summary: Retrieves weather information for a given city.
+Response: The temperature in {{weather_form.city}} is {{weather_form.temperature}} and the forecast is {{weather_form.forecast}}.
+"""
+    _prompt = f"""Request:
+Verb: {verb}
+Parameters: {request_params}
+Slots: {response_params}
+Summary: {summary}
+Response:
+"""
+    msg = create_user_prompt_message(_prompt)
+    response = llm_invoke(system_prompt, messages=[msg], temperature=0.1)
+    response = response.replace('\n', ' ')
+    response = response.replace('{{', "'")
+    response = response.replace('}}', "'")
+    return response
 
 def create_dialogue(
     model,

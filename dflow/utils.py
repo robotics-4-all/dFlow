@@ -52,8 +52,6 @@ def llm_invoke(system_prompt: str = '', messages: list = []):
                 "messages": messages
             }
         )
-        print(response)
-        print(response.reason)
         return response.json()['text']
     except Exception as e:
         detail = f"Could not reach LLM service: {e}"
