@@ -10,6 +10,7 @@ from dotenv import dotenv_values
 from pydantic import BaseModel
 from typing import Tuple, Optional, Any, Union, Optional
 from enum import Enum
+from dflow.utils import llm_invoke, create_user_prompt_message, create_assistant_prompt_message
 
 class RestVerb(str, Enum):
     get = 'GET'
@@ -263,7 +264,7 @@ def extract_response(responses: dict, model: dict) -> Union[Response, None]:
     successful_response = None
 
     for response_code, response_details in responses.items():
-        if response_code.startswith('2'):
+        if str(response_code).startswith('2'):
             successful_response = response_code
         extracted_responses[response_code] = []
         content = responses[response_code].get('content', {})
@@ -363,7 +364,18 @@ def create_service(
     return eservice
 
 def generate_intent_examples(description: Optional[str], summary: Optional[str]):
-    return ['test']*10
+    if not description and not summary:
+        raise ValueError(f"Both provided description and summary are empty!")
+    system_prompt = "You are an NLP engineer expert assisting users to create VAs. Each VA scenario calls a specific API that has a description and possibly a summary. Your task is to create a set of 10 diverse intent examples based on the description and summary. The examples should be human-like, varied, and cover different ways the same intent might be expressed. Return a Python list of strings containing only the requested intent examples. Avoid any other text or preamble."
+    _prompt = ''
+    if description:
+        _prompt += f"Description: {description} "
+    if summary:
+        _prompt += f"Description: {summary} "
+    msg = create_user_prompt_message(_prompt)
+    response = llm_invoke(system_prompt, messages=[msg])
+    response = eval(response)
+    return response
 
 def create_trigger(name, description, summary) -> Trigger:
     return Trigger(
