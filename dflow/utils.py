@@ -40,7 +40,7 @@ def get_grammar():
     with open(join(this_dir, 'grammar', 'dflow.tx')) as f:
         return f.read()
 
-def llm_invoke(system_prompt: str = '', messages: list = []):
+def llm_invoke(system_prompt: str = '', messages: list = [], temperature: float = 0):
     try:
         response = requests.post(
             "https://services.issel.ee.auth.gr/llms/chat",
@@ -50,6 +50,9 @@ def llm_invoke(system_prompt: str = '', messages: list = []):
             json={
                 "system_prompt": system_prompt,
                 "messages": messages
+            },
+            params={
+                "temperature": temperature
             }
         )
         return response.json()['text']
