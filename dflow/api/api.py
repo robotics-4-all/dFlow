@@ -28,7 +28,7 @@ from dflow.language import build_model, merge_models
 from dflow.generator import codegen as rasa_generator
 
 from dflow import definitions as CONSTANTS
-from dflow.m2m import openapi_to_dflow
+from dflow.m2m.openapi_to_dflow import openapi_to_dflow
 
 API_KEY = os.getenv("API_KEY", "123")
 
@@ -255,24 +255,35 @@ async def gen_model(input_model: TransformationModel = Body(...),
         )
 
 @api.post("/openapi2dflow")
-async def openapi2dflow(model: str = Body(...),
+async def openapi2dflow(input_model: str = Body(...),
                        api_key: str = Security(get_api_key)):
     resp = {
         'status': 200,
         'message': '',
         'model_str': ''
     }
-    if len(model) == 0:
+    if len(input_model) == 0:
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail="No model provided!",
         )
+    model = None
     try:
-        openapi_v3_spec_validator.validate(model)
-    except Exception as e:
-        print('Exception while validating OpenAPI model')
-        print(e)
-        raise HTTPException(status_code=400, detail=f"Invalid OpenAPI model: {e}")
+        model = yaml.safe_load(input_model)
+    except:
+        # try:
+        #     model = json.load(model)
+    # except Exception as e:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="Wrong model format provided! Send model in YAML!",
+        )
+    # try:
+    #     openapi_v3_spec_validator.validate(model)
+    # except Exception as e:
+    #     print('Exception while validating OpenAPI model')
+    #     print(e)
+    #     raise HTTPException(status_code=400, detail=f"Invalid OpenAPI model: {e}")
 
     try:
         dflow_model_str = openapi_to_dflow(model)
@@ -292,29 +303,28 @@ async def openapi2dflow_file(model_file: UploadFile = File(...),
         'message': '',
         'model_str': ''
     }
+    fd = model_file.file.read()
     file_extension = model_file.filename.split('.')[-1].lower()
-    with open(model_file, 'r') as f:
-        if file_extension in ['yaml', 'yml']:
-            model = yaml.safe_load(f)
-        elif file_extension == 'json':
-            model = json.load(f)
-        else:
-            raise HTTPException(
-                status_code=HTTP_400_BAD_REQUEST,
-                detail="Invalid file type. Only JSON and YAML are supported!",
-            )
-
+    if file_extension in ['yaml', 'yml']:
+        model = yaml.safe_load(fd)
+    elif file_extension == 'json':
+        model = json.load(fd)
+    else:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="Invalid file type. Only JSON and YAML are supported!",
+        )
     if len(model) == 0:
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail="No model provided!",
         )
-    try:
-        openapi_v3_spec_validator.validate(model)
-    except Exception as e:
-        print('Exception while validating OpenAPI model')
-        print(e)
-        raise HTTPException(status_code=400, detail=f"Invalid OpenAPI model: {e}")
+    # try:
+    #     openapi_v3_spec_validator.validate(model)
+    # except Exception as e:
+    #     print('Exception while validating OpenAPI model')
+    #     print(e)
+    #     raise HTTPException(status_code=400, detail=f"Invalid OpenAPI model: {e}")
 
     try:
         dflow_model_str = openapi_to_dflow(model)
