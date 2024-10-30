@@ -39,7 +39,7 @@ dialogues
                 {%- if response.type == "Form" %}
                 Form {{ response.name }}
                     {%- for slot in response.slots %}
-                        {{ slot.name }}: {{ slot.type }} = {% if slot.service_call %}{{ slot.service_call }}[{{ slot.name }}]{% else %}HRI('{{ slot.prompt }}'){% endif %}
+                        {{ slot.name }}: {{ slot.type }} = {% if slot.service_call %}{{ slot.service_call }}{% if slot.response_filter %}[{{slot.response_filter}}]{% endif %}{% else %}HRI('{{ slot.prompt }}'){% endif %}
                     {%- endfor %}
                     end,    
                 {%- elif response.type == "ActionGroup" %}
