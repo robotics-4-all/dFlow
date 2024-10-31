@@ -9,3 +9,4 @@ services:
     environment:
       - API_KEY=${API_KEY:-123}
       - WORKERS=${WORKERS:-1}
+      - ISSEL_API_KEY=${ISSEL_API_KEY:-123}
