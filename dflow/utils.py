@@ -7,7 +7,7 @@ import textx.scoping.providers as scoping_providers
 
 this_dir = dirname(__file__)
 
-API_KEY = os.getenv("API_KEY", "123")
+ISSEL_API_KEY = os.getenv("ISSEL_API_KEY", "123")
 
 def get_mm(debug=False, global_scope=True):
     mm = metamodel_from_file(
@@ -45,7 +45,7 @@ def llm_invoke(system_prompt: str = '', messages: list = [], temperature: float 
         response = requests.post(
             "https://services.issel.ee.auth.gr/llms/chat",
             headers={
-                'access_token': API_KEY
+                'access_token': ISSEL_API_KEY
             },
             json={
                 "system_prompt": system_prompt,
