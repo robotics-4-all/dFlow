@@ -6,7 +6,7 @@
 {% macro actions_macro(act) -%}
 {% if act.type in ['SpeakAction', 'AskSlot'] %}
 {% for property in act.system_properties %} 
-{{property}} = compute_system_properties("{{property}}")
+{{property}} = compute_system_properties("{{property}}", tracker)
 {% endfor %} 
 dispatcher.utter_message(text = f"{{act.text}}")
 {% elif act.type == 'FireEventAction' %} 
@@ -20,12 +20,12 @@ event_data = {
 dispatcher.utter_message(json_message = event_data)
 {% elif act.type in ['SetGlobalSlot', 'SetFormSlot'] %} 
 {% for property in act.system_properties %} 
-{{property}} = compute_system_properties("{{property}}")
+{{property}} = compute_system_properties("{{property}}", tracker)
 {% endfor %} 
 output.append(SlotSet("{{act.slot}}", {{act.value}}))
 {% elif act.type == 'EServiceCallHTTP' %} 
 {% for property in act.system_properties %} 
-{{property}} = compute_system_properties("{{property}}")
+{{property}} = compute_system_properties("{{property}}", tracker)
 {% endfor %} 
 {% for key, value in act.path_params.items() %} 
 {{key}} = f"{{value}}"
@@ -65,7 +65,7 @@ from slack_sdk import WebClient
 {% endif %}
 {% endif %}
 
-def compute_system_properties(property):
+def compute_system_properties(property, tracker = None):
     if property.lower() == 'time':
         return datetime.now().strftime("%I:%M")
     if property.lower() == 'location':
@@ -81,7 +81,8 @@ def compute_system_properties(property):
             return requests.get('https://api.ipify.org').content.decode('utf8')
         except:
             return "Could not resolve IP address"
-
+    if property.lower() == 'user_expression':
+        return tracker.latest_message['text'] if tracker else ''
 
 def compute_user_properties(property):
     if property.lower() == 'name':
@@ -201,7 +202,7 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
             {{key}} = f"{{value}}"
             {% endfor %}
             {% for property in slot.data.system_properties %}
-            {{property}} = compute_system_properties("{{property}}")
+            {{property}} = compute_system_properties("{{property}}", tracker)
             {% endfor %}
             {% for property in slot.data.user_properties %}
             {{property}} = compute_user_properties("{{property}}")
@@ -233,7 +234,7 @@ class {{action.name|replace("_","")|capitalize}}(FormValidationAction):
                 {{slot}} = tracker.get_slot('{{slot}}')
                 {% endfor %}
                 {% for property in slot.data.system_properties %}
-                {{property}} = compute_system_properties("{{property}}")
+                {{property}} = compute_system_properties("{{property}}", tracker)
                 {% endfor %}
                 {% for property in slot.data.user_properties %}
                 {{property}} = compute_user_properties("{{property}}")
