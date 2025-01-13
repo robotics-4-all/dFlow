@@ -21,6 +21,7 @@
 import utils
 import connector
 import auth
+import nluconfig
 
 dFlow:
 (
@@ -56,6 +57,10 @@ dFlow:
 
     ('connectors'
         connectors*=Connector
+    'end')?
+
+    ('nluconfig'
+        nlu_config=NLUConfig
     'end')?
 )#
 ;

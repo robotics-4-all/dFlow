@@ -1,0 +1,7 @@
+NLUConfig:
+    (
+        ('model_name:' name=STRING)
+        ('model_weights:' weights=STRING)
+    )#
+;
+

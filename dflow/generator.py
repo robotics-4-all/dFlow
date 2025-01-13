@@ -65,6 +65,7 @@ class TransformationDataModel(BaseModel):
     roles: List[str] = []
     policies: Dict[str, set] = {}
     ac_misc: AccessControlMisc = AccessControlMisc()
+    nlu_config: Dict[str, str] = {}
 
     class Config:
             arbitrary_types_allowed = True
@@ -140,7 +141,8 @@ def generate(metamodel,
                 connectors=data.connectors,
                 roles=data.roles,
                 policies=data.policies,
-                ac_misc=data.ac_misc
+                ac_misc=data.ac_misc,
+                nlu_config=data.nlu_config
             )
         )
         chmod(out_file, 509)
@@ -206,6 +208,10 @@ def parse_model(model, out_dir) -> TransformationDataModel:
     data = TransformationDataModel()
     
     data = add_static_scenario(data)
+
+    # Extract nlu_config
+    if model.nlu_config:
+        data.nlu_config = {'name': model.nlu_config.name, 'weights': model.nlu_config.weights}
 
     # Extract synonyms
     synonyms_dictionary = {}
