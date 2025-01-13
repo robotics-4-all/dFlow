@@ -316,7 +316,8 @@ SystemProperty:
 	'RANDOM_INT'	|
 	'RANDOM_FLOAT'  |
     'HOSTNAME'      |
-    'PUBLIC_IP'
+    'PUBLIC_IP'     |
+    'USER_EXPRESSION'
 ;
 
 // TYPES
