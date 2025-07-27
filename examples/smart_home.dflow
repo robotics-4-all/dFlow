@@ -1,0 +1,132 @@
+gslots
+    name: str = ""
+end
+
+entities
+    Entity ITEM
+        "new kPhone",
+        "new smart TV",
+        "new samung galaxy",
+        "diamond necklace"
+    end
+
+    Entity ADDRESS
+        "West 136th St Austin Texas",
+        "North St 1052 LA California"
+    end
+end
+
+triggers
+    Intent affirm
+      "yes",
+      "yeahh",
+      "absolutely",
+      "yeap",
+      "y"
+    end
+
+    Intent deny
+      "no",
+      "nohh",
+      "no way",
+      "nope",
+      "n"
+    end
+
+    Intent greet
+        "hey",
+        "hello",
+        "hi",
+        "hello there",
+        "good morning",
+        "good evening",
+        "moin"
+    end
+
+    Intent inform_name
+        "Hello I am" PE:PERSON['John', 'Nick'],
+        "Hi my name is" PE:PERSON['Nick'],
+        "Hi my name is" PE:PERSON['Nick'],
+        "I'm" PE:PERSON,
+        PE:PERSON,
+        "I am" PE:PERSON
+    end
+
+    Intent basket_item
+        "I would like to buy a new item",
+        "I would like to add a new item to the backet",
+        "Basket item",
+        "I want to buy a new item",
+        "I want to buy something",
+        "Buy new item"
+    end
+
+    Intent inform_item
+        "The" TE:ITEM,
+        TE:ITEM,
+        "I want the" TE:ITEM
+    end
+
+    Intent purchase_item
+        "I want to purchase basket items",
+        "I want to purchase the basket items",
+        "I want to purchase the items in my basket",
+        "Please purchase basket items",
+        "Buy basket items"
+    end
+
+    Intent give_address
+        "Ship it to" TE:ADDRESS,
+        "Address" TE:ADDRESS
+    end
+
+end
+
+dialogues
+    // This is a demonstration on how slot authentication can be used for debbuging or ease of use.
+    // In production, IDs should be acquired from third party Auths like Slack.
+
+    Dialogue get_name_dialogue
+        on: greet
+        responses:
+            Form form1
+                name_slot: str = HRI('What is your name?', [PE:PERSON])
+            end,
+            ActionGroup answer_back
+                SetGSlot(name, form1.name_slot)
+                Speak('Thanks' form1.name_slot '! I will remember that')
+            end
+    end
+
+    Dialogue basket_item_dialogue
+        on: basket_item
+        responses:
+            Form BIDF1
+                item_slot: str = HRI('What item would you like to add to the basket?', [TE:ITEM])
+            end,
+            ActionGroup inform_buy
+                Speak('Ok I will add' BIDF1.item_slot 'to your basket!')
+                FireEvent('/update_basket', {item: BIDF1.item_slot})
+            end
+    end
+
+    Dialogue purchase_item_dialogue
+        on: purchase_item
+        responses:
+            Form BIDF2
+                address_slot: str = HRI('Where should they be shipped?', [TE:ADDRESS])
+            end,
+            ActionGroup inform_purchase
+                Speak('Ok buying items and shipping them to' BIDF2.address_slot)
+                FireEvent('/purchase_basket', {address: BIDF2.address_slot})
+            end
+    end
+end
+
+connectors
+  Connector slack
+    token: "slack-token"
+    channel: "smart-home-bot"
+    signing_secret: "signing-secret"
+  end
+end
